@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String      @id @default(cuid())
+  email                 String      @unique
+  username              String      @unique
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  password              String?
+  profilePicture        String?
+  bio                   String?
+  
+  // OAuth providers
+  googleId              String?     @unique
+  discordId             String?     @unique
+  facebookId            String?     @unique
+  twitterId             String?     @unique
+  
+  // User preferences
+  theme                 String      @default("dark")
+  emailNotifications    Boolean     @default(true)
+  receiveUpdates        Boolean     @default(false)
+  
+  // Relations
+  posts                 Post[]
+  comments              Comment[]
+  tournamentParticipations TournamentParticipant[]
+  gameStats             GameStat[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model Game {
+  id                    String      @id @default(cuid())
+  name                  String
+  category              String
+  description           String?
+  icon                  String?
+  thumbnail             String?
+  players               Int         @default(0)
+  rating                Float       @default(0)
+  
+  // Relations
+  tournaments           Tournament[]
+  gameStats             GameStat[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model GameStat {
+  id                    String      @id @default(cuid())
+  userId                String
+  gameId                String
+  gamesPlayed           Int         @default(0)
+  wins                  Int         @default(0)
+  losses                Int         @default(0)
+  highScore             Int         @default(0)
+  totalPoints           Int         @default(0)
+  
+  // Relations
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game                  Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  
+  @@unique([userId, gameId])
+}
+
+model Tournament {
+  id                    String      @id @default(cuid())
+  name                  String
+  gameId                String
+  description           String?
+  prizePool             Float       @default(0)
+  maxParticipants       Int         @default(64)
+  status                String      @default("upcoming")
+  startDate             DateTime
+  endDate               DateTime?
+  
+  // Relations
+  game                  Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  participants          TournamentParticipant[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model TournamentParticipant {
+  id                    String      @id @default(cuid())
+  tournamentId          String
+  userId                String
+  rank                  Int?
+  score                 Int         @default(0)
+  status                String      @default("registered")
+  
+  // Relations
+  tournament            Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  
+  @@unique([tournamentId, userId])
+}
+
+model Post {
+  id                    String      @id @default(cuid())
+  userId                String
+  content               String
+  image                 String?
+  likes                 Int         @default(0)
+  
+  // Relations
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments              Comment[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model Comment {
+  id                    String      @id @default(cuid())
+  postId                String
+  userId                String
+  content               String
+  
+  // Relations
+  post                  Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model Notification {
+  id                    String      @id @default(cuid())
+  userId                String
+  type                  String
+  title                 String
+  message               String
+  read                  Boolean     @default(false)
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}

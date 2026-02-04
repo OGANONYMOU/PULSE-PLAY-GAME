@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tournaments - PulsePay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/tournaments.css" />
+</head>
+<body>
+  <!-- Particles Background -->
+  <div class="particles-container" id="particles"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="logo-container">
+      <img src="../assets/images/Pulsupay Background Removed.png" alt="PulsePay Logo" class="logo-img">
+      <div class="logo">PulsePay</div>
+    </div>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="tournaments.html" class="active">Tournaments</a></li>
+        <li><a href="community.html">Community</a></li>
+        <li><a href="about.html">About</a></li>
+      </ul>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode" title="Toggle theme">☀️</button>
+      <button class="signin-btn" onclick="window.location.href='signin.html'">
+        <span>Sign In</span>
+        <div class="btn-glow"></div>
+      </button>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="tournaments-hero">
+    <div class="hero-content">
+      <h1 class="tournaments-main-title">Tournament Arena</h1>
+      <p class="tournaments-main-subtitle">Browse ongoing, upcoming, and completed tournaments within the PulsePay community.</p>
+      
+      <!-- Stats Overview -->
+      <div class="tournaments-stats">
+        <div class="tournament-stat-card">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-info">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">Active Tournaments</div>
+          </div>
+        </div>
+        <div class="tournament-stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-number">₦5M</div>
+            <div class="stat-label">Total Prize Pool</div>
+          </div>
+        </div>
+        <div class="tournament-stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="stat-number">2.5K</div>
+            <div class="stat-label">Total Players</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tournaments Section -->
+  <section class="tournaments-main">
+    <!-- Filter Bar -->
+    <div class="filter-container">
+      <div class="filter-header">
+        <h2>Filter Tournaments</h2>
+        <span class="results-count">Showing <span id="resultsCount">12</span> tournaments</span>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">
+          <span class="filter-icon">🎮</span>
+          <span class="filter-text">All</span>
+          <span class="filter-count">12</span>
+        </button>
+        <button class="filter-btn" data-filter="upcoming">
+          <span class="filter-icon">📅</span>
+          <span class="filter-text">Upcoming</span>
+          <span class="filter-count">5</span>
+        </button>
+        <button class="filter-btn" data-filter="ongoing">
+          <span class="filter-icon">🔴</span>
+          <span class="filter-text">Live</span>
+          <span class="filter-count">4</span>
+        </button>
+        <button class="filter-btn" data-filter="completed">
+          <span class="filter-icon">✓</span>
+          <span class="filter-text">Completed</span>
+          <span class="filter-count">3</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tournament Grid -->
+    <div class="tournament-grid">
+      <!-- Tournament Card 1 - Live -->
+      <div class="tournament-card" data-category="ongoing" data-tilt>
+        <div class="tournament-image-wrapper">
+          <div class="tournament-placeholder game-fifa">
+            <span class="game-icon">⚽</span>
+          </div>
+          <div class="tournament-badge live">
+            <span class="badge-dot"></span>
+            Live Now
+          </div>
+        </div>
+        <div class="tournament-content">
+          <div class="tournament-header">
+            <h3>FIFA 24 Championship</h3>
+            <div class="tournament-game-tag">FIFA 24</div>
+          </div>
+          
+          <div class="tournament-details-grid">
+            <div class="detail-box">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">Oct 28, 2025</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">💰</span>
+              <div class="detail-content">
+                <span class="detail-label">Prize Pool</span>
+                <span class="detail-value">₦200,000</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">👥</span>
+              <div class="detail-content">
+                <span class="detail-label">Players</span>
+                <span class="detail-value">64/128</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">⏱️</span>
+              <div class="detail-content">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">3 Days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tournament-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="50"></div>
+            </div>
+            <span class="progress-text">50% Filled</span>
+          </div>
+
+          <button class="tournament-action-btn primary">
+            <span>Join Tournament</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tournament Card 2 - Upcoming -->
+      <div class="tournament-card" data-category="upcoming" data-tilt>
+        <div class="tournament-image-wrapper">
+          <div class="tournament-placeholder game-mk">
+            <span class="game-icon">🥊</span>
+          </div>
+          <div class="tournament-badge upcoming">
+            <span class="badge-icon">📅</span>
+            Upcoming
+          </div>
+        </div>
+        <div class="tournament-content">
+          <div class="tournament-header">
+            <h3>Mortal Kombat Legends</h3>
+            <div class="tournament-game-tag mk">Mortal Kombat</div>
+          </div>
+          
+          <div class="tournament-details-grid">
+            <div class="detail-box">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">Nov 5, 2025</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">💰</span>
+              <div class="detail-content">
+                <span class="detail-label">Prize Pool</span>
+                <span class="detail-value">₦150,000</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">👥</span>
+              <div class="detail-content">
+                <span class="detail-label">Players</span>
+                <span class="detail-value">32/64</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">⏱️</span>
+              <div class="detail-content">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">2 Days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tournament-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="50"></div>
+            </div>
+            <span class="progress-text">50% Filled</span>
+          </div>
+
+          <button class="tournament-action-btn primary">
+            <span>Register Now</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tournament Card 3 - Live -->
+      <div class="tournament-card" data-category="ongoing" data-tilt>
+        <div class="tournament-image-wrapper">
+          <div class="tournament-placeholder game-fortnite">
+            <span class="game-icon">🎯</span>
+          </div>
+          <div class="tournament-badge live">
+            <span class="badge-dot"></span>
+            Live Now
+          </div>
+        </div>
+        <div class="tournament-content">
+          <div class="tournament-header">
+            <h3>Fortnite Arena</h3>
+            <div class="tournament-game-tag fortnite">Fortnite</div>
+          </div>
+          
+          <div class="tournament-details-grid">
+            <div class="detail-box">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">Dec 2, 2025</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">💰</span>
+              <div class="detail-content">
+                <span class="detail-label">Prize Pool</span>
+                <span class="detail-value">₦500,000</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">👥</span>
+              <div class="detail-content">
+                <span class="detail-label">Players</span>
+                <span class="detail-value">100/100</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">⏱️</span>
+              <div class="detail-content">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">5 Days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tournament-progress">
+            <div class="progress-bar full">
+              <div class="progress-fill" data-width="100"></div>
+            </div>
+            <span class="progress-text">Full</span>
+          </div>
+
+          <button class="tournament-action-btn secondary">
+            <span>View Details</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tournament Card 4 - Upcoming -->
+      <div class="tournament-card" data-category="upcoming" data-tilt>
+        <div class="tournament-image-wrapper">
+          <div class="tournament-placeholder game-codm">
+            <span class="game-icon">🎮</span>
+          </div>
+          <div class="tournament-badge upcoming">
+            <span class="badge-icon">📅</span>
+            Upcoming
+          </div>
+        </div>
+        <div class="tournament-content">
+          <div class="tournament-header">
+            <h3>CODM Elite Championship</h3>
+            <div class="tournament-game-tag codm">Call of Duty</div>
+          </div>
+          
+          <div class="tournament-details-grid">
+            <div class="detail-box">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">Dec 10, 2025</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">💰</span>
+              <div class="detail-content">
+                <span class="detail-label">Prize Pool</span>
+                <span class="detail-value">₦300,000</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">👥</span>
+              <div class="detail-content">
+                <span class="detail-label">Players</span>
+                <span class="detail-value">16/64</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">⏱️</span>
+              <div class="detail-content">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">4 Days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tournament-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="25"></div>
+            </div>
+            <span class="progress-text">25% Filled</span>
+          </div>
+
+          <button class="tournament-action-btn primary">
+            <span>Register Now</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tournament Card 5 - Completed -->
+      <div class="tournament-card" data-category="completed" data-tilt>
+        <div class="tournament-image-wrapper">
+          <div class="tournament-placeholder game-ml">
+            <span class="game-icon">🏅</span>
+          </div>
+          <div class="tournament-badge completed">
+            <span class="badge-icon">✓</span>
+            Completed
+          </div>
+        </div>
+        <div class="tournament-content">
+          <div class="tournament-header">
+            <h3>Mobile Legends Championship</h3>
+            <div class="tournament-game-tag ml">Mobile Legends</div>
+          </div>
+          
+          <div class="tournament-details-grid">
+            <div class="detail-box">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">Oct 15, 2025</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">💰</span>
+              <div class="detail-content">
+                <span class="detail-label">Prize Pool</span>
+                <span class="detail-value">₦250,000</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">🏆</span>
+              <div class="detail-content">
+                <span class="detail-label">Winner</span>
+                <span class="detail-value">Team Alpha</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">👥</span>
+              <div class="detail-content">
+                <span class="detail-label">Participants</span>
+                <span class="detail-value">128</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tournament-winners">
+            <div class="winner-badge">🥇 Champion: Team Alpha</div>
+          </div>
+
+          <button class="tournament-action-btn secondary">
+            <span>View Results</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tournament Card 6 - Live -->
+      <div class="tournament-card" data-category="ongoing" data-tilt>
+        <div class="tournament-image-wrapper">
+          <div class="tournament-placeholder game-pubg">
+            <span class="game-icon">🎖️</span>
+          </div>
+          <div class="tournament-badge live">
+            <span class="badge-dot"></span>
+            Live Now
+          </div>
+        </div>
+        <div class="tournament-content">
+          <div class="tournament-header">
+            <h3>PUBG Mobile Masters</h3>
+            <div class="tournament-game-tag pubg">PUBG Mobile</div>
+          </div>
+          
+          <div class="tournament-details-grid">
+            <div class="detail-box">
+              <span class="detail-icon">📅</span>
+              <div class="detail-content">
+                <span class="detail-label">Date</span>
+                <span class="detail-value">Oct 29, 2025</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">💰</span>
+              <div class="detail-content">
+                <span class="detail-label">Prize Pool</span>
+                <span class="detail-value">₦400,000</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">👥</span>
+              <div class="detail-content">
+                <span class="detail-label">Players</span>
+                <span class="detail-value">80/100</span>
+              </div>
+            </div>
+            <div class="detail-box">
+              <span class="detail-icon">⏱️</span>
+              <div class="detail-content">
+                <span class="detail-label">Duration</span>
+                <span class="detail-value">3 Days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tournament-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="80"></div>
+            </div>
+            <span class="progress-text">80% Filled</span>
+          </div>
+
+          <button class="tournament-action-btn primary">
+            <span>Join Tournament</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load More Button -->
+    <div class="load-more-container">
+      <button class="load-more-btn">
+        <span>Load More Tournaments</span>
+        <span class="load-icon">↓</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>© 2025 PulsePay. All rights reserved.</p>
+      <div class="social-links">
+        <a href="https://twitter.com" target="_blank" rel="noopener" class="social-link">
+          <span>Twitter</span>
+        </a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" class="social-link">
+          <span>Instagram</span>
+        </a>
+        <a href="https://discord.com" target="_blank" rel="noopener" class="social-link">
+          <span>Discord</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JS -->
+  <script src="js/main.js"></script>
+  <script src="js/tournament.js"></script>
+</body>
+</html>
