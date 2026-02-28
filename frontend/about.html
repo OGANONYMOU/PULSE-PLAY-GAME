@@ -4,20 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>About - PulsePay</title>
+  <link rel="icon" type="image/png" href="../assets/images/Pulsupay.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  
-  <!-- AOS Library for Scroll Animations -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
-  
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/about.css" />
 </head>
 <body>
-  <!-- Particles Background -->
   <div class="particles-container" id="particles"></div>
 
-  <!-- Navigation Bar -->
   <header class="navbar">
     <div class="logo-container">
       <img src="../assets/images/Pulsupay Background Removed.png" alt="PulsePay Logo" class="logo-img">
@@ -27,8 +23,8 @@
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="games.html">Games</a></li>
-        <li><a href="tournaments.html">Tournaments</a></li>
         <li><a href="community.html">Community</a></li>
+        <li><a href="tournaments.html">Tournaments</a></li>
         <li><a href="about.html" class="active">About</a></li>
       </ul>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode" title="Toggle theme">☀️</button>
@@ -37,116 +33,208 @@
         <div class="btn-glow"></div>
       </button>
     </nav>
-
-    <!-- Mobile Menu Toggle -->
     <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
-      <span></span>
-      <span></span>
-      <span></span>
+      <span></span><span></span><span></span>
     </button>
   </header>
 
   <main>
-    <!-- About Hero Section -->
-    <section class="hero about-hero">
-      <div class="hero-content">
-        <h1 class="glitch-text" data-text="About PulsePay">About PulsePay</h1>
-        <p class="hero-subtitle">Empowering mobile gamers worldwide with tournaments, community, and opportunities.</p>
+    <!-- About Hero -->
+    <section class="about-hero">
+      <div class="about-hero-bg">
+        <div class="about-orb orb-1"></div>
+        <div class="about-orb orb-2"></div>
+        <div class="about-grid-overlay"></div>
       </div>
-    </section>
-
-    <!-- Mission Section -->
-    <section class="about-section">
-      <div class="about-content">
-        <h2>Our Mission</h2>
-        <p>PulsePay builds community-first experiences for mobile gamers worldwide. We organize tournaments, surface player highlights, and create opportunities for players to compete, learn, and earn rewards.</p>
-      </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features-section">
-      <h2 class="section-title">Why Choose PulsePay?</h2>
-      <div class="features-grid">
-        <div class="feature-card" data-aos="fade-up">
-          <div class="feature-icon">🎮</div>
-          <h3>Wide Game Selection</h3>
-          <p>Access tournaments for your favorite mobile games</p>
-        </div>
-        <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
-          <div class="feature-icon">🏆</div>
-          <h3>Competitive Tournaments</h3>
-          <p>Join exciting competitions with real prizes</p>
-        </div>
-        <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
-          <div class="feature-icon">👥</div>
-          <h3>Active Community</h3>
-          <p>Connect with thousands of gamers worldwide</p>
-        </div>
-        <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
-          <div class="feature-icon">💰</div>
-          <h3>Earn Rewards</h3>
-          <p>Compete and win prizes with our reward system</p>
+      <div class="about-hero-content">
+        <div class="about-badge-pill">Empowering Mobile Gamers Since 2024</div>
+        <h1 class="about-hero-title">
+          We Live &<br>
+          <span class="gradient-about">Breathe Gaming</span>
+        </h1>
+        <p class="about-hero-desc">PulsePay is the home of competitive mobile gaming in Nigeria and beyond. We build community-first experiences for players who are hungry to compete, connect, and win.</p>
+        <div class="about-hero-ctas">
+          <button class="about-cta-primary" onclick="window.location.href='register.html'">Join PulsePay</button>
+          <button class="about-cta-secondary" onclick="window.location.href='tournaments.html'">View Tournaments</button>
         </div>
       </div>
-    </section>
 
-    <!-- Contact Section -->
-    <section class="team-section">
-      <h2>Meet the Team</h2>
-      <p>We're a small team of gamers, designers, and engineers passionate about making competitive mobile gaming accessible and fun.</p>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">👥</div>
-          <h3>Community First</h3>
-          <p>We prioritize features that benefit players and organizers alike.</p>
+      <!-- Floating stat cards -->
+      <div class="about-stats-row">
+        <div class="about-stat-card">
+          <div class="about-stat-num">10K+</div>
+          <div class="about-stat-lbl">Active Gamers</div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">⚙️</div>
-          <h3>Built for Growth</h3>
-          <p>Scalable tournaments, leaderboards, and clear rules make competitions fair and fun.</p>
+        <div class="about-stat-card">
+          <div class="about-stat-num">50+</div>
+          <div class="about-stat-lbl">Tournaments Hosted</div>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <h3>Secure & Transparent</h3>
-          <p>We use proven practices to protect player data and keep prize distribution transparent.</p>
+        <div class="about-stat-card">
+          <div class="about-stat-num">₦5M+</div>
+          <div class="about-stat-lbl">Total Prize Pool</div>
+        </div>
+        <div class="about-stat-card">
+          <div class="about-stat-num">15+</div>
+          <div class="about-stat-lbl">Partner Games</div>
         </div>
       </div>
     </section>
 
-    <section class="contact-section">
-      <h2>Get In Touch</h2>
-      <p>Have questions? We'd love to hear from you.</p>
-      <div class="contact-info">
-        <p><strong>Email:</strong> support@pulsepay.com</p>
-        <p><strong>Discord:</strong> <a href="https://discord.com" target="_blank" rel="noopener">Join our community</a></p>
+    <!-- Mission -->
+    <section class="mission-section">
+      <div class="mission-inner">
+        <div class="mission-text-col">
+          <span class="section-eyebrow">Our Purpose</span>
+          <h2 class="mission-title">Built for Players,<br>By Players</h2>
+          <p class="mission-body">PulsePay was founded by mobile gamers who were frustrated with the lack of structured competition and community on mobile platforms. We set out to change that.</p>
+          <p class="mission-body">Today we organize high-stakes tournaments, surface player highlights, and create real opportunities for players of all skill levels to compete, grow, and earn recognition.</p>
+          <div class="mission-highlights">
+            <div class="mh-item">
+              <span class="mh-check">✓</span>
+              Fair, transparent prize distribution
+            </div>
+            <div class="mh-item">
+              <span class="mh-check">✓</span>
+              Open to all skill levels
+            </div>
+            <div class="mh-item">
+              <span class="mh-check">✓</span>
+              Community-driven game selection
+            </div>
+          </div>
+        </div>
+        <div class="mission-visual-col">
+          <div class="mission-card-stack">
+            <div class="stack-card card-a">
+              <span class="stack-icon">🏆</span>
+              <div class="stack-text">
+                <div class="stack-title">Weekly Tournaments</div>
+                <div class="stack-sub">Compete every week across multiple games</div>
+              </div>
+            </div>
+            <div class="stack-card card-b">
+              <span class="stack-icon">💰</span>
+              <div class="stack-text">
+                <div class="stack-title">Real Cash Prizes</div>
+                <div class="stack-sub">Win and get paid directly</div>
+              </div>
+            </div>
+            <div class="stack-card card-c">
+              <span class="stack-icon">🎮</span>
+              <div class="stack-text">
+                <div class="stack-title">Your Favourite Games</div>
+                <div class="stack-sub">CODM, eFootball, Free Fire & more</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Values / Why Us -->
+    <section class="values-section">
+      <div class="values-inner">
+        <span class="section-eyebrow">Why PulsePay?</span>
+        <h2 class="section-title">Built on Three Pillars</h2>
+        <div class="values-grid">
+          <div class="value-card" data-tilt>
+            <div class="value-icon-wrap">🌍</div>
+            <h3>Community First</h3>
+            <p>Every feature we build starts with what's best for the players and tournament organizers in our community.</p>
+            <div class="value-glow"></div>
+          </div>
+          <div class="value-card featured-value" data-tilt>
+            <div class="value-icon-wrap">⚡</div>
+            <h3>Built for Growth</h3>
+            <p>Scalable brackets, real-time leaderboards, and transparent rules make every competition fair and exciting.</p>
+            <div class="value-glow"></div>
+          </div>
+          <div class="value-card" data-tilt>
+            <div class="value-icon-wrap">🔒</div>
+            <h3>Secure & Transparent</h3>
+            <p>We protect player data and keep prize distribution fully transparent — no hidden fees, no surprises.</p>
+            <div class="value-glow"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline / Story -->
+    <section class="timeline-section">
+      <div class="timeline-inner">
+        <span class="section-eyebrow">Our Journey</span>
+        <h2 class="section-title">How We Got Here</h2>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <div class="tl-year">2024</div>
+              <h4>PulsePay Founded</h4>
+              <p>A small team of mobile gaming enthusiasts launched PulsePay with a single goal: make competitive mobile gaming accessible to everyone.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <div class="tl-year">Early 2025</div>
+              <h4>First 1,000 Players</h4>
+              <p>We hit our first milestone — 1,000 registered players and our inaugural tournament series across CODM and eFootball.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <div class="tl-year">Mid 2025</div>
+              <h4>₦1M in Prizes Distributed</h4>
+              <p>Players earned real cash through PulsePay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-dot current"></div>
+            <div class="tl-content">
+              <div class="tl-year">Now</div>
+              <h4>10K+ Gamers & Growing</h4>
+              <p>With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePay is just getting started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact / CTA -->
+    <section class="about-contact">
+      <div class="contact-inner">
+        <h2 class="contact-title">Ready to Compete?</h2>
+        <p class="contact-sub">Join thousands of players already on PulsePay. Sign up free and enter your first tournament today.</p>
+        <div class="contact-actions">
+          <button class="about-cta-primary" onclick="window.location.href='register.html'">Create Free Account</button>
+        </div>
+        <div class="contact-info-row">
+          <div class="contact-item">
+            <span class="ci-icon">📧</span>
+            <span>support@pulsepay.com</span>
+          </div>
+          <div class="contact-item">
+            <span class="ci-icon">💬</span>
+            <a href="https://discord.com" target="_blank" rel="noopener">Join our Discord</a>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
       <p>© 2025 PulsePay. All rights reserved.</p>
       <div class="social-links">
-        <a href="https://twitter.com" target="_blank" rel="noopener" class="social-link">
-          <span>Twitter</span>
-        </a>
-        <a href="https://instagram.com" target="_blank" rel="noopener" class="social-link">
-          <span>Instagram</span>
-        </a>
-        <a href="https://discord.com" target="_blank" rel="noopener" class="social-link">
-          <span>Discord</span>
-        </a>
+        <a href="https://twitter.com" target="_blank" rel="noopener" class="social-link"><span>Twitter</span></a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" class="social-link"><span>Instagram</span></a>
+        <a href="https://discord.com" target="_blank" rel="noopener" class="social-link"><span>Discord</span></a>
       </div>
     </div>
   </footer>
 
-  <!-- AOS Script -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-  
-  <!-- Vanilla Tilt Script for 3D Card Effects -->
-  <script src="https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js"></script>
-  
+  <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+{
+  "name": "pulsepay-frontend",
+  "version": "1.0.0",
+  "description": "PulsePay Frontend",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve . --listen 3000 --no-clipboard",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "license": "MIT"
+}

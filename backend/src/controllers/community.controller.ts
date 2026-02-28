@@ -1,102 +1,67 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
-import { tournamentService } from '../services/tournament.service';
-import { successResponse } from '../utils/response';
-import { asyncHandler } from '../middleware/error';
+import { AuthenticatedRequest } from '../middleware/auth.js';
+import { communityService } from '../services/community.service.js';
+import { successResponse } from '../utils/response.js';
+import { asyncHandler } from '../middleware/error.js';
 
-export const getAllTournaments = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+// GET /api/community/posts
+export const getAllPosts = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const skip = parseInt(req.query.skip as string) || 0;
   const take = parseInt(req.query.take as string) || 20;
-  const status = req.query.status as string | undefined;
-
-  const result = await tournamentService.getAllTournaments(skip, take, status);
-
-  res.json(
-    successResponse(result, 'Tournaments retrieved successfully')
-  );
+  const result = await communityService.getAllPosts(skip, take);
+  res.json(successResponse(result, 'Posts retrieved'));
 });
 
-export const getTournamentById = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { tournamentId } = req.params;
-  const tournament = await tournamentService.getTournamentById(tournamentId);
-
-  res.json(
-    successResponse(tournament, 'Tournament retrieved successfully')
-  );
+// GET /api/community/posts/:postId
+export const getPostById = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const post = await communityService.getPostById(req.params.postId);
+  res.json(successResponse(post, 'Post retrieved'));
 });
 
-export const getTournamentsByGame = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { gameId } = req.params;
-  const tournaments = await tournamentService.getTournamentsByGame(gameId);
-
-  res.json(
-    successResponse(tournaments, 'Tournaments by game retrieved successfully')
-  );
+// GET /api/community/user/:userId/posts
+export const getUserPosts = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const posts = await communityService.getUserPosts(req.params.userId);
+  res.json(successResponse(posts, 'User posts retrieved'));
 });
 
-export const createTournament = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const tournament = await tournamentService.createTournament(req.body);
-
-  res.status(201).json(
-    successResponse(tournament, 'Tournament created successfully', 201)
-  );
+// POST /api/community/posts
+export const createPost = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { content, image } = req.body;
+  const post = await communityService.createPost(userId, content, image);
+  res.status(201).json(successResponse(post, 'Post created', 201));
 });
 
-export const updateTournament = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { tournamentId } = req.params;
-  const tournament = await tournamentService.updateTournament(tournamentId, req.body);
-
-  res.json(
-    successResponse(tournament, 'Tournament updated successfully')
-  );
+// PUT /api/community/posts/:postId
+export const updatePost = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { content, image } = req.body;
+  const post = await communityService.updatePost(req.params.postId, userId, content, image);
+  res.json(successResponse(post, 'Post updated'));
 });
 
-export const joinTournament = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user?.id;
-  const { tournamentId } = req.params;
-
-  if (!userId) {
-    throw new Error('User ID not found');
-  }
-
-  const participant = await tournamentService.joinTournament(tournamentId, userId);
-
-  res.status(201).json(
-    successResponse(participant, 'Joined tournament successfully', 201)
-  );
+// DELETE /api/community/posts/:postId
+export const deletePost = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  await communityService.deletePost(req.params.postId, req.user!.id);
+  res.json(successResponse(null, 'Post deleted'));
 });
 
-export const leaveTournament = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user?.id;
-  const { tournamentId } = req.params;
-
-  if (!userId) {
-    throw new Error('User ID not found');
-  }
-
-  await tournamentService.leaveTournament(tournamentId, userId);
-
-  res.json(
-    successResponse(null, 'Left tournament successfully')
-  );
+// POST /api/community/posts/:postId/like
+export const likePost = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const post = await communityService.likePost(req.params.postId);
+  res.json(successResponse(post, 'Post liked'));
 });
 
-export const updateParticipantRank = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { participantId } = req.params;
-  const { rank, score } = req.body;
-
-  const participant = await tournamentService.updateParticipantRank(participantId, rank, score);
-
-  res.json(
-    successResponse(participant, 'Participant rank updated successfully')
-  );
+// POST /api/community/posts/:postId/comments
+export const addComment = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { content } = req.body;
+  const comment = await communityService.addComment(req.params.postId, userId, content);
+  res.status(201).json(successResponse(comment, 'Comment added', 201));
 });
 
-export const deleteTournament = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { tournamentId } = req.params;
-  await tournamentService.deleteTournament(tournamentId);
-
-  res.json(
-    successResponse(null, 'Tournament deleted successfully')
-  );
+// DELETE /api/community/comments/:commentId
+export const deleteComment = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+  await communityService.deleteComment(req.params.commentId, req.user!.id);
+  res.json(successResponse(null, 'Comment deleted'));
 });

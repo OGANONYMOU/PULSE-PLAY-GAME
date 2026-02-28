@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="../assets/images/Pulsupay.png">
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/games.css" />
 </head>
@@ -24,8 +25,8 @@
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="games.html" class="active">Games</a></li>
-        <li><a href="tournaments.html">Tournaments</a></li>
         <li><a href="community.html">Community</a></li>
+        <li><a href="tournaments.html">Tournaments</a></li>
         <li><a href="about.html">About</a></li>
       </ul>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode" title="Toggle theme">☀️</button>
@@ -40,7 +41,7 @@
       <span></span>
       <span></span>
       <span></span>
-    </div>
+    </button>
   </header>
 
   <!-- Games Section -->
@@ -191,10 +192,12 @@
               <span class="detail-text">128 Players</span>
             </div>
           </div>
-          <button class="join-tournament-btn">
-            <span>Join Now</span>
-            <span class="join-arrow">→</span>
-          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="join-tournament-btn view-live-btn" onclick="window.location.href='tournaments.html'">
+              <span class="live-btn-dot-sm"></span>
+              <span>View Live Updates</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -259,6 +262,7 @@
     </div>
   </footer>
 
+  <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
   <script src="js/games.js"></script>
 </body>

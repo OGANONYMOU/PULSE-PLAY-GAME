@@ -3,7 +3,7 @@ import Joi from 'joi';
 export const authValidation = {
   register: Joi.object({
     email: Joi.string().email().required(),
-    username: Joi.string().alphanum().min(3).max(30).required(),
+    username: Joi.string().pattern(/^[a-zA-Z0-9_]+$/).min(3).max(30).required().messages({"string.pattern.base": "Username can only contain letters, numbers and underscores"}),
     password: Joi.string().min(8).required(),
     firstName: Joi.string().optional(),
     lastName: Joi.string().optional(),

@@ -5,8 +5,8 @@
  * @date 2/1/2026, 5:20:23 PM
  */
 
-import prisma from '../config/database';
-import { NotFoundError } from '../utils/errors';
+import prisma from '../config/database.js';
+import { NotFoundError } from '../utils/errors.js';
 
 export class CommunityService {
   async getAllPosts(skip: number = 0, take: number = 20) {

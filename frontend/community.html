@@ -4,10 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Community | PulsePay</title>
+  <link rel="icon" type="image/png" href="../assets/images/Pulsupay.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/community.css" />
 </head>
 <body>
-  <!-- Navigation Bar -->
+  <div class="particles-container" id="particles"></div>
+
   <header class="navbar">
     <div class="logo-container">
       <img src="../assets/images/Pulsupay Background Removed.png" alt="PulsePay Logo" class="logo-img">
@@ -17,8 +23,8 @@
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="games.html">Games</a></li>
-        <li><a href="tournaments.html">Tournaments</a></li>
         <li><a href="community.html" class="active">Community</a></li>
+        <li><a href="tournaments.html">Tournaments</a></li>
         <li><a href="about.html">About</a></li>
       </ul>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode" title="Toggle theme">☀️</button>
@@ -27,77 +33,203 @@
         <div class="btn-glow"></div>
       </button>
     </nav>
-
     <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
-      <span></span>
-      <span></span>
-      <span></span>
+      <span></span><span></span><span></span>
     </button>
   </header>
 
-  <!-- Community Section -->
-  <main class="community">
-    <div class="community-container">
-      <!-- Feed Section -->
-      <section class="feed">
-        <h1>Join the Conversation</h1>
-        <p>Connect with other mobile gamers. Share updates, discuss tactics, or post tournament news.</p>
+  <main class="community-page">
+    <!-- Community Hero -->
+    <section class="community-hero-banner">
+      <div class="community-hero-content">
+        <h1 class="community-hero-title">The <span class="gradient-word">PulsePay</span> Community</h1>
+        <p class="community-hero-sub">Connect with thousands of mobile gamers. Share updates, discuss tactics, celebrate victories.</p>
+        <div class="community-live-stat">
+          <span class="live-dot"></span>
+          <span id="onlineCount">1,247</span> gamers online now
+        </div>
+      </div>
+    </section>
+
+    <div class="community-layout">
+      <!-- Main Feed -->
+      <div class="community-feed-area">
 
         <!-- Composer -->
-        <div class="post-composer">
-          <textarea id="newPostContent" placeholder="Share an update, event, or question..."></textarea>
-          <div class="post-actions">
-            <button id="cancelPost" class="card-btn">Cancel</button>
-            <button id="submitPost" class="card-btn clickable">Post</button>
+        <div class="composer-card">
+          <div class="composer-header">
+            <div class="composer-avatar">🎮</div>
+            <div class="composer-input-area">
+              <textarea id="newPostContent" placeholder="What's on your mind? Share a clip, ask for tips, or hype up a tournament..." rows="3"></textarea>
+            </div>
+          </div>
+          <div class="composer-footer">
+            <div class="composer-tags">
+              <button class="tag-btn active" data-tag="general">💬 General</button>
+              <button class="tag-btn" data-tag="tournament">🏆 Tournament</button>
+              <button class="tag-btn" data-tag="tips">💡 Tips</button>
+              <button class="tag-btn" data-tag="clips">🎬 Clips</button>
+            </div>
+            <div class="composer-actions">
+              <button id="cancelPost" class="cancel-post-btn">Cancel</button>
+              <button id="submitPost" class="submit-post-btn">
+                <span>Post</span>
+                <span class="post-btn-glow"></span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Posts -->
-        <div id="posts">
-          <article class="post-card">
-            <h3>🔥 CODM Tournament Kicks Off This Weekend!</h3>
-            <p>Players around the world are gearing up for the biggest CODM event of the year. Who’s ready to join?</p>
-          </article>
-
-          <article class="post-card">
-            <h3>⚽ eFootball 2025 Patch Released!</h3>
-            <p>Better dribbling, faster gameplay — and new ranked challenges. What are your thoughts?</p>
-          </article>
-
-          <article class="post-card">
-            <h3>🎮 PulsePay Exclusive Event</h3>
-            <p>Be part of our first community-organized challenge and stand a chance to win exclusive rewards.</p>
-          </article>
+        <!-- Feed Filters -->
+        <div class="feed-filters">
+          <button class="feed-filter active" data-filter="all">All Posts</button>
+          <button class="feed-filter" data-filter="tournament">Tournament</button>
+          <button class="feed-filter" data-filter="tips">Tips</button>
+          <button class="feed-filter" data-filter="general">General</button>
         </div>
-      </section>
+
+        <!-- Posts Feed -->
+        <div id="posts" class="posts-feed">
+
+          <article class="post-card" data-tag="tournament">
+            <div class="post-header">
+              <div class="post-avatar">🔥</div>
+              <div class="post-meta">
+                <span class="post-author">GhostPlayer_NG</span>
+                <span class="post-time">2 hours ago</span>
+              </div>
+              <span class="post-tag tournament">🏆 Tournament</span>
+            </div>
+            <h3 class="post-title">CODM Tournament Kicks Off This Weekend!</h3>
+            <p class="post-body">Players around the world are gearing up for the biggest CODM event of the year. Squad slots are filling fast — who's ready to compete? Drop your username below and let's form a squad!</p>
+            <div class="post-footer">
+              <button class="post-react-btn" data-type="like">
+                <span class="react-icon">🔥</span> <span class="react-count">42</span>
+              </button>
+              <button class="post-react-btn" data-type="comment">
+                <span class="react-icon">💬</span> <span class="react-count">17</span>
+              </button>
+              <button class="post-react-btn" data-type="share">
+                <span class="react-icon">📤</span> Share
+              </button>
+            </div>
+          </article>
+
+          <article class="post-card" data-tag="tips">
+            <div class="post-header">
+              <div class="post-avatar">⚡</div>
+              <div class="post-meta">
+                <span class="post-author">ProSniper_X</span>
+                <span class="post-time">5 hours ago</span>
+              </div>
+              <span class="post-tag tips">💡 Tips</span>
+            </div>
+            <h3 class="post-title">eFootball 2025 Patch — My Honest Review</h3>
+            <p class="post-body">The new patch dropped smoother dribbling mechanics and faster gameplay. Ranked mode feels completely different now. The AI defending improvements are a game-changer. Here's what you need to adjust in your playstyle...</p>
+            <div class="post-footer">
+              <button class="post-react-btn" data-type="like">
+                <span class="react-icon">🔥</span> <span class="react-count">89</span>
+              </button>
+              <button class="post-react-btn" data-type="comment">
+                <span class="react-icon">💬</span> <span class="react-count">31</span>
+              </button>
+              <button class="post-react-btn" data-type="share">
+                <span class="react-icon">📤</span> Share
+              </button>
+            </div>
+          </article>
+
+          <article class="post-card" data-tag="general">
+            <div class="post-header">
+              <div class="post-avatar">🎯</div>
+              <div class="post-meta">
+                <span class="post-author">PulsePay_Official</span>
+                <span class="post-time">1 day ago</span>
+              </div>
+              <span class="post-tag general">💬 General</span>
+            </div>
+            <h3 class="post-title">🎮 PulsePay Exclusive Event — Earn Rewards!</h3>
+            <p class="post-body">Be part of our first community-organized challenge and stand a chance to win exclusive rewards. All skill levels welcome. Sign up before the 31st to secure your spot in the bracket.</p>
+            <div class="post-footer">
+              <button class="post-react-btn" data-type="like">
+                <span class="react-icon">🔥</span> <span class="react-count">134</span>
+              </button>
+              <button class="post-react-btn" data-type="comment">
+                <span class="react-icon">💬</span> <span class="react-count">56</span>
+              </button>
+              <button class="post-react-btn" data-type="share">
+                <span class="react-icon">📤</span> Share
+              </button>
+            </div>
+          </article>
+
+        </div>
+      </div>
 
       <!-- Sidebar -->
-      <aside class="sidebar">
-        <h2>Trending Topics</h2>
-        <ul>
-          <li>#CODMSeasonX</li>
-          <li>#eFootballUpdate</li>
-          <li>#PulsePayTournaments</li>
-          <li>#MobileGamingNews</li>
-          <li>#PulsePayCommunity</li>
-        </ul>
+      <aside class="community-sidebar">
+
+        <!-- Trending Topics -->
+        <div class="sidebar-widget">
+          <h2 class="widget-title">🔥 Trending Topics</h2>
+          <ul class="trending-list">
+            <li class="trending-item">#CODMSeasonX <span class="trending-count">2.4K posts</span></li>
+            <li class="trending-item">#eFootballUpdate <span class="trending-count">1.8K posts</span></li>
+            <li class="trending-item">#PulsePayTournaments <span class="trending-count">1.1K posts</span></li>
+            <li class="trending-item">#MobileGamingNews <span class="trending-count">897 posts</span></li>
+            <li class="trending-item">#PulsePayCommunity <span class="trending-count">654 posts</span></li>
+          </ul>
+        </div>
+
+        <!-- Active Tournaments Widget -->
+        <div class="sidebar-widget">
+          <h2 class="widget-title">⚡ Live Tournaments</h2>
+          <div class="sidebar-tournament-item">
+            <div class="st-icon">⚽</div>
+            <div class="st-info">
+              <div class="st-name">FIFA 24 Championship</div>
+              <div class="st-status"><span class="live-dot-small"></span> Live Now</div>
+            </div>
+          </div>
+          <div class="sidebar-tournament-item">
+            <div class="st-icon">🎖️</div>
+            <div class="st-info">
+              <div class="st-name">PUBG Mobile Masters</div>
+              <div class="st-status"><span class="live-dot-small"></span> Live Now</div>
+            </div>
+          </div>
+          <a href="tournaments.html" class="widget-cta">View All Tournaments →</a>
+        </div>
+
+        <!-- Community Rules -->
+        <div class="sidebar-widget rules-widget">
+          <h2 class="widget-title">📋 Community Rules</h2>
+          <ol class="rules-list">
+            <li>Be respectful to all members</li>
+            <li>No spam or self-promotion</li>
+            <li>Keep posts relevant to gaming</li>
+            <li>No hate speech or harassment</li>
+            <li>Have fun and compete fairly</li>
+          </ol>
+        </div>
+
       </aside>
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
       <p>© 2025 PulsePay. All rights reserved.</p>
       <div class="social-links">
-        <a href="#">Twitter</a>
-        <a href="#">Instagram</a>
-        <a href="#">Discord</a>
+        <a href="https://twitter.com" target="_blank" rel="noopener" class="social-link"><span>Twitter</span></a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" class="social-link"><span>Instagram</span></a>
+        <a href="https://discord.com" target="_blank" rel="noopener" class="social-link"><span>Discord</span></a>
       </div>
     </div>
   </footer>
 
-  <!-- JavaScript -->
+  <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/community.js"></script>
 </body>
 </html>

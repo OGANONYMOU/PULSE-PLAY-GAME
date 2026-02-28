@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — PulsePay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">⚡</span>
+    <span class="logo-text">PulsePay</span>
+    <span class="logo-badge">ADMIN</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="#dashboard" class="nav-item active" data-section="dashboard">
+      <i class="fas fa-chart-line"></i><span>Dashboard</span>
+    </a>
+    <a href="#users" class="nav-item" data-section="users">
+      <i class="fas fa-users"></i><span>Users</span>
+      <span class="nav-badge" id="badge-users"></span>
+    </a>
+    <a href="#tournaments" class="nav-item" data-section="tournaments">
+      <i class="fas fa-trophy"></i><span>Tournaments</span>
+    </a>
+    <a href="#posts" class="nav-item" data-section="posts">
+      <i class="fas fa-comments"></i><span>Community</span>
+    </a>
+    <a href="#games" class="nav-item" data-section="games">
+      <i class="fas fa-gamepad"></i><span>Games</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-signout" onclick="adminSignOut()">
+      <i class="fas fa-sign-out-alt"></i><span>Sign Out</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────── -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-menu" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-right">
+      <div class="topbar-user" id="topbarUser"></div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- ── DASHBOARD ─────────────────────────────────────────── -->
+    <section id="section-dashboard" class="section active">
+      <div class="page-header">
+        <h1>Overview</h1>
+        <p>Welcome back. Here's what's happening on PulsePay.</p>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card" style="--accent:#00d9ff">
+          <div class="kpi-icon"><i class="fas fa-users"></i></div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-users">—</div>
+            <div class="kpi-label">Total Users</div>
+            <div class="kpi-sub" id="kpi-users-sub"></div>
+          </div>
+        </div>
+        <div class="kpi-card" style="--accent:#9d4edd">
+          <div class="kpi-icon"><i class="fas fa-trophy"></i></div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-tournaments">—</div>
+            <div class="kpi-label">Tournaments</div>
+            <div class="kpi-sub" id="kpi-tournaments-sub"></div>
+          </div>
+        </div>
+        <div class="kpi-card" style="--accent:#ff006e">
+          <div class="kpi-icon"><i class="fas fa-comments"></i></div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-posts">—</div>
+            <div class="kpi-label">Posts</div>
+          </div>
+        </div>
+        <div class="kpi-card" style="--accent:#00ff88">
+          <div class="kpi-icon"><i class="fas fa-gamepad"></i></div>
+          <div class="kpi-info">
+            <div class="kpi-value" id="kpi-games">—</div>
+            <div class="kpi-label">Active Games</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent signups -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Recent Signups</h2>
+          <button class="btn-ghost" onclick="showSection('users')">View all →</button>
+        </div>
+        <div class="panel-body">
+          <table class="data-table" id="recentSignupsTable">
+            <thead>
+              <tr><th>User</th><th>Email</th><th>Role</th><th>Joined</th></tr>
+            </thead>
+            <tbody id="recentSignupsTbody"><tr><td colspan="4" class="loading-row">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── USERS ──────────────────────────────────────────────── -->
+    <section id="section-users" class="section">
+      <div class="page-header">
+        <h1>User Management</h1>
+        <div class="page-actions">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="userSearch" placeholder="Search users..." oninput="debounceUserSearch(this.value)">
+          </div>
+          <select id="roleFilter" onchange="loadUsers(1)" class="select-filter">
+            <option value="">All Roles</option>
+            <option value="USER">User</option>
+            <option value="MODERATOR">Moderator</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>User</th><th>Email</th><th>Role</th><th>Status</th>
+                <th>Logins</th><th>Joined</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"><tr><td colspan="7" class="loading-row">Loading...</td></tr></tbody>
+          </table>
+          <div class="pagination" id="usersPagination"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TOURNAMENTS ────────────────────────────────────────── -->
+    <section id="section-tournaments" class="section">
+      <div class="page-header">
+        <h1>Tournaments</h1>
+        <div class="page-actions">
+          <select id="tournamentStatusFilter" onchange="loadTournaments(1)" class="select-filter">
+            <option value="">All Status</option>
+            <option value="UPCOMING">Upcoming</option>
+            <option value="ONGOING">Ongoing</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-body">
+          <table class="data-table">
+            <thead>
+              <tr><th>Name</th><th>Game</th><th>Status</th><th>Prize Pool</th><th>Participants</th><th>Start</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="tournamentsTbody"><tr><td colspan="7" class="loading-row">Loading...</td></tr></tbody>
+          </table>
+          <div class="pagination" id="tournamentsPagination"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── POSTS ──────────────────────────────────────────────── -->
+    <section id="section-posts" class="section">
+      <div class="page-header">
+        <h1>Community Posts</h1>
+        <div class="page-actions">
+          <select id="postFilter" onchange="loadPosts(1)" class="select-filter">
+            <option value="">All Posts</option>
+            <option value="false">Visible</option>
+            <option value="true">Hidden</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-body">
+          <table class="data-table">
+            <thead>
+              <tr><th>Author</th><th>Content</th><th>Category</th><th>Likes</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="postsTbody"><tr><td colspan="7" class="loading-row">Loading...</td></tr></tbody>
+          </table>
+          <div class="pagination" id="postsPagination"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── GAMES ──────────────────────────────────────────────── -->
+    <section id="section-games" class="section">
+      <div class="page-header"><h1>Games Library</h1></div>
+      <div class="panel">
+        <div class="panel-body">
+          <table class="data-table">
+            <thead>
+              <tr><th>Game</th><th>Category</th><th>Players</th><th>Tournaments</th><th>Rating</th><th>Status</th></tr>
+            </thead>
+            <tbody id="gamesTbody"><tr><td colspan="6" class="loading-row">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── Modal ─────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+  <div class="modal" id="modal" onclick="e=>e.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modalTitle">Action</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- ── Toast ─────────────────────────────────────────────────── -->
+<div id="toastContainer"></div>
+
+<script src="../js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

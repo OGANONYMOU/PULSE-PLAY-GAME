@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { NotFoundError } from '../utils/errors';
+import prisma from '../config/database.js';
+import { NotFoundError } from '../utils/errors.js';
 
 export class TournamentService {
   async getAllTournaments(skip: number = 0, take: number = 20, status?: string) {

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tournaments - PulsePay</title>
+  <link rel="icon" type="image/png" href="../assets/images/Pulsupay.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -24,8 +25,8 @@
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="games.html">Games</a></li>
-        <li><a href="tournaments.html" class="active">Tournaments</a></li>
         <li><a href="community.html">Community</a></li>
+        <li><a href="tournaments.html" class="active">Tournaments</a></li>
         <li><a href="about.html">About</a></li>
       </ul>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode" title="Toggle theme">☀️</button>
@@ -47,7 +48,7 @@
   <section class="tournaments-hero">
     <div class="hero-content">
       <h1 class="tournaments-main-title">Tournament Arena</h1>
-      <p class="tournaments-main-subtitle">Browse ongoing, upcoming, and completed tournaments within the PulsePay community.</p>
+      <p class="tournaments-main-subtitle">Browse live, upcoming, and completed tournaments across the PulsePay community.</p>
       
       <!-- Stats Overview -->
       <div class="tournaments-stats">
@@ -165,10 +166,16 @@
             <span class="progress-text">50% Filled</span>
           </div>
 
-          <button class="tournament-action-btn primary">
-            <span>Join Tournament</span>
-            <span class="btn-arrow">→</span>
-          </button>
+          <div class="tournament-live-actions">
+            <button class="tournament-action-btn live-watch-btn" onclick="showLiveUpdates(this)">
+              <span class="live-btn-dot"></span>
+              <span>View Live Updates</span>
+            </button>
+            <button class="tournament-action-btn secondary-sm">
+              <span>Join</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -472,10 +479,16 @@
             <span class="progress-text">80% Filled</span>
           </div>
 
-          <button class="tournament-action-btn primary">
-            <span>Join Tournament</span>
-            <span class="btn-arrow">→</span>
-          </button>
+          <div class="tournament-live-actions">
+            <button class="tournament-action-btn live-watch-btn" onclick="showLiveUpdates(this)">
+              <span class="live-btn-dot"></span>
+              <span>View Live Updates</span>
+            </button>
+            <button class="tournament-action-btn secondary-sm">
+              <span>Join</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -508,7 +521,52 @@
   </footer>
 
   <!-- JS -->
+  <script src="js/auth.js"></script>
   <script src="js/main.js"></script>
   <script src="js/tournament.js"></script>
+
+  <!-- Live Updates Panel -->
+  <div id="liveUpdatesModal" class="live-modal-overlay" onclick="closeLiveModal(event)">
+    <div class="live-modal-panel">
+      <button class="live-modal-close" onclick="document.getElementById('liveUpdatesModal').style.display='none'">✕</button>
+      <div class="live-modal-header">
+        <span class="live-modal-dot"></span>
+        <h3>Live Tournament Updates</h3>
+      </div>
+      <div class="live-updates-feed">
+        <div class="live-update-item">
+          <span class="lut">2 min ago</span>
+          <p>🎯 Quarter-finals: PlayerX defeated PlayerY 3-1 in a thrilling match</p>
+        </div>
+        <div class="live-update-item">
+          <span class="lut">8 min ago</span>
+          <p>🏆 Semi-final brackets have been confirmed — 4 players remain</p>
+        </div>
+        <div class="live-update-item">
+          <span class="lut">15 min ago</span>
+          <p>⚡ Round of 16 completed — upsets in 3 of 8 matches</p>
+        </div>
+        <div class="live-update-item">
+          <span class="lut">30 min ago</span>
+          <p>📣 Tournament officially started — 64 players competing</p>
+        </div>
+        <div class="live-update-item">
+          <span class="lut">1 hr ago</span>
+          <p>🎮 Registration closed. All slots filled — let the games begin!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function showLiveUpdates(btn) {
+    document.getElementById('liveUpdatesModal').style.display = 'flex';
+  }
+  function closeLiveModal(e) {
+    if (e.target.id === 'liveUpdatesModal') {
+      e.target.style.display = 'none';
+    }
+  }
+  </script>
 </body>
 </html>

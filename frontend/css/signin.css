@@ -643,3 +643,117 @@ body.light-mode .signin-form-container {
   animation: fadeIn 0.8s ease 0.2s forwards;
   opacity: 0;
 }
+
+/* ---- Password Toggle ---- */
+.pw-wrapper {
+  position: relative;
+}
+
+.pw-wrapper input {
+  padding-right: 48px !important;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.25s ease;
+  z-index: 2;
+}
+
+.pw-toggle:hover {
+  color: var(--accent-cyan);
+}
+
+.pw-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── API Feedback Alerts ── */
+.api-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+  animation: slideInUp 0.3s ease;
+}
+
+.api-alert-error {
+  background: rgba(255, 0, 110, 0.1);
+  border: 1px solid rgba(255, 0, 110, 0.35);
+  color: #ff5599;
+}
+
+.api-alert-success {
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.35);
+  color: #00ff88;
+}
+
+/* ── API Alerts ─────────────────────────────────────────── */
+.api-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  animation: slideInDown 0.3s ease;
+  line-height: 1.6;
+}
+.api-alert-error {
+  background: rgba(255,0,110,0.1);
+  border: 1px solid rgba(255,0,110,0.35);
+  color: #ff5599;
+}
+.api-alert-success {
+  background: rgba(0,255,136,0.1);
+  border: 1px solid rgba(0,255,136,0.35);
+  color: #00ff88;
+}
+.api-alert code {
+  font-family: 'Space Mono', monospace;
+  background: rgba(0,0,0,0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+@keyframes slideInDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+/* ── OAuth button disabled state ────────────────────────── */
+.social-btn:disabled {
+  filter: grayscale(1);
+  cursor: not-allowed !important;
+}
+
+/* ── Spinner ────────────────────────────────────────────── */
+.spinner-sm {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

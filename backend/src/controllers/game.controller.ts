@@ -1,8 +1,8 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
-import { gameService } from '../services/game.service';
-import { successResponse } from '../utils/response';
-import { asyncHandler } from '../middleware/error';
+import { AuthenticatedRequest } from '../middleware/auth.js';
+import { gameService } from '../services/game.service.js';
+import { successResponse } from '../utils/response.js';
+import { asyncHandler } from '../middleware/error.js';
 
 export const getAllGames = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const skip = parseInt(req.query.skip as string) || 0;

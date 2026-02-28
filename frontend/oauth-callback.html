@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing you in... — PulsePay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Space+Mono&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:#0a0a12;font-family:'Space Mono',monospace;color:#fff}
+    .card{text-align:center;padding:3rem;background:rgba(255,255,255,.04);
+      border:1px solid rgba(0,217,255,.15);border-radius:20px;max-width:400px;width:90%}
+    .logo{font-family:'Orbitron',sans-serif;font-size:1.4rem;color:#00d9ff;margin-bottom:1.5rem}
+    .spinner{width:48px;height:48px;border:3px solid rgba(0,217,255,.15);
+      border-top-color:#00d9ff;border-radius:50%;animation:spin 0.8s linear infinite;
+      margin:0 auto 1.5rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    p{color:rgba(255,255,255,.6);font-size:.9rem;line-height:1.6}
+    .error{color:#ff5599;margin-top:1rem}
+    a{color:#00d9ff;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">⚡ PulsePay</div>
+    <div class="spinner" id="spinner"></div>
+    <p id="msg">Completing sign in...</p>
+    <p class="error" id="err"></p>
+  </div>
+
+  <script>
+    (function() {
+      // Token is in the URL fragment (never sent to server)
+      const hash = window.location.hash.slice(1);
+      const params = new URLSearchParams(hash);
+      const token  = params.get('token');
+      const userStr= params.get('user');
+
+      // Also check query string for errors
+      const qp    = new URLSearchParams(window.location.search);
+      const error = qp.get('error');
+
+      if (error || !token) {
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('msg').textContent = 'Sign in failed.';
+        document.getElementById('err').innerHTML =
+          (error === 'oauth_cancelled' ? 'You cancelled the sign-in.' : 'Something went wrong with OAuth.') +
+          '<br><br><a href="signin.html">← Try again</a>';
+        return;
+      }
+
+      try {
+        const user = JSON.parse(decodeURIComponent(userStr || '{}'));
+        localStorage.setItem('pp_token', token);
+        localStorage.setItem('pp_user', JSON.stringify(user));
+        document.getElementById('msg').textContent = `Welcome, ${user.username || 'Gamer'}! Redirecting...`;
+
+        // Admin users → admin dashboard
+        const dest = user.role === 'ADMIN' || user.role === 'MODERATOR'
+          ? 'admin/'
+          : 'index.html';
+
+        setTimeout(() => { window.location.href = dest; }, 800);
+      } catch(e) {
+        document.getElementById('err').innerHTML = 'Failed to parse session. <a href="signin.html">Try again</a>';
+      }
+    })();
+  </script>
+</body>
+</html>
