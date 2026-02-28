@@ -19,76 +19,68 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
-// In dev: __dirname = backend/src → go up 2 dirs → project root → frontend
-// In prod (dist/): __dirname = backend/dist → go up 2 dirs → project root → frontend
+// Works in both dev (backend/src/) and prod (backend/dist/)
 const frontendPath = path.resolve(__dirname, '..', '..', 'frontend');
 
 const app = express();
 
-// ── Security ────────────────────────────────────────────────────
+// ── Security ─────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(config.node_env === 'production' ? 'combined' : 'dev'));
 app.use(cors({ origin: config.cors.origin, credentials: config.cors.credentials }));
 
-// ── Rate Limiting ───────────────────────────────────────────────
-const apiLimiter = rateLimit({
+// ── Rate Limiting ─────────────────────────────────────────────
+app.use('/api', rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Too many requests, slow down.' }
-});
-const authLimiter = rateLimit({
+  message: { success: false, message: 'Too many requests.' }
+}));
+app.use('/api/auth', rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { success: false, message: 'Too many auth attempts, try again later.' }
-});
+  message: { success: false, message: 'Too many auth attempts.' }
+}));
 
-app.use('/api',      apiLimiter);
-app.use('/api/auth', authLimiter);
-
-// ── API Routes ──────────────────────────────────────────────────
+// ── API Routes ────────────────────────────────────────────────
 app.use('/api/auth',        authRoutes);
 app.use('/api/games',       gameRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/community',   communityRoutes);
 app.use('/api/admin',       adminRoutes);
 
-// ── Health ──────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
-  res.json({
-    ok: true,
-    env: config.node_env,
-    ts: new Date().toISOString(),
-  });
+  res.json({ ok: true, env: config.node_env, ts: new Date().toISOString() });
 });
 
-// ── Serve Frontend Static Files ──────────────────────────────────
+// ── Serve Frontend ────────────────────────────────────────────
 app.use(express.static(frontendPath));
 
-// SPA fallback — send index.html for any non-API route
-// (handles /admin/, /oauth-callback.html, etc.)
-app.use((_req, res, next) => {
-  if (_req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
-    if (err) next(err);
-  });
+// SPA fallback — non-API routes get index.html
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(frontendPath, 'index.html'), err => { if (err) next(err); });
 });
 
-// ── Error Handler ───────────────────────────────────────────────
+// ── Error Handler ─────────────────────────────────────────────
 app.use(errorHandler);
 
-// ── Start ───────────────────────────────────────────────────────
-const port = config.port;
-app.listen(port, () => {
-  console.log('');
-  console.log('  🎮  PulsePay');
-  console.log(`  🌐  http://localhost:${port}`);
-  console.log(`  ⚙️   http://localhost:${port}/admin/`);
-  console.log(`  💚  http://localhost:${port}/api/health`);
-  console.log('');
-});
+// ── Listen only when NOT running as Vercel serverless ─────────
+// Vercel imports this file and uses the exported `app` directly.
+// When running locally with `npm run dev`, start the server normally.
+if (process.env.VERCEL !== '1') {
+  const port = config.port;
+  app.listen(port, () => {
+    console.log('');
+    console.log('  🎮  PulsePay');
+    console.log(`  🌐  http://localhost:${port}`);
+    console.log(`  ⚙️   http://localhost:${port}/admin/`);
+    console.log('');
+  });
+}
 
+// Must export for Vercel serverless
 export default app;
