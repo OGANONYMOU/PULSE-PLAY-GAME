@@ -274,10 +274,11 @@ export function Profile() {
                 <div className="flex items-center gap-3 mt-3 flex-wrap">
                   {profile.twitter_username && (
                     
-                      href={`https://twitter.com/${profile.twitter_username}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                      href={"https://twitter.com/" + profile.twitter_username}
+                        target="_blank"
+                         rel="noopener noreferrer"
+                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+>
                     >
                       <Twitter className="w-3.5 h-3.5" />
                       @{profile.twitter_username}
