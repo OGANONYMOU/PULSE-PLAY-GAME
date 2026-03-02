@@ -270,32 +270,28 @@ export function Profile() {
                 </p>
               )}
 
-              {!isEditing && (profile.twitter_username || profile.discord_username) && (
-                <div className="flex items-center gap-3 mt-3 flex-wrap">
-                  {profile.twitter_username && (
-                    
-                      href={"https://twitter.com/" + profile.twitter_username}
-                        target="_blank"
-                         rel="noopener noreferrer"
-                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
->
-                    >
-                      <Twitter className="w-3.5 h-3.5" />
-                      @{profile.twitter_username}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                  {profile.discord_username && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      {profile.discord_username}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
+              {!isEditing && (
+  <div className="flex items-center gap-3 mt-3 flex-wrap">
+    {profile.twitter_username ? (
+      
+        href={"https://twitter.com/" + profile.twitter_username}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+      >
+        <Twitter className="w-3.5 h-3.5" />
+        <span>@{profile.twitter_username}</span>
+        <ExternalLink className="w-3 h-3" />
+      </a>
+    ) : null}
+    {profile.discord_username ? (
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <MessageSquare className="w-3.5 h-3.5" />
+        {profile.discord_username}
+      </span>
+    ) : null}
+  </div>
+)}
           {/* Edit Form */}
           {isEditing && (
             <div className="mt-6 space-y-4">
