@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
-interface Profile {
+export interface Profile {
   id: string;
   username: string;
   email: string;
@@ -10,7 +10,12 @@ interface Profile {
   last_name: string | null;
   phone: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
+  bio: string | null;
+  discord_username: string | null;
+  twitter_username: string | null;
   role: 'USER' | 'ADMIN' | 'MODERATOR';
+  is_banned: boolean;
   created_at: string;
 }
 
@@ -36,6 +41,7 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,19 +57,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single();
-
-    if (!error && data) {
-      setProfile(data as Profile);
-    }
+    if (!error && data) setProfile(data as Profile);
   };
 
   useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
+      if (session?.user) await fetchProfile(session.user.id);
       setIsLoading(false);
     };
 
@@ -71,20 +72,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
+      if (session?.user) fetchProfile(session.user.id);
+      else setProfile(null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const refreshProfile = async () => {
-    if (user?.id) {
-      await fetchProfile(user.id);
-    }
+    if (user?.id) await fetchProfile(user.id);
+  };
+
+  const updateProfile = async (data: Partial<Profile>) => {
+    if (!user?.id) return { error: new Error('Not authenticated') };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('profiles') as any)
+      .update(data)
+      .eq('id', user.id);
+    if (!error) await fetchProfile(user.id);
+    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -95,12 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (
     email: string,
     password: string,
-    metadata: {
-      username: string;
-      first_name?: string;
-      last_name?: string;
-      phone?: string;
-    }
+    metadata: { username: string; first_name?: string; last_name?: string; phone?: string }
   ) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -115,9 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     return { error };
   };
@@ -128,26 +127,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
   };
 
-  const value: AuthContextType = {
-    user,
-    profile,
-    isLoading,
-    isAuthenticated: !!user,
-    isAdmin: profile?.role === 'ADMIN' || profile?.role === 'MODERATOR',
-    signIn,
-    signUp,
-    signInWithOAuth: handleSignInWithOAuth,
-    signOut: handleSignOut,
-    refreshProfile,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        isLoading,
+        isAuthenticated: !!user,
+        isAdmin: profile?.role === 'ADMIN' || profile?.role === 'MODERATOR',
+        signIn,
+        signUp,
+        signInWithOAuth: handleSignInWithOAuth,
+        signOut: handleSignOut,
+        refreshProfile,
+        updateProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

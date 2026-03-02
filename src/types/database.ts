@@ -18,7 +18,12 @@ export interface Database {
           last_name: string | null;
           phone: string | null;
           avatar_url: string | null;
+          banner_url: string | null;
+          bio: string | null;
+          discord_username: string | null;
+          twitter_username: string | null;
           role: 'USER' | 'ADMIN' | 'MODERATOR';
+          is_banned: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -30,7 +35,12 @@ export interface Database {
           last_name?: string | null;
           phone?: string | null;
           avatar_url?: string | null;
+          banner_url?: string | null;
+          bio?: string | null;
+          discord_username?: string | null;
+          twitter_username?: string | null;
           role?: 'USER' | 'ADMIN' | 'MODERATOR';
+          is_banned?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -42,7 +52,12 @@ export interface Database {
           last_name?: string | null;
           phone?: string | null;
           avatar_url?: string | null;
+          banner_url?: string | null;
+          bio?: string | null;
+          discord_username?: string | null;
+          twitter_username?: string | null;
           role?: 'USER' | 'ADMIN' | 'MODERATOR';
+          is_banned?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -178,21 +193,44 @@ export interface Database {
           created_at?: string;
         };
       };
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          type: 'info' | 'warning' | 'success' | 'event';
+          is_active: boolean;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          type?: 'info' | 'warning' | 'success' | 'event';
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          type?: 'info' | 'warning' | 'success' | 'event';
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
     };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      [_ in never]: never;
-    };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
   };
 }
 
-// Extended types for joined queries
 export type GameRow = Database['public']['Tables']['games']['Row'];
 export type TournamentRow = Database['public']['Tables']['tournaments']['Row'];
 export type PostRow = Database['public']['Tables']['posts']['Row'];
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+export type AnnouncementRow = Database['public']['Tables']['announcements']['Row'];

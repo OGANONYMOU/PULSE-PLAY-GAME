@@ -1,23 +1,24 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, User, Search } from 'lucide-react';
+import { Shield, User, Search, Ban, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 type Profile = {
   id: string;
   username: string;
   email: string;
   role: 'USER' | 'ADMIN' | 'MODERATOR';
-  created_at: string;
+  is_banned: boolean;
   avatar_url: string | null;
+  created_at: string;
 };
 
 const roleBadge = (role: string) => {
@@ -34,9 +35,12 @@ export function AdminUsers() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      setUsers(data ?? []);
-      setFiltered(data ?? []);
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setUsers((data as Profile[]) ?? []);
+      setFiltered((data as Profile[]) ?? []);
       setIsLoading(false);
     };
     fetchUsers();
@@ -44,7 +48,13 @@ export function AdminUsers() {
 
   useEffect(() => {
     const q = search.toLowerCase();
-    setFiltered(users.filter((u) => u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
+    setFiltered(
+      users.filter(
+        (u) =>
+          u.username.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q)
+      )
+    );
   }, [search, users]);
 
   const handleRoleChange = async (userId: string, role: string) => {
@@ -53,8 +63,25 @@ export function AdminUsers() {
     if (error) {
       toast.error('Failed to update role.');
     } else {
-      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: role as Profile['role'] } : u));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: role as Profile['role'] } : u))
+      );
       toast.success('Role updated.');
+    }
+  };
+
+  const handleToggleBan = async (userId: string, isBanned: boolean) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('profiles') as any)
+      .update({ is_banned: !isBanned })
+      .eq('id', userId);
+    if (error) {
+      toast.error('Failed to update ban status.');
+    } else {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, is_banned: !isBanned } : u))
+      );
+      toast.success(isBanned ? 'User unbanned.' : 'User banned.');
     }
   };
 
@@ -66,11 +93,12 @@ export function AdminUsers() {
             <h1 className="font-orbitron text-3xl font-bold mb-1">
               Manage <span className="gradient-text">Users</span>
             </h1>
-            <p className="text-muted-foreground">{users.length} registered users</p>
+            <p className="text-muted-foreground">
+              {users.length} registered · {users.filter((u) => u.is_banned).length} banned
+            </p>
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative max-w-md mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -87,60 +115,84 @@ export function AdminUsers() {
           </div>
         ) : (
           <div className="gaming-card overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border/50">
-                  <th className="text-left text-xs font-medium text-muted-foreground px-6 py-4">User</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-6 py-4">Email</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-6 py-4">Role</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-6 py-4">Joined</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-6 py-4">Change Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((user, i) => (
-                  <motion.tr
-                    key={user.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="border-b border-border/30 hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/40 to-purple-600/40 flex items-center justify-center">
-                          {user.avatar_url
-                            ? <img src={user.avatar_url} className="w-full h-full rounded-full object-cover" />
-                            : <User className="w-4 h-4 text-muted-foreground" />
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    {['User', 'Email', 'Role', 'Status', 'Joined', 'Change Role', 'Actions'].map((h) => (
+                      <th key={h} className="text-left text-xs font-medium text-muted-foreground px-5 py-4 whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((user, i) => (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.03 }}
+                      className={`border-b border-border/30 transition-colors ${
+                        user.is_banned ? 'bg-destructive/5' : 'hover:bg-muted/30'
+                      }`}
+                    >
+                      <td className="px-5 py-4">
+                        <Link
+                          to={`/profile/${user.username}`}
+                          className="flex items-center gap-3 hover:text-cyan-400 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/40 to-purple-600/40 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {user.avatar_url
+                              ? <img src={user.avatar_url} className="w-full h-full object-cover" />
+                              : <User className="w-4 h-4 text-muted-foreground" />
+                            }
+                          </div>
+                          <span className="font-medium text-sm">{user.username}</span>
+                        </Link>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-muted-foreground">{user.email}</td>
+                      <td className="px-5 py-4">{roleBadge(user.role)}</td>
+                      <td className="px-5 py-4">
+                        {user.is_banned
+                          ? <Badge className="bg-destructive/20 text-destructive border-destructive/30">Banned</Badge>
+                          : <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
+                        }
+                      </td>
+                      <td className="px-5 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                      </td>
+                      <td className="px-5 py-4">
+                        <Select value={user.role} onValueChange={(v) => handleRoleChange(user.id, v)}>
+                          <SelectTrigger className="w-32 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USER"><User className="w-3 h-3 mr-1 inline" />User</SelectItem>
+                            <SelectItem value="MODERATOR"><Shield className="w-3 h-3 mr-1 inline" />Moderator</SelectItem>
+                            <SelectItem value="ADMIN"><Shield className="w-3 h-3 mr-1 inline" />Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="px-5 py-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-8 text-xs ${user.is_banned ? 'text-green-400 hover:text-green-300' : 'text-destructive hover:text-destructive/80'}`}
+                          onClick={() => handleToggleBan(user.id, user.is_banned)}
+                        >
+                          {user.is_banned
+                            ? <><CheckCircle className="w-3 h-3 mr-1" />Unban</>
+                            : <><Ban className="w-3 h-3 mr-1" />Ban</>
                           }
-                        </div>
-                        <span className="font-medium text-sm">{user.username}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{user.email}</td>
-                    <td className="px-6 py-4">{roleBadge(user.role)}</td>
-                    <td className="px-6 py-4 text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Select value={user.role} onValueChange={(v) => handleRoleChange(user.id, v)}>
-                        <SelectTrigger className="w-32 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USER"><User className="w-3 h-3 mr-1 inline" />User</SelectItem>
-                          <SelectItem value="MODERATOR"><Shield className="w-3 h-3 mr-1 inline" />Moderator</SelectItem>
-                          <SelectItem value="ADMIN"><Shield className="w-3 h-3 mr-1 inline" />Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">No users found.</div>
-            )}
+                        </Button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+              {filtered.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">No users found.</div>
+              )}
+            </div>
           </div>
         )}
       </motion.div>

@@ -1,0 +1,485 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  Camera, Edit2, Save, X, Twitter, Trophy,
+  Flame, Calendar, MessageSquare, Shield, User,
+  ExternalLink,
+} from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { formatDistanceToNow, format } from 'date-fns';
+
+type PostWithLikes = {
+  id: string;
+  title: string;
+  content: string;
+  tag: string;
+  likes: number;
+  comments: number;
+  created_at: string;
+};
+
+const roleColors: Record<string, string> = {
+  ADMIN: 'bg-red-500/20 text-red-400 border-red-500/30',
+  MODERATOR: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  USER: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+};
+
+const tagColors: Record<string, string> = {
+  general: 'bg-blue-500/20 text-blue-400',
+  tournament: 'bg-purple-500/20 text-purple-400',
+  tips: 'bg-green-500/20 text-green-400',
+  clips: 'bg-pink-500/20 text-pink-400',
+};
+
+export function Profile() {
+  const { username } = useParams<{ username?: string }>();
+  const { user, profile: ownProfile, updateProfile } = useAuth();
+
+  const [profile, setProfile] = useState<ProfileType | null>(null);
+  const [posts, setPosts] = useState<PostWithLikes[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const [editForm, setEditForm] = useState({
+    first_name: '',
+    last_name: '',
+    bio: '',
+    discord_username: '',
+    twitter_username: '',
+  });
+
+  const isOwnProfile = !username || username === ownProfile?.username;
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true);
+
+      let profileData: ProfileType | null = null;
+
+      if (isOwnProfile && ownProfile) {
+        profileData = ownProfile;
+      } else {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', username)
+          .single();
+        profileData = data as ProfileType;
+      }
+
+      if (profileData) {
+        setProfile(profileData);
+        setEditForm({
+          first_name: profileData.first_name ?? '',
+          last_name: profileData.last_name ?? '',
+          bio: profileData.bio ?? '',
+          discord_username: profileData.discord_username ?? '',
+          twitter_username: profileData.twitter_username ?? '',
+        });
+
+        // Fetch posts
+        const { data: postsData } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('author_id', profileData.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        setPosts((postsData as PostWithLikes[]) ?? []);
+      }
+
+      setIsLoading(false);
+    };
+
+    fetchProfile();
+  }, [username, ownProfile, isOwnProfile]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { error } = await updateProfile(editForm);
+    if (error) {
+      toast.error('Failed to save profile.');
+    } else {
+      toast.success('Profile updated!');
+      setProfile((prev) => prev ? { ...prev, ...editForm } : prev);
+      setIsEditing(false);
+    }
+    setIsSaving(false);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploadingAvatar(true);
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('Failed to upload avatar.');
+      setIsUploadingAvatar(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+    const { error } = await updateProfile({ avatar_url: publicUrl });
+
+    if (error) {
+      toast.error('Failed to update avatar URL.');
+    } else {
+      setProfile((prev) => prev ? { ...prev, avatar_url: publicUrl } : prev);
+      toast.success('Avatar updated!');
+    }
+    setIsUploadingAvatar(false);
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploadingBanner(true);
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/banner.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error('Failed to upload banner.');
+      setIsUploadingBanner(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+    const { error } = await updateProfile({ banner_url: publicUrl });
+
+    if (error) {
+      toast.error('Failed to update banner.');
+    } else {
+      setProfile((prev) => prev ? { ...prev, banner_url: publicUrl } : prev);
+      toast.success('Banner updated!');
+    }
+    setIsUploadingBanner(false);
+  };
+
+  const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-24 px-6 max-w-4xl mx-auto">
+        <Skeleton className="h-48 rounded-2xl mb-4" />
+        <Skeleton className="h-24 w-24 rounded-full -mt-12 ml-6" />
+        <Skeleton className="h-8 w-48 mt-4" />
+        <Skeleton className="h-4 w-96 mt-2" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center">
+        <div className="text-center">
+          <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <h2 className="font-orbitron text-2xl font-bold mb-2">User Not Found</h2>
+          <p className="text-muted-foreground">This profile doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-24 pb-16 px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative h-48 rounded-2xl overflow-hidden mb-0 gaming-card"
+        >
+          {profile.banner_url ? (
+            <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
+          )}
+          {isOwnProfile && (
+            <>
+              <button
+                onClick={() => bannerInputRef.current?.click()}
+                disabled={isUploadingBanner}
+                className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white text-xs transition-colors"
+              >
+                <Camera className="w-3 h-3" />
+                {isUploadingBanner ? 'Uploading…' : 'Change Banner'}
+              </button>
+              <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+            </>
+          )}
+        </motion.div>
+
+        {/* Profile Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="gaming-card p-6 -mt-1 rounded-t-none"
+        >
+          <div className="flex flex-col sm:flex-row items-start gap-6">
+            {/* Avatar */}
+            <div className="relative -mt-16 flex-shrink-0">
+              <Avatar className="w-24 h-24 border-4 border-background ring-2 ring-cyan-500/50">
+                <AvatarImage src={profile.avatar_url ?? ''} />
+                <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-2xl font-bold text-white">
+                  {profile.username[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <>
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-cyan-500 hover:bg-cyan-400 flex items-center justify-center transition-colors"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-white" />
+                  </button>
+                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                </>
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="flex items-center gap-3 mb-1 flex-wrap">
+                    <h1 className="font-orbitron text-2xl font-bold">{profile.username}</h1>
+                    <Badge className={roleColors[profile.role] ?? roleColors['USER']}>
+                      {profile.role === 'ADMIN' && <Shield className="w-3 h-3 mr-1" />}
+                      {profile.role}
+                    </Badge>
+                  </div>
+                  {(profile.first_name || profile.last_name) && (
+                    <p className="text-muted-foreground text-sm mb-1">
+                      {[profile.first_name, profile.last_name].filter(Boolean).join(' ')}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Calendar className="w-3 h-3" />
+                    Joined {format(new Date(profile.created_at), 'MMMM yyyy')}
+                  </div>
+                </div>
+
+                {isOwnProfile && !isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="border-cyan-500/50 hover:bg-cyan-500/10"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" /> Edit Profile
+                  </Button>
+                )}
+              </div>
+
+              {/* Bio */}
+              {!isEditing && (
+                <p className="text-muted-foreground text-sm mt-3 max-w-xl">
+                  {profile.bio ?? (isOwnProfile ? 'No bio yet — click Edit Profile to add one.' : 'No bio yet.')}
+                </p>
+              )}
+
+              {/* Social Links */}
+              {!isEditing && (profile.twitter_username || profile.discord_username) && (
+                <div className="flex items-center gap-3 mt-3">
+                  {profile.twitter_username && (
+                    
+                      href={`https://twitter.com/${profile.twitter_username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                    >
+                      <Twitter className="w-3.5 h-3.5" />
+                      @{profile.twitter_username}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {profile.discord_username && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      {profile.discord_username}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Edit Form */}
+          {isEditing && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-6 space-y-4"
+            >
+              <Separator />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">First Name</label>
+                  <Input
+                    value={editForm.first_name}
+                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                    className="mt-1 bg-muted/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Last Name</label>
+                  <Input
+                    value={editForm.last_name}
+                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                    className="mt-1 bg-muted/50"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Bio</label>
+                <Textarea
+                  value={editForm.bio}
+                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                  className="mt-1 bg-muted/50 resize-none"
+                  rows={3}
+                  placeholder="Tell the community about yourself..."
+                  maxLength={300}
+                />
+                <p className="text-xs text-muted-foreground mt-1">{editForm.bio.length}/300</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Twitter Username</label>
+                  <div className="relative mt-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input
+                      value={editForm.twitter_username}
+                      onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })}
+                      className="pl-7 bg-muted/50"
+                      placeholder="username"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Discord Username</label>
+                  <Input
+                    value={editForm.discord_username}
+                    onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })}
+                    className="mt-1 bg-muted/50"
+                    placeholder="username#0000"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                  <X className="w-4 h-4 mr-1" /> Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                >
+                  <Save className="w-4 h-4 mr-1" />
+                  {isSaving ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Stats Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-3 gap-4 mt-4"
+        >
+          {[
+            { label: 'Posts', value: posts.length, icon: MessageSquare },
+            { label: 'Total Likes', value: totalLikes, icon: Flame },
+            { label: 'Tournaments', value: '—', icon: Trophy },
+          ].map((stat) => (
+            <div key={stat.label} className="gaming-card p-4 text-center">
+              <stat.icon className="w-5 h-5 mx-auto text-cyan-400 mb-2" />
+              <div className="font-orbitron text-xl font-bold">{stat.value}</div>
+              <div className="text-xs text-muted-foreground">{stat.label}</div>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Posts */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6"
+        >
+          <h2 className="font-orbitron font-bold text-lg mb-4">
+            {isOwnProfile ? 'My Posts' : `${profile.username}'s Posts`}
+          </h2>
+
+          {posts.length === 0 ? (
+            <div className="gaming-card p-12 text-center">
+              <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No posts yet.</p>
+              {isOwnProfile && (
+                <Button asChild size="sm" className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600">
+                  <Link to="/community">Share your first post</Link>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {posts.map((post, i) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + i * 0.04 }}
+                  className="gaming-card p-5"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="font-orbitron font-bold text-sm">{post.title}</h3>
+                    <Badge className={`flex-shrink-0 ${tagColors[post.tag] ?? 'bg-muted text-muted-foreground'}`}>
+                      {post.tag}
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{post.content}</p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Flame className="w-3 h-3" />{post.likes}</span>
+                    <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{post.comments}</span>
+                    <span className="ml-auto">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  );
+}

@@ -1,8 +1,9 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Gamepad2, Trophy, Users, MessageSquare,
-  ChevronRight, Shield, LogOut,
+  LayoutDashboard, Gamepad2, Trophy, Users,
+  MessageSquare, ChevronRight, Shield, LogOut,
+  Megaphone, Settings,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,8 @@ const navItems = [
   { href: '/admin/tournaments', label: 'Tournaments', icon: Trophy },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/posts', label: 'Posts', icon: MessageSquare },
+  { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AdminLayout() {
@@ -28,20 +31,16 @@ export function AdminLayout() {
     );
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
       <motion.aside
         initial={{ x: -80, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
         className="fixed top-0 left-0 h-full w-64 z-40 glass border-r border-border/50 flex flex-col"
       >
-        {/* Logo */}
         <div className="p-6 border-b border-border/50">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
@@ -54,19 +53,16 @@ export function AdminLayout() {
           </Link>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = item.exact
               ? location.pathname === item.href
-              : location.pathname.startsWith(item.href) && item.href !== '/admin'
-                ? true
-                : location.pathname === item.href;
+              : location.pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 text-cyan-400'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -80,7 +76,6 @@ export function AdminLayout() {
           })}
         </nav>
 
-        {/* Footer */}
         <div className="p-4 border-t border-border/50">
           <div className="flex items-center gap-3 mb-3 px-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
@@ -97,14 +92,12 @@ export function AdminLayout() {
             className="w-full justify-start text-muted-foreground hover:text-destructive"
             onClick={signOut}
           >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            <LogOut className="w-4 h-4 mr-2" /> Sign Out
           </Button>
         </div>
       </motion.aside>
 
-      {/* Main content */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-64 min-h-screen bg-background">
         <Outlet />
       </div>
     </div>
