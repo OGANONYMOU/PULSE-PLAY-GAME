@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Camera, Edit2, Save, X, Twitter, Trophy,
@@ -35,13 +34,13 @@ type EditForm = {
   twitter_username: string;
 };
 
-function getRoleClass(role: string) {
+function getRoleClass(role: string): string {
   if (role === 'ADMIN') return 'bg-red-500/20 text-red-400 border-red-500/30';
   if (role === 'MODERATOR') return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
   return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
 }
 
-function getTagClass(tag: string) {
+function getTagClass(tag: string): string {
   if (tag === 'general') return 'bg-blue-500/20 text-blue-400';
   if (tag === 'tournament') return 'bg-purple-500/20 text-purple-400';
   if (tag === 'tips') return 'bg-green-500/20 text-green-400';
@@ -49,23 +48,7 @@ function getTagClass(tag: string) {
   return 'bg-muted text-muted-foreground';
 }
 
-const TwitterLink = ({ username }: { username: string }): JSX.Element => {
-  const url = 'https://twitter.com/' + username;
-  return (
-    
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
-    >
-      <Twitter className="w-3.5 h-3.5" />
-      <span>{'@' + username}</span>
-      <ExternalLink className="w-3 h-3" />
-    </a>
-  );
-};
-
-export function Profile() {
+export function Profile(): React.ReactElement {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: ownProfile, updateProfile } = useAuth();
 
@@ -98,12 +81,12 @@ export function Profile() {
       if (isOwnProfile && ownProfile) {
         profileData = ownProfile;
       } else if (username) {
-        const { data } = await supabase
+        const result = await supabase
           .from('profiles')
           .select('*')
           .eq('username', username)
           .single();
-        profileData = data as unknown as ProfileType;
+        profileData = result.data as unknown as ProfileType;
       }
 
       if (profileData) {
@@ -115,13 +98,13 @@ export function Profile() {
           discord_username: profileData.discord_username ?? '',
           twitter_username: profileData.twitter_username ?? '',
         });
-        const { data: postsData } = await supabase
+        const postsResult = await supabase
           .from('posts')
           .select('*')
           .eq('author_id', profileData.id)
           .order('created_at', { ascending: false })
           .limit(10);
-        setPosts((postsData as PostItem[]) ?? []);
+        setPosts((postsResult.data as PostItem[]) ?? []);
       }
       setIsLoading(false);
     };
@@ -130,8 +113,8 @@ export function Profile() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const { error } = await updateProfile(editForm);
-    if (error) {
+    const result = await updateProfile(editForm);
+    if (result.error) {
       toast.error('Failed to save profile.');
     } else {
       toast.success('Profile updated!');
@@ -151,18 +134,16 @@ export function Profile() {
     setUploading(true);
     const ext = file.name.split('.').pop();
     const path = user.id + '/' + pathSuffix + '.' + ext;
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true });
-    if (uploadError) {
+    const uploadResult = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    if (uploadResult.error) {
       toast.error('Upload failed.');
       setUploading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-    const publicUrl = urlData.publicUrl;
-    const { error } = await updateProfile({ [field]: publicUrl });
-    if (error) {
+    const urlResult = supabase.storage.from('avatars').getPublicUrl(path);
+    const publicUrl = urlResult.data.publicUrl;
+    const updateResult = await updateProfile({ [field]: publicUrl });
+    if (updateResult.error) {
       toast.error('Failed to save URL.');
     } else {
       setProfile((prev) => (prev ? { ...prev, [field]: publicUrl } : prev));
@@ -206,9 +187,13 @@ export function Profile() {
     );
   }
 
-  const bannerStyle = profile.banner_url
-    ? { backgroundImage: 'url(' + profile.banner_url + ')', backgroundSize: 'cover', backgroundPosition: 'center' }
-    : {};
+  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username || '');
+  const bioText = profile.bio
+    ? profile.bio
+    : isOwnProfile
+      ? 'No bio yet - click Edit Profile to add one.'
+      : 'No bio yet.';
+  const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
@@ -216,7 +201,7 @@ export function Profile() {
 
         <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
           {profile.banner_url ? (
-            <div className="w-full h-full" style={bannerStyle} />
+            <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
           )}
@@ -264,9 +249,7 @@ export function Profile() {
                       <span>{profile.role}</span>
                     </Badge>
                   </div>
-                  {fullName !== '' && (
-                    <p className="text-muted-foreground text-sm mb-1">{fullName}</p>
-                  )}
+                  {fullName && <p className="text-muted-foreground text-sm mb-1">{fullName}</p>}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Calendar className="w-3 h-3" />
                     <span>Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>
@@ -286,19 +269,22 @@ export function Profile() {
               </div>
 
               {!isEditing && (
-                <p className="text-muted-foreground text-sm mt-3 max-w-xl">
-                  {profile.bio
-                    ? profile.bio
-                    : isOwnProfile
-                      ? 'No bio yet - click Edit Profile to add one.'
-                      : 'No bio yet.'}
-                </p>
+                <p className="text-muted-foreground text-sm mt-3 max-w-xl">{bioText}</p>
               )}
 
               {!isEditing && (
                 <div className="flex items-center gap-3 mt-3 flex-wrap">
                   {profile.twitter_username && (
-                    <TwitterLink username={profile.twitter_username} />
+                    
+                      href={twitterUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                    >
+                      <Twitter className="w-3.5 h-3.5" />
+                      <span>@{profile.twitter_username}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
                   )}
                   {profile.discord_username && (
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -317,31 +303,16 @@ export function Profile() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground">First Name</label>
-                  <Input
-                    value={editForm.first_name}
-                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                    className="mt-1 bg-muted/50"
-                  />
+                  <Input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="mt-1 bg-muted/50" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Last Name</label>
-                  <Input
-                    value={editForm.last_name}
-                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                    className="mt-1 bg-muted/50"
-                  />
+                  <Input value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="mt-1 bg-muted/50" />
                 </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Bio</label>
-                <Textarea
-                  value={editForm.bio}
-                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                  className="mt-1 bg-muted/50 resize-none"
-                  rows={3}
-                  placeholder="Tell the community about yourself..."
-                  maxLength={300}
-                />
+                <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} className="mt-1 bg-muted/50 resize-none" rows={3} placeholder="Tell the community about yourself..." maxLength={300} />
                 <p className="text-xs text-muted-foreground mt-1">{editForm.bio.length}/300</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -349,22 +320,12 @@ export function Profile() {
                   <label className="text-xs text-muted-foreground">Twitter Username</label>
                   <div className="relative mt-1">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-                    <Input
-                      value={editForm.twitter_username}
-                      onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })}
-                      className="pl-7 bg-muted/50"
-                      placeholder="username"
-                    />
+                    <Input value={editForm.twitter_username} onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })} className="pl-7 bg-muted/50" placeholder="username" />
                   </div>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Discord Username</label>
-                  <Input
-                    value={editForm.discord_username}
-                    onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })}
-                    className="mt-1 bg-muted/50"
-                    placeholder="username#0000"
-                  />
+                  <Input value={editForm.discord_username} onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })} className="mt-1 bg-muted/50" placeholder="username#0000" />
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
@@ -372,12 +333,7 @@ export function Profile() {
                   <X className="w-4 h-4 mr-1" />
                   <span>Cancel</span>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600"
-                >
+                <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-gradient-to-r from-cyan-500 to-purple-600">
                   <Save className="w-4 h-4 mr-1" />
                   <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
                 </Button>
@@ -405,9 +361,7 @@ export function Profile() {
         </div>
 
         <div>
-          <h2 className="font-orbitron font-bold text-lg mb-4">
-            {isOwnProfile ? 'My Posts' : profile.username + "'s Posts"}
-          </h2>
+          <h2 className="font-orbitron font-bold text-lg mb-4">{postsTitle}</h2>
 
           {posts.length === 0 && (
             <div className="gaming-card p-12 text-center">
