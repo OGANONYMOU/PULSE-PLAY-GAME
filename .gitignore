@@ -1,33 +1,32 @@
 # Dependencies
 node_modules/
-*/node_modules/
+.pnp
+.pnp.js
 
-# Build output
+# Build outputs
 dist/
+dist-ssr/
 build/
-*.tsbuildinfo
 
-# Environment — NEVER commit real .env
+# Environment variables - NEVER commit these
 .env
-backend/.env
-frontend/.env
-
-# Prisma generated
-backend/src/generated/
+.env.local
+.env.*.local
 
 # Logs
-*.log
 npm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Test coverage
-coverage/
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
