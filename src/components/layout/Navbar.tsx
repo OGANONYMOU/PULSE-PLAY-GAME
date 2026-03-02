@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,

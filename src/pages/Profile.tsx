@@ -79,7 +79,7 @@ export function Profile() {
         profileData = ownProfile;
       } else if (username) {
         const { data } = await supabase.from('profiles').select('*').eq('username', username).single();
-        profileData = data as ProfileType;
+        profileData = data as unknown as ProfileType;
       }
 
       if (profileData) {
