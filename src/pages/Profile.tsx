@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 
-type PostWithLikes = {
+type PostItem = {
   id: string;
   title: string;
   content: string;
@@ -41,21 +41,30 @@ const tagColors: Record<string, string> = {
   clips: 'bg-pink-500/20 text-pink-400',
 };
 
+type EditForm = {
+  first_name: string;
+  last_name: string;
+  bio: string;
+  discord_username: string;
+  twitter_username: string;
+};
+
 export function Profile() {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: ownProfile, updateProfile } = useAuth();
 
   const [profile, setProfile] = useState<ProfileType | null>(null);
-  const [posts, setPosts] = useState<PostWithLikes[]>([]);
+  const [posts, setPosts] = useState<PostItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<EditForm>({
     first_name: '',
     last_name: '',
     bio: '',
@@ -73,7 +82,7 @@ export function Profile() {
 
       if (isOwnProfile && ownProfile) {
         profileData = ownProfile;
-      } else {
+      } else if (username) {
         const { data } = await supabase
           .from('profiles')
           .select('*')
@@ -92,14 +101,14 @@ export function Profile() {
           twitter_username: profileData.twitter_username ?? '',
         });
 
-        // Fetch posts
         const { data: postsData } = await supabase
           .from('posts')
           .select('*')
           .eq('author_id', profileData.id)
           .order('created_at', { ascending: false })
           .limit(10);
-        setPosts((postsData as PostWithLikes[]) ?? []);
+
+        setPosts((postsData as PostItem[]) ?? []);
       }
 
       setIsLoading(false);
@@ -115,81 +124,63 @@ export function Profile() {
       toast.error('Failed to save profile.');
     } else {
       toast.success('Profile updated!');
-      setProfile((prev) => prev ? { ...prev, ...editForm } : prev);
+      setProfile((prev) => (prev ? { ...prev, ...editForm } : prev));
       setIsEditing(false);
     }
     setIsSaving(false);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    setIsUploadingAvatar(true);
+  const uploadFile = async (
+    file: File,
+    pathSuffix: string,
+    field: 'avatar_url' | 'banner_url',
+    setUploading: (v: boolean) => void
+  ) => {
+    if (!user) return;
+    setUploading(true);
     const ext = file.name.split('.').pop();
-    const path = `${user.id}/avatar.${ext}`;
+    const path = `${user.id}/${pathSuffix}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(path, file, { upsert: true });
 
     if (uploadError) {
-      toast.error('Failed to upload avatar.');
-      setIsUploadingAvatar(false);
+      toast.error(`Failed to upload ${pathSuffix}.`);
+      setUploading(false);
       return;
     }
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    const { error } = await updateProfile({ avatar_url: publicUrl });
+    const { error } = await updateProfile({ [field]: publicUrl });
 
     if (error) {
-      toast.error('Failed to update avatar URL.');
+      toast.error('Failed to save URL.');
     } else {
-      setProfile((prev) => prev ? { ...prev, avatar_url: publicUrl } : prev);
-      toast.success('Avatar updated!');
+      setProfile((prev) => (prev ? { ...prev, [field]: publicUrl } : prev));
+      toast.success(`${pathSuffix === 'avatar' ? 'Avatar' : 'Banner'} updated!`);
     }
-    setIsUploadingAvatar(false);
+    setUploading(false);
   };
 
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (file) uploadFile(file, 'avatar', 'avatar_url', setIsUploadingAvatar);
+  };
 
-    setIsUploadingBanner(true);
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/banner.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true });
-
-    if (uploadError) {
-      toast.error('Failed to upload banner.');
-      setIsUploadingBanner(false);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    const { error } = await updateProfile({ banner_url: publicUrl });
-
-    if (error) {
-      toast.error('Failed to update banner.');
-    } else {
-      setProfile((prev) => prev ? { ...prev, banner_url: publicUrl } : prev);
-      toast.success('Banner updated!');
-    }
-    setIsUploadingBanner(false);
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadFile(file, 'banner', 'banner_url', setIsUploadingBanner);
   };
 
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pt-24 px-6 max-w-4xl mx-auto">
-        <Skeleton className="h-48 rounded-2xl mb-4" />
-        <Skeleton className="h-24 w-24 rounded-full -mt-12 ml-6" />
-        <Skeleton className="h-8 w-48 mt-4" />
-        <Skeleton className="h-4 w-96 mt-2" />
+      <div className="min-h-screen pt-24 px-6 max-w-4xl mx-auto space-y-4">
+        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-24 rounded-2xl" />
       </div>
     );
   }
@@ -200,7 +191,7 @@ export function Profile() {
         <div className="text-center">
           <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h2 className="font-orbitron text-2xl font-bold mb-2">User Not Found</h2>
-          <p className="text-muted-foreground">This profile doesn't exist.</p>
+          <p className="text-muted-foreground">This profile does not exist.</p>
         </div>
       </div>
     );
@@ -208,15 +199,20 @@ export function Profile() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-4">
+
         {/* Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative h-48 rounded-2xl overflow-hidden mb-0 gaming-card"
+          className="relative h-48 rounded-2xl overflow-hidden gaming-card"
         >
           {profile.banner_url ? (
-            <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
+            <img
+              src={profile.banner_url}
+              alt="Banner"
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
           )}
@@ -230,17 +226,23 @@ export function Profile() {
                 <Camera className="w-3 h-3" />
                 {isUploadingBanner ? 'Uploading…' : 'Change Banner'}
               </button>
-              <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleBannerUpload}
+              />
             </>
           )}
         </motion.div>
 
-        {/* Profile Header */}
+        {/* Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="gaming-card p-6 -mt-1 rounded-t-none"
+          className="gaming-card p-6"
         >
           <div className="flex flex-col sm:flex-row items-start gap-6">
             {/* Avatar */}
@@ -260,7 +262,13 @@ export function Profile() {
                   >
                     <Camera className="w-3.5 h-3.5 text-white" />
                   </button>
-                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
                 </>
               )}
             </div>
@@ -294,21 +302,22 @@ export function Profile() {
                     onClick={() => setIsEditing(true)}
                     className="border-cyan-500/50 hover:bg-cyan-500/10"
                   >
-                    <Edit2 className="w-4 h-4 mr-2" /> Edit Profile
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit Profile
                   </Button>
                 )}
               </div>
 
-              {/* Bio */}
               {!isEditing && (
                 <p className="text-muted-foreground text-sm mt-3 max-w-xl">
-                  {profile.bio ?? (isOwnProfile ? 'No bio yet — click Edit Profile to add one.' : 'No bio yet.')}
+                  {profile.bio ?? (isOwnProfile
+                    ? 'No bio yet — click Edit Profile to add one.'
+                    : 'No bio yet.')}
                 </p>
               )}
 
-              {/* Social Links */}
               {!isEditing && (profile.twitter_username || profile.discord_username) && (
-                <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
                   {profile.twitter_username && (
                     
                       href={`https://twitter.com/${profile.twitter_username}`}
@@ -394,7 +403,12 @@ export function Profile() {
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                >
                   <X className="w-4 h-4 mr-1" /> Cancel
                 </Button>
                 <Button
@@ -411,12 +425,12 @@ export function Profile() {
           )}
         </motion.div>
 
-        {/* Stats Bar */}
+        {/* Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-3 gap-4 mt-4"
+          className="grid grid-cols-3 gap-4"
         >
           {[
             { label: 'Posts', value: posts.length, icon: MessageSquare },
@@ -436,7 +450,6 @@ export function Profile() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-6"
         >
           <h2 className="font-orbitron font-bold text-lg mb-4">
             {isOwnProfile ? 'My Posts' : `${profile.username}'s Posts`}
@@ -447,7 +460,11 @@ export function Profile() {
               <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No posts yet.</p>
               {isOwnProfile && (
-                <Button asChild size="sm" className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600">
+                <Button
+                  asChild
+                  size="sm"
+                  className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600"
+                >
                   <Link to="/community">Share your first post</Link>
                 </Button>
               )}
@@ -470,9 +487,17 @@ export function Profile() {
                   </div>
                   <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{post.content}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Flame className="w-3 h-3" />{post.likes}</span>
-                    <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{post.comments}</span>
-                    <span className="ml-auto">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                    <span className="flex items-center gap-1">
+                      <Flame className="w-3 h-3" />
+                      {post.likes}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" />
+                      {post.comments}
+                    </span>
+                    <span className="ml-auto">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </span>
                   </div>
                 </motion.div>
               ))}
