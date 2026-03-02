@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -48,7 +49,7 @@ function getTagClass(tag: string) {
   return 'bg-muted text-muted-foreground';
 }
 
-function TwitterLink({ username }: { username: string }) {
+const TwitterLink = ({ username }: { username: string }): JSX.Element => {
   const url = 'https://twitter.com/' + username;
   return (
     
@@ -58,11 +59,11 @@ function TwitterLink({ username }: { username: string }) {
       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
     >
       <Twitter className="w-3.5 h-3.5" />
-      <span>@{username}</span>
+      <span>{'@' + username}</span>
       <ExternalLink className="w-3 h-3" />
     </a>
   );
-}
+};
 
 export function Profile() {
   const { username } = useParams<{ username?: string }>();
