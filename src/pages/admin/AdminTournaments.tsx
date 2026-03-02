@@ -33,7 +33,7 @@ type Game = { id: string; name: string; icon: string };
 const emptyForm = {
   name: '',
   game_id: '',
-  status: 'upcoming' as const,
+  status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed',
   date: '',
   prize_pool: '',
   max_players: 64,
