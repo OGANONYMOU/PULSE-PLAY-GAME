@@ -73,18 +73,20 @@ export function usePosts(tagFilter?: string) {
     content: string,
     tag: PostTag
   ) => {
-    const { error } = await supabase
-      .from('posts')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .insert({ author_id: authorId, title, content, tag } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('posts') as any).insert({
+      author_id: authorId,
+      title,
+      content,
+      tag,
+    });
     return { error };
   };
 
   const likePost = async (postId: string, currentLikes: number) => {
-    const { error } = await supabase
-      .from('posts')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ likes: currentLikes + 1 } as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('posts') as any)
+      .update({ likes: currentLikes + 1 })
       .eq('id', postId);
 
     if (!error) {

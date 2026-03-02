@@ -10,14 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePosts } from '@/hooks/usePosts';
+import { usePosts, type PostTag } from '@/hooks/usePosts';
 import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
-import type { Database } from '@/types/database';
-
-type PostTag = Database['public']['Tables']['posts']['Row']['tag'];
 
 const tags: { value: PostTag; label: string; color: string }[] = [
   { value: 'general', label: '💬 General', color: 'bg-blue-500/20 text-blue-400' },
@@ -320,7 +317,7 @@ export function Community() {
               </Button>
             </motion.div>
 
-            {/* Trending Tags */}
+            {/* Categories */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
