@@ -6,7 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { ParticleBackground } from '@/components/ui-custom/ParticleBackground';
 import { Toaster } from '@/components/ui/sonner';
 
-// Pages
+// Public Pages
 import { Home } from '@/pages/Home';
 import { Games } from '@/pages/Games';
 import { Tournaments } from '@/pages/Tournaments';
@@ -16,7 +16,15 @@ import { SignIn } from '@/pages/SignIn';
 import { Register } from '@/pages/Register';
 import { AuthCallback } from '@/pages/AuthCallback';
 
-function AppContent() {
+// Admin Pages
+import { AdminLayout } from '@/pages/admin/AdminLayout';
+import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { AdminGames } from '@/pages/admin/AdminGames';
+import { AdminTournaments } from '@/pages/admin/AdminTournaments';
+import { AdminUsers } from '@/pages/admin/AdminUsers';
+import { AdminPosts } from '@/pages/admin/AdminPosts';
+
+function PublicLayout() {
   return (
     <div className="relative min-h-screen">
       <ParticleBackground />
@@ -44,7 +52,19 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <AppContent />
+          <Routes>
+            {/* Admin routes — no Navbar/Footer */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="games" element={<AdminGames />} />
+              <Route path="tournaments" element={<AdminTournaments />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="posts" element={<AdminPosts />} />
+            </Route>
+
+            {/* Public routes */}
+            <Route path="/*" element={<PublicLayout />} />
+          </Routes>
         </Router>
         <Toaster />
       </AuthProvider>
