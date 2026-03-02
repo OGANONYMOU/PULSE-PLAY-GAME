@@ -1,17 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
-import { formatDistanceToNow, format } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type PostItem = {
   id: string;
