@@ -48,6 +48,22 @@ function getTagClass(tag: string) {
   return 'bg-muted text-muted-foreground';
 }
 
+function TwitterLink({ username }: { username: string }) {
+  const url = 'https://twitter.com/' + username;
+  return (
+    
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+    >
+      <Twitter className="w-3.5 h-3.5" />
+      <span>@{username}</span>
+      <ExternalLink className="w-3 h-3" />
+    </a>
+  );
+}
+
 export function Profile() {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: ownProfile, updateProfile } = useAuth();
@@ -133,7 +149,7 @@ export function Profile() {
     if (!user) return;
     setUploading(true);
     const ext = file.name.split('.').pop();
-    const path = `${user.id}/${pathSuffix}.${ext}`;
+    const path = user.id + '/' + pathSuffix + '.' + ext;
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(path, file, { upsert: true });
@@ -142,7 +158,8 @@ export function Profile() {
       setUploading(false);
       return;
     }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    const publicUrl = urlData.publicUrl;
     const { error } = await updateProfile({ [field]: publicUrl });
     if (error) {
       toast.error('Failed to save URL.');
@@ -188,16 +205,20 @@ export function Profile() {
     );
   }
 
+  const bannerStyle = profile.banner_url
+    ? { backgroundImage: 'url(' + profile.banner_url + ')', backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {};
+
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
       <div className="max-w-4xl mx-auto space-y-4">
 
-        {/* Banner */}
         <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
-          {profile.banner_url
-            ? <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
-            : <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
-          }
+          {profile.banner_url ? (
+            <div className="w-full h-full" style={bannerStyle} />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
+          )}
           {isOwnProfile && (
             <button
               onClick={() => bannerInputRef.current?.click()}
@@ -205,16 +226,14 @@ export function Profile() {
               className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white text-xs transition-colors"
             >
               <Camera className="w-3 h-3" />
-              {isUploadingBanner ? 'Uploading...' : 'Change Banner'}
+              <span>{isUploadingBanner ? 'Uploading...' : 'Change Banner'}</span>
             </button>
           )}
           <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
         </div>
 
-        {/* Profile Card */}
         <div className="gaming-card p-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
-            {/* Avatar */}
             <div className="relative -mt-16 flex-shrink-0">
               <Avatar className="w-24 h-24 border-4 border-background ring-2 ring-cyan-500/50">
                 <AvatarImage src={profile.avatar_url ?? ''} />
@@ -234,7 +253,6 @@ export function Profile() {
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
@@ -242,13 +260,15 @@ export function Profile() {
                     <h1 className="font-orbitron text-2xl font-bold">{profile.username}</h1>
                     <Badge className={getRoleClass(profile.role)}>
                       {profile.role === 'ADMIN' && <Shield className="w-3 h-3 mr-1" />}
-                      {profile.role}
+                      <span>{profile.role}</span>
                     </Badge>
                   </div>
-                  {fullName && <p className="text-muted-foreground text-sm mb-1">{fullName}</p>}
+                  {fullName !== '' && (
+                    <p className="text-muted-foreground text-sm mb-1">{fullName}</p>
+                  )}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Calendar className="w-3 h-3" />
-                    Joined {format(new Date(profile.created_at), 'MMMM yyyy')}
+                    <span>Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>
                   </div>
                 </div>
                 {isOwnProfile && !isEditing && (
@@ -266,33 +286,30 @@ export function Profile() {
 
               {!isEditing && (
                 <p className="text-muted-foreground text-sm mt-3 max-w-xl">
-                  {profile.bio || (isOwnProfile ? 'No bio yet - click Edit Profile to add one.' : 'No bio yet.')}
+                  {profile.bio
+                    ? profile.bio
+                    : isOwnProfile
+                      ? 'No bio yet - click Edit Profile to add one.'
+                      : 'No bio yet.'}
                 </p>
               )}
 
               {!isEditing && (
-  <div className="flex items-center gap-3 mt-3 flex-wrap">
-    {profile.twitter_username ? (
-      
-        href={"https://twitter.com/" + profile.twitter_username}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
-      >
-        <Twitter className="w-3.5 h-3.5" />
-        <span>@{profile.twitter_username}</span>
-        <ExternalLink className="w-3 h-3" />
-      </a>
-    ) : null}
-    {profile.discord_username ? (
-      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <MessageSquare className="w-3.5 h-3.5" />
-        {profile.discord_username}
-      </span>
-    ) : null}
-  </div>
-)}
-          {/* Edit Form */}
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  {profile.twitter_username && (
+                    <TwitterLink username={profile.twitter_username} />
+                  )}
+                  {profile.discord_username && (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>{profile.discord_username}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           {isEditing && (
             <div className="mt-6 space-y-4">
               <Separator />
@@ -351,7 +368,8 @@ export function Profile() {
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={isSaving}>
-                  <X className="w-4 h-4 mr-1" /> Cancel
+                  <X className="w-4 h-4 mr-1" />
+                  <span>Cancel</span>
                 </Button>
                 <Button
                   size="sm"
@@ -360,14 +378,13 @@ export function Profile() {
                   className="bg-gradient-to-r from-cyan-500 to-purple-600"
                 >
                   <Save className="w-4 h-4 mr-1" />
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="gaming-card p-4 text-center">
             <MessageSquare className="w-5 h-5 mx-auto text-cyan-400 mb-2" />
@@ -386,7 +403,6 @@ export function Profile() {
           </div>
         </div>
 
-        {/* Posts */}
         <div>
           <h2 className="font-orbitron font-bold text-lg mb-4">
             {isOwnProfile ? 'My Posts' : profile.username + "'s Posts"}
@@ -410,13 +426,23 @@ export function Profile() {
                 <div key={post.id} className="gaming-card p-5">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <h3 className="font-orbitron font-bold text-sm">{post.title}</h3>
-                    <Badge className={`flex-shrink-0 ${getTagClass(post.tag)}`}>{post.tag}</Badge>
+                    <Badge className={'flex-shrink-0 ' + getTagClass(post.tag)}>
+                      <span>{post.tag}</span>
+                    </Badge>
                   </div>
                   <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{post.content}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Flame className="w-3 h-3" />{post.likes}</span>
-                    <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{post.comments}</span>
-                    <span className="ml-auto">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                    <span className="flex items-center gap-1">
+                      <Flame className="w-3 h-3" />
+                      <span>{post.likes}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" />
+                      <span>{post.comments}</span>
+                    </span>
+                    <span className="ml-auto">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </span>
                   </div>
                 </div>
               ))}
