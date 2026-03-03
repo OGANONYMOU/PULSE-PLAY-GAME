@@ -27,11 +27,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (
-    email: string,
-    password: string,
-    metadata: { username: string; first_name?: string; last_name?: string; phone?: string }
-  ) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, metadata: {
+    username: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+  }) => Promise<{ error: Error | null }>;
   signInWithOAuth: (provider: 'google' | 'twitter' | 'discord' | 'facebook') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -53,14 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
       if (error) {
-        console.error('[Auth] profile fetch error:', error.message, '| code:', error.code);
+        console.error('[Auth] fetchProfile error:', error.message, error.code);
         return null;
       }
       const p = data as Profile;
       setProfile(p);
       return p;
     } catch (err) {
-      console.error('[Auth] profile fetch threw:', err);
+      console.error('[Auth] fetchProfile threw:', err);
       return null;
     }
   }, []);
@@ -101,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const channel = supabase
-      .channel('auth-profile-rt')
+      .channel('auth-profile-realtime')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         if (!mounted) return;
         setProfile((prev) => {
@@ -118,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
-  }, []); // eslint-disable-line
+  }, [fetchProfile]);
 
   const refreshProfile = async () => {
     if (user?.id) await fetchProfile(user.id);
@@ -126,7 +127,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (data: Partial<Profile>): Promise<{ error: Error | null }> => {
     if (!user?.id) return { error: new Error('Not authenticated') };
-    const { error } = await supabase.from('profiles').update(data as never).eq('id', user.id);
+    const { error } = await supabase
+      .from('profiles')
+      .update(data as never)
+      .eq('id', user.id);
     if (!error) await fetchProfile(user.id);
     return { error: error as Error | null };
   };
@@ -136,11 +140,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signUp = async (
-    email: string,
-    password: string,
-    metadata: { username: string; first_name?: string; last_name?: string; phone?: string }
-  ) => {
+  const signUp = async (email: string, password: string, metadata: {
+    username: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+  }) => {
     const { error } = await supabase.auth.signUp({ email, password, options: { data: metadata } });
     return { error: error as Error | null };
   };
@@ -161,12 +166,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, profile, isLoading,
+      user,
+      profile,
+      isLoading,
       isAuthenticated: !!user,
       isAdmin: profile?.role === 'ADMIN' || profile?.role === 'MODERATOR',
-      signIn, signUp, signInWithOAuth,
+      signIn,
+      signUp,
+      signInWithOAuth,
       signOut: handleSignOut,
-      refreshProfile, updateProfile,
+      refreshProfile,
+      updateProfile,
     }}>
       {children}
     </AuthContext.Provider>
@@ -174,7 +184,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
