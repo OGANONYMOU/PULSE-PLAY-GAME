@@ -82,10 +82,8 @@ export function Profile(): React.ReactElement {
 
       if (isOwnProfile) {
         if (ownProfile) {
-          // Already loaded in context
           profileData = ownProfile;
         } else if (user) {
-          // Context hasn't loaded profile yet — fetch directly by user id
           const { data } = await supabase
             .from('profiles')
             .select('*')
@@ -94,7 +92,6 @@ export function Profile(): React.ReactElement {
           profileData = data as unknown as ProfileType;
         }
       } else if (username) {
-        // Public profile lookup by username
         const { data } = await supabase
           .from('profiles')
           .select('*')
@@ -126,7 +123,6 @@ export function Profile(): React.ReactElement {
       setIsLoading(false);
     };
 
-    // Only load once user/ownProfile state is settled
     if (!isOwnProfile || user !== undefined) {
       load();
     }
@@ -186,18 +182,6 @@ export function Profile(): React.ReactElement {
   };
 
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
-  const fullName = profile
-    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ')
-    : '';
-  const bioText = profile?.bio
-    ? profile.bio
-    : isOwnProfile
-      ? 'No bio yet - click Edit Profile to add one.'
-      : 'No bio yet.';
-  const postsTitle = isOwnProfile ? 'My Posts' : (profile ? profile.username + "'s Posts" : 'Posts');
-  const twitterUrl = 'https://twitter.com/' + (profile?.twitter_username ?? '');
-  const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
-  const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
 
   if (isLoading) {
     return (
@@ -225,11 +209,22 @@ export function Profile(): React.ReactElement {
     );
   }
 
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+  const bioText = profile.bio
+    ? profile.bio
+    : isOwnProfile
+      ? 'No bio yet - click Edit Profile to add one.'
+      : 'No bio yet.';
+  const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
+  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username ?? '');
+  const twitterHandle = 'at' + (profile.twitter_username ?? '');
+  const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
+  const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
+
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
       <div className="max-w-4xl mx-auto space-y-4">
 
-        {/* Banner */}
         <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
           {profile.banner_url ? (
             <img
@@ -259,11 +254,8 @@ export function Profile(): React.ReactElement {
           />
         </div>
 
-        {/* Profile Card */}
         <div className="gaming-card p-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
-
-            {/* Avatar */}
             <div className="relative -mt-16 flex-shrink-0">
               <Avatar className="w-24 h-24 border-4 border-background ring-2 ring-cyan-500/50">
                 <AvatarImage src={profile.avatar_url ?? ''} alt={profile.username} />
@@ -290,7 +282,6 @@ export function Profile(): React.ReactElement {
               />
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
@@ -304,10 +295,10 @@ export function Profile(): React.ReactElement {
                   {fullName && (
                     <p className="text-muted-foreground text-sm mb-1">{fullName}</p>
                   )}
-                  {profile.email && isOwnProfile && (
+                  {isOwnProfile && profile.email && (
                     <p className="text-muted-foreground text-xs mb-1">{profile.email}</p>
                   )}
-                  {profile.phone && isOwnProfile && (
+                  {isOwnProfile && profile.phone && (
                     <p className="text-muted-foreground text-xs mb-1">{profile.phone}</p>
                   )}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -343,7 +334,7 @@ export function Profile(): React.ReactElement {
                       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
                     >
                       <Twitter className="w-3.5 h-3.5" />
-                      <span>{'@' + profile.twitter_username}</span>
+                      <span>{twitterHandle}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
@@ -358,7 +349,6 @@ export function Profile(): React.ReactElement {
             </div>
           </div>
 
-          {/* Edit Form */}
           {isEditing && (
             <div className="mt-6 space-y-4">
               <Separator />
@@ -441,7 +431,6 @@ export function Profile(): React.ReactElement {
           )}
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="gaming-card p-4 text-center">
             <MessageSquare className="w-5 h-5 mx-auto text-cyan-400 mb-2" />
@@ -460,7 +449,6 @@ export function Profile(): React.ReactElement {
           </div>
         </div>
 
-        {/* Posts */}
         <div>
           <h2 className="font-orbitron font-bold text-lg mb-4">{postsTitle}</h2>
 
