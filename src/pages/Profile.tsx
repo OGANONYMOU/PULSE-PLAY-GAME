@@ -48,6 +48,34 @@ function getTagClass(tag: string): string {
   return 'bg-muted text-muted-foreground';
 }
 
+function SocialLinks(props: { twitterUsername: string | null; discordUsername: string | null }): React.ReactElement | null {
+  if (!props.twitterUsername && !props.discordUsername) return null;
+  const twitterUrl = 'https://twitter.com/' + (props.twitterUsername ?? '');
+  const twitterLabel = 'at' + (props.twitterUsername ?? '');
+  return (
+    <div className="flex items-center gap-3 mt-3 flex-wrap">
+      {props.twitterUsername ? (
+        
+          href={twitterUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+        >
+          <Twitter className="w-3.5 h-3.5" />
+          <span>{twitterLabel}</span>
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      ) : null}
+      {props.discordUsername ? (
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>{props.discordUsername}</span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function Profile(): React.ReactElement {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: ownProfile, updateProfile } = useAuth();
@@ -216,10 +244,10 @@ export function Profile(): React.ReactElement {
       ? 'No bio yet - click Edit Profile to add one.'
       : 'No bio yet.';
   const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
-  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username ?? '');
-  const twitterHandle = 'at' + (profile.twitter_username ?? '');
   const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
   const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
+  const avatarFallback = profile.username[0] ? profile.username[0].toUpperCase() : 'U';
+  const joinedDate = format(new Date(profile.created_at), 'MMMM yyyy');
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
@@ -227,15 +255,11 @@ export function Profile(): React.ReactElement {
 
         <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
           {profile.banner_url ? (
-            <img
-              src={profile.banner_url}
-              alt="Profile banner"
-              className="w-full h-full object-cover"
-            />
+            <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
           )}
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <button
               onClick={() => bannerInputRef.current?.click()}
               disabled={isUploadingBanner}
@@ -244,26 +268,21 @@ export function Profile(): React.ReactElement {
               <Camera className="w-3 h-3" />
               <span>{bannerLabel}</span>
             </button>
-          )}
-          <input
-            ref={bannerInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleBannerChange}
-          />
+          ) : null}
+          <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
         </div>
 
         <div className="gaming-card p-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
+
             <div className="relative -mt-16 flex-shrink-0">
               <Avatar className="w-24 h-24 border-4 border-background ring-2 ring-cyan-500/50">
                 <AvatarImage src={profile.avatar_url ?? ''} alt={profile.username} />
                 <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-2xl font-bold text-white">
-                  {profile.username[0]?.toUpperCase()}
+                  {avatarFallback}
                 </AvatarFallback>
               </Avatar>
-              {isOwnProfile && (
+              {isOwnProfile ? (
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={isUploadingAvatar}
@@ -272,14 +291,8 @@ export function Profile(): React.ReactElement {
                 >
                   <Camera className="w-3.5 h-3.5 text-white" />
                 </button>
-              )}
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarChange}
-              />
+              ) : null}
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
 
             <div className="flex-1 min-w-0">
@@ -288,26 +301,24 @@ export function Profile(): React.ReactElement {
                   <div className="flex items-center gap-3 mb-1 flex-wrap">
                     <h1 className="font-orbitron text-2xl font-bold">{profile.username}</h1>
                     <Badge className={getRoleClass(profile.role)}>
-                      {profile.role === 'ADMIN' && <Shield className="w-3 h-3 mr-1" />}
+                      {profile.role === 'ADMIN' ? <Shield className="w-3 h-3 mr-1" /> : null}
                       <span>{profile.role}</span>
                     </Badge>
                   </div>
-                  {fullName && (
-                    <p className="text-muted-foreground text-sm mb-1">{fullName}</p>
-                  )}
-                  {isOwnProfile && profile.email && (
+                  {fullName ? <p className="text-muted-foreground text-sm mb-1">{fullName}</p> : null}
+                  {isOwnProfile && profile.email ? (
                     <p className="text-muted-foreground text-xs mb-1">{profile.email}</p>
-                  )}
-                  {isOwnProfile && profile.phone && (
+                  ) : null}
+                  {isOwnProfile && profile.phone ? (
                     <p className="text-muted-foreground text-xs mb-1">{profile.phone}</p>
-                  )}
+                  ) : null}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                     <Calendar className="w-3 h-3" />
-                    <span>Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>
+                    <span>{'Joined ' + joinedDate}</span>
                   </div>
                 </div>
 
-                {isOwnProfile && !isEditing && (
+                {isOwnProfile && !isEditing ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -317,39 +328,23 @@ export function Profile(): React.ReactElement {
                     <Edit2 className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
-                )}
+                ) : null}
               </div>
 
-              {!isEditing && (
+              {isEditing ? null : (
                 <p className="text-muted-foreground text-sm mt-3 max-w-xl">{bioText}</p>
               )}
 
-              {!isEditing && (profile.twitter_username || profile.discord_username) && (
-                <div className="flex items-center gap-3 mt-3 flex-wrap">
-                  {profile.twitter_username && (
-                    
-                      href={twitterUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
-                    >
-                      <Twitter className="w-3.5 h-3.5" />
-                      <span>{twitterHandle}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                  {profile.discord_username && (
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>{profile.discord_username}</span>
-                    </span>
-                  )}
-                </div>
+              {isEditing ? null : (
+                <SocialLinks
+                  twitterUsername={profile.twitter_username}
+                  discordUsername={profile.discord_username}
+                />
               )}
             </div>
           </div>
 
-          {isEditing && (
+          {isEditing ? (
             <div className="mt-6 space-y-4">
               <Separator />
               <div className="grid grid-cols-2 gap-3">
@@ -382,7 +377,7 @@ export function Profile(): React.ReactElement {
                   placeholder="Tell the community about yourself..."
                   maxLength={300}
                 />
-                <p className="text-xs text-muted-foreground mt-1">{editForm.bio.length}/300</p>
+                <p className="text-xs text-muted-foreground mt-1">{editForm.bio.length + '/300'}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -408,27 +403,17 @@ export function Profile(): React.ReactElement {
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                  disabled={isSaving}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={isSaving}>
                   <X className="w-4 h-4 mr-1" />
                   <span>Cancel</span>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600"
-                >
+                <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-gradient-to-r from-cyan-500 to-purple-600">
                   <Save className="w-4 h-4 mr-1" />
                   <span>{saveLabel}</span>
                 </Button>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -451,24 +436,17 @@ export function Profile(): React.ReactElement {
 
         <div>
           <h2 className="font-orbitron font-bold text-lg mb-4">{postsTitle}</h2>
-
-          {posts.length === 0 && (
+          {posts.length === 0 ? (
             <div className="gaming-card p-12 text-center">
               <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No posts yet.</p>
-              {isOwnProfile && (
-                <Button
-                  asChild
-                  size="sm"
-                  className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600"
-                >
+              {isOwnProfile ? (
+                <Button asChild size="sm" className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600">
                   <Link to="/community">Share your first post</Link>
                 </Button>
-              )}
+              ) : null}
             </div>
-          )}
-
-          {posts.length > 0 && (
+          ) : (
             <div className="space-y-3">
               {posts.map((post) => (
                 <div key={post.id} className="gaming-card p-5">
@@ -478,9 +456,7 @@ export function Profile(): React.ReactElement {
                       <span>{post.tag}</span>
                     </Badge>
                   </div>
-                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                    {post.content}
-                  </p>
+                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{post.content}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Flame className="w-3 h-3" />
