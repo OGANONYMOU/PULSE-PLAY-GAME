@@ -32,7 +32,7 @@ interface AuthContextType {
     password: string,
     metadata: { username: string; first_name?: string; last_name?: string; phone?: string }
   ) => Promise<{ error: Error | null }>;
-  signInWithOAuth: (provider: 'google' | 'twitter' | 'discord') => Promise<{ error: Error | null }>;
+  signInWithOAuth: (provider: 'google' | 'twitter' | 'discord' | 'facebook') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -46,15 +46,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (error || !data) return null;
-    const p = data as Profile;
-    setProfile(p);
-    return p;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (error) {
+        console.error('[Auth] profile fetch error:', error.message, '| code:', error.code);
+        return null;
+      }
+      const p = data as Profile;
+      setProfile(p);
+      return p;
+    } catch (err) {
+      console.error('[Auth] profile fetch threw:', err);
+      return null;
+    }
   }, []);
 
   useEffect(() => {
@@ -68,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user);
           await fetchProfile(session.user.id);
         }
-      } catch (_) {
-        // session load failed
+      } catch (err) {
+        console.error('[Auth] init error:', err);
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -82,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setUser(session.user);
         if (event === 'SIGNED_IN') {
-          // Brief wait for DB trigger to create profile row
           await new Promise((r) => setTimeout(r, 1000));
         }
         await fetchProfile(session.user.id);
@@ -93,9 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (mounted) setIsLoading(false);
     });
 
-    // Realtime: role/ban changes reflect immediately
     const channel = supabase
-      .channel('profile-watch')
+      .channel('auth-profile-rt')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         if (!mounted) return;
         setProfile((prev) => {
@@ -139,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signInWithOAuth = async (provider: 'google' | 'twitter' | 'discord') => {
+  const signInWithOAuth = async (provider: 'google' | 'twitter' | 'discord' | 'facebook') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: window.location.origin + '/auth/callback' },
@@ -168,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 }
