@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   Camera, Edit2, Save, X, Twitter, Trophy,
   Flame, Calendar, MessageSquare, Shield, User, ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
@@ -11,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -48,17 +48,15 @@ function getTagClass(tag: string): string {
   return 'bg-muted text-muted-foreground';
 }
 
+// Sub-components — single return with ternary (required by this project's TS config)
+
 function BannerDisplay(p: { url: string | null }): React.ReactElement {
   return p.url
     ? <img src={p.url} alt="Banner" className="w-full h-full object-cover" />
     : <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />;
 }
 
-function BannerUploadBtn(p: {
-  show: boolean;
-  uploading: boolean;
-  onClick: () => void;
-}): React.ReactElement {
+function BannerUploadBtn(p: { show: boolean; uploading: boolean; onClick: () => void }): React.ReactElement {
   const label = p.uploading ? 'Uploading...' : 'Change Banner';
   return p.show ? (
     <button
@@ -72,11 +70,7 @@ function BannerUploadBtn(p: {
   ) : <span />;
 }
 
-function AvatarUploadBtn(p: {
-  show: boolean;
-  uploading: boolean;
-  onClick: () => void;
-}): React.ReactElement {
+function AvatarUploadBtn(p: { show: boolean; uploading: boolean; onClick: () => void }): React.ReactElement {
   return p.show ? (
     <button
       onClick={p.onClick}
@@ -219,20 +213,12 @@ function PostCard(p: { post: PostItem }): React.ReactElement {
     <div className="gaming-card p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <h3 className="font-orbitron font-bold text-sm">{p.post.title}</h3>
-        <Badge className={'flex-shrink-0 ' + tagClass}>
-          <span>{p.post.tag}</span>
-        </Badge>
+        <Badge className={'flex-shrink-0 ' + tagClass}><span>{p.post.tag}</span></Badge>
       </div>
       <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{p.post.content}</p>
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Flame className="w-3 h-3" />
-          <span>{p.post.likes}</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <MessageSquare className="w-3 h-3" />
-          <span>{p.post.comments}</span>
-        </span>
+        <span className="flex items-center gap-1"><Flame className="w-3 h-3" /><span>{p.post.likes}</span></span>
+        <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /><span>{p.post.comments}</span></span>
         <span className="ml-auto">{timeAgo}</span>
       </div>
     </div>
@@ -241,16 +227,18 @@ function PostCard(p: { post: PostItem }): React.ReactElement {
 
 export function Profile(): React.ReactElement {
   const { username } = useParams<{ username?: string }>();
-  const { user, profile: ownProfile, updateProfile } = useAuth();
+  // isLoading from auth tells us when it's safe to start fetching
+  const { user, profile: ownProfile, updateProfile, isLoading: authLoading } = useAuth();
 
   const [profile, setProfile] = useState<ProfileType | null>(null);
   const [posts, setPosts] = useState<PostItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [fetchError, setFetchError] = useState('');
 
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const bannerInputRef = useRef<HTMLInputElement | null>(null);
@@ -262,48 +250,59 @@ export function Profile(): React.ReactElement {
   const isOwnProfile = !username || username === ownProfile?.username;
 
   useEffect(() => {
+    // CRITICAL: do not attempt to load until auth context has fully resolved
+    if (authLoading) return;
+
     const load = async () => {
-      setIsLoading(true);
+      setPageLoading(true);
       setNotFound(false);
+      setFetchError('');
       let found: ProfileType | null = null;
 
-      if (isOwnProfile) {
-        if (ownProfile) {
-          found = ownProfile;
-        } else if (user) {
-          const res = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      try {
+        if (isOwnProfile) {
+          if (ownProfile) {
+            found = ownProfile;
+          } else if (user) {
+            const res = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (res.error) throw res.error;
+            found = res.data as ProfileType;
+          }
+          // User not logged in and no username param — nothing to show
+        } else if (username) {
+          const res = await supabase.from('profiles').select('*').eq('username', username).single();
+          if (res.error && res.error.code !== 'PGRST116') throw res.error;
           found = res.data as ProfileType | null;
         }
-      } else if (username) {
-        const res = await supabase.from('profiles').select('*').eq('username', username).single();
-        found = res.data as ProfileType | null;
-      }
 
-      if (found) {
-        setProfile(found);
-        setEditForm({
-          first_name: found.first_name ?? '',
-          last_name: found.last_name ?? '',
-          bio: found.bio ?? '',
-          discord_username: found.discord_username ?? '',
-          twitter_username: found.twitter_username ?? '',
-        });
-        const pr = await supabase
-          .from('posts').select('*')
-          .eq('author_id', found.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        setPosts((pr.data as PostItem[]) ?? []);
-      } else {
-        setNotFound(true);
+        if (found) {
+          setProfile(found);
+          setEditForm({
+            first_name: found.first_name ?? '',
+            last_name: found.last_name ?? '',
+            bio: found.bio ?? '',
+            discord_username: found.discord_username ?? '',
+            twitter_username: found.twitter_username ?? '',
+          });
+          const pr = await supabase
+            .from('posts').select('*')
+            .eq('author_id', found.id)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          setPosts((pr.data as PostItem[]) ?? []);
+        } else {
+          setNotFound(true);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to load profile';
+        setFetchError(msg);
+      } finally {
+        setPageLoading(false);
       }
-      setIsLoading(false);
     };
 
-    if (!isOwnProfile || user !== undefined) {
-      load();
-    }
-  }, [username, ownProfile, user, isOwnProfile]);
+    load();
+  }, [username, ownProfile, user, isOwnProfile, authLoading]); // eslint-disable-line
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -329,7 +328,7 @@ export function Profile(): React.ReactElement {
     const ext = file.name.split('.').pop();
     const path = user.id + '/' + suffix + '.' + ext;
     const up = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-    if (up.error) { toast.error('Upload failed.'); setUploading(false); return; }
+    if (up.error) { toast.error('Upload failed: ' + up.error.message); setUploading(false); return; }
     const pub = supabase.storage.from('avatars').getPublicUrl(path);
     const url = pub.data.publicUrl;
     const upd = await updateProfile({ [field]: url });
@@ -354,13 +353,26 @@ export function Profile(): React.ReactElement {
 
   const totalLikes = posts.reduce((s, p) => s + p.likes, 0);
 
-  if (isLoading) {
+  // Auth still resolving — show spinner, not skeletons
+  if (authLoading || pageLoading) {
     return (
-      <div className="min-h-screen pt-24 px-6 max-w-4xl mx-auto space-y-4">
-        <Skeleton className="h-48 rounded-2xl" />
-        <Skeleton className="h-40 rounded-2xl" />
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
+      <div className="min-h-screen pt-24 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-cyan-400 mx-auto" />
+          <p className="text-muted-foreground text-sm">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center">
+        <div className="text-center gaming-card p-10 max-w-md">
+          <p className="text-destructive font-medium mb-2">Failed to load profile</p>
+          <p className="text-muted-foreground text-sm mb-6">{fetchError}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">Try Again</Button>
+        </div>
       </div>
     );
   }
