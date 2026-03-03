@@ -48,34 +48,6 @@ function getTagClass(tag: string): string {
   return 'bg-muted text-muted-foreground';
 }
 
-function SocialLinks(props: { twitterUsername: string | null; discordUsername: string | null }): React.ReactElement | null {
-  if (!props.twitterUsername && !props.discordUsername) return null;
-  const twitterUrl = 'https://twitter.com/' + (props.twitterUsername ?? '');
-  const twitterLabel = 'at' + (props.twitterUsername ?? '');
-  return (
-    <div className="flex items-center gap-3 mt-3 flex-wrap">
-      {props.twitterUsername ? (
-        
-          href={twitterUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
-        >
-          <Twitter className="w-3.5 h-3.5" />
-          <span>{twitterLabel}</span>
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      ) : null}
-      {props.discordUsername ? (
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>{props.discordUsername}</span>
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
 export function Profile(): React.ReactElement {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: ownProfile, updateProfile } = useAuth();
@@ -112,20 +84,20 @@ export function Profile(): React.ReactElement {
         if (ownProfile) {
           profileData = ownProfile;
         } else if (user) {
-          const { data } = await supabase
+          const result = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
-          profileData = data as unknown as ProfileType;
+          profileData = result.data as unknown as ProfileType;
         }
       } else if (username) {
-        const { data } = await supabase
+        const result = await supabase
           .from('profiles')
           .select('*')
           .eq('username', username)
           .single();
-        profileData = data as unknown as ProfileType;
+        profileData = result.data as unknown as ProfileType;
       }
 
       if (profileData) {
@@ -238,16 +210,17 @@ export function Profile(): React.ReactElement {
   }
 
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-  const bioText = profile.bio
-    ? profile.bio
-    : isOwnProfile
-      ? 'No bio yet - click Edit Profile to add one.'
-      : 'No bio yet.';
+  const bioText = profile.bio ? profile.bio : isOwnProfile ? 'No bio yet - click Edit Profile to add one.' : 'No bio yet.';
   const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
   const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
   const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
   const avatarFallback = profile.username[0] ? profile.username[0].toUpperCase() : 'U';
-  const joinedDate = format(new Date(profile.created_at), 'MMMM yyyy');
+  const joinedDate = 'Joined ' + format(new Date(profile.created_at), 'MMMM yyyy');
+  const hasSocials = Boolean(profile.twitter_username || profile.discord_username);
+  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username ?? '');
+  const twitterLabel = 'at' + (profile.twitter_username ?? '');
+  const bioCharCount = editForm.bio.length + '/300';
+  const showAdminIcon = profile.role === 'ADMIN';
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
@@ -287,7 +260,6 @@ export function Profile(): React.ReactElement {
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={isUploadingAvatar}
                   className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-cyan-500 hover:bg-cyan-400 flex items-center justify-center transition-colors border-2 border-background"
-                  title="Change avatar"
                 >
                   <Camera className="w-3.5 h-3.5 text-white" />
                 </button>
@@ -301,23 +273,18 @@ export function Profile(): React.ReactElement {
                   <div className="flex items-center gap-3 mb-1 flex-wrap">
                     <h1 className="font-orbitron text-2xl font-bold">{profile.username}</h1>
                     <Badge className={getRoleClass(profile.role)}>
-                      {profile.role === 'ADMIN' ? <Shield className="w-3 h-3 mr-1" /> : null}
+                      {showAdminIcon ? <Shield className="w-3 h-3 mr-1" /> : null}
                       <span>{profile.role}</span>
                     </Badge>
                   </div>
                   {fullName ? <p className="text-muted-foreground text-sm mb-1">{fullName}</p> : null}
-                  {isOwnProfile && profile.email ? (
-                    <p className="text-muted-foreground text-xs mb-1">{profile.email}</p>
-                  ) : null}
-                  {isOwnProfile && profile.phone ? (
-                    <p className="text-muted-foreground text-xs mb-1">{profile.phone}</p>
-                  ) : null}
+                  {isOwnProfile && profile.email ? <p className="text-muted-foreground text-xs mb-1">{profile.email}</p> : null}
+                  {isOwnProfile && profile.phone ? <p className="text-muted-foreground text-xs mb-1">{profile.phone}</p> : null}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                     <Calendar className="w-3 h-3" />
-                    <span>{'Joined ' + joinedDate}</span>
+                    <span>{joinedDate}</span>
                   </div>
                 </div>
-
                 {isOwnProfile && !isEditing ? (
                   <Button
                     variant="outline"
@@ -331,15 +298,29 @@ export function Profile(): React.ReactElement {
                 ) : null}
               </div>
 
-              {isEditing ? null : (
-                <p className="text-muted-foreground text-sm mt-3 max-w-xl">{bioText}</p>
-              )}
+              {isEditing ? null : <p className="text-muted-foreground text-sm mt-3 max-w-xl">{bioText}</p>}
 
               {isEditing ? null : (
-                <SocialLinks
-                  twitterUsername={profile.twitter_username}
-                  discordUsername={profile.discord_username}
-                />
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  {hasSocials && profile.twitter_username ? (
+                    
+                      href={twitterUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                    >
+                      <Twitter className="w-3.5 h-3.5" />
+                      <span>{twitterLabel}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : null}
+                  {hasSocials && profile.discord_username ? (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>{profile.discord_username}</span>
+                    </span>
+                  ) : null}
+                </div>
               )}
             </div>
           </div>
@@ -350,56 +331,29 @@ export function Profile(): React.ReactElement {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">First Name</label>
-                  <Input
-                    value={editForm.first_name}
-                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                    className="bg-muted/50"
-                    placeholder="First name"
-                  />
+                  <Input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="bg-muted/50" placeholder="First name" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Last Name</label>
-                  <Input
-                    value={editForm.last_name}
-                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                    className="bg-muted/50"
-                    placeholder="Last name"
-                  />
+                  <Input value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="bg-muted/50" placeholder="Last name" />
                 </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Bio</label>
-                <Textarea
-                  value={editForm.bio}
-                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                  className="bg-muted/50 resize-none"
-                  rows={3}
-                  placeholder="Tell the community about yourself..."
-                  maxLength={300}
-                />
-                <p className="text-xs text-muted-foreground mt-1">{editForm.bio.length + '/300'}</p>
+                <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} className="bg-muted/50 resize-none" rows={3} placeholder="Tell the community about yourself..." maxLength={300} />
+                <p className="text-xs text-muted-foreground mt-1">{bioCharCount}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Twitter Username</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-                    <Input
-                      value={editForm.twitter_username}
-                      onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })}
-                      className="pl-7 bg-muted/50"
-                      placeholder="username"
-                    />
+                    <Input value={editForm.twitter_username} onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })} className="pl-7 bg-muted/50" placeholder="username" />
                   </div>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Discord Username</label>
-                  <Input
-                    value={editForm.discord_username}
-                    onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })}
-                    className="bg-muted/50"
-                    placeholder="username#0000"
-                  />
+                  <Input value={editForm.discord_username} onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })} className="bg-muted/50" placeholder="username#0000" />
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
