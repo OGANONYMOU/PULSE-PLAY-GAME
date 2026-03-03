@@ -48,13 +48,10 @@ function getTagClass(tag: string): string {
   return 'bg-muted text-muted-foreground';
 }
 
-// All sub-components defined outside Profile to avoid JSX parser issues
-
 function BannerDisplay(p: { url: string | null }): React.ReactElement {
-  if (p.url) {
-    return <img src={p.url} alt="Banner" className="w-full h-full object-cover" />;
-  }
-  return <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />;
+  return p.url
+    ? <img src={p.url} alt="Banner" className="w-full h-full object-cover" />
+    : <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />;
 }
 
 function BannerUploadBtn(p: {
@@ -62,9 +59,8 @@ function BannerUploadBtn(p: {
   uploading: boolean;
   onClick: () => void;
 }): React.ReactElement {
-  if (!p.show) return <span />;
   const label = p.uploading ? 'Uploading...' : 'Change Banner';
-  return (
+  return p.show ? (
     <button
       onClick={p.onClick}
       disabled={p.uploading}
@@ -73,7 +69,7 @@ function BannerUploadBtn(p: {
       <Camera className="w-3 h-3" />
       <span>{label}</span>
     </button>
-  );
+  ) : <span />;
 }
 
 function AvatarUploadBtn(p: {
@@ -81,8 +77,7 @@ function AvatarUploadBtn(p: {
   uploading: boolean;
   onClick: () => void;
 }): React.ReactElement {
-  if (!p.show) return <span />;
-  return (
+  return p.show ? (
     <button
       onClick={p.onClick}
       disabled={p.uploading}
@@ -90,81 +85,62 @@ function AvatarUploadBtn(p: {
     >
       <Camera className="w-3.5 h-3.5 text-white" />
     </button>
-  );
+  ) : <span />;
 }
 
 function AdminIcon(p: { show: boolean }): React.ReactElement {
-  if (!p.show) return <span />;
-  return <Shield className="w-3 h-3 mr-1" />;
+  return p.show ? <Shield className="w-3 h-3 mr-1" /> : <span />;
 }
 
 function FullNameRow(p: { name: string }): React.ReactElement {
-  if (!p.name) return <span />;
-  return <p className="text-muted-foreground text-sm mb-1">{p.name}</p>;
+  return p.name ? <p className="text-muted-foreground text-sm mb-1">{p.name}</p> : <span />;
 }
 
 function PrivateRow(p: { show: boolean; value: string | null }): React.ReactElement {
-  if (!p.show || !p.value) return <span />;
-  return <p className="text-muted-foreground text-xs mb-1">{p.value}</p>;
+  return p.show && p.value ? <p className="text-muted-foreground text-xs mb-1">{p.value}</p> : <span />;
 }
 
 function EditProfileBtn(p: { show: boolean; onClick: () => void }): React.ReactElement {
-  if (!p.show) return <span />;
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={p.onClick}
-      className="border-cyan-500/50 hover:bg-cyan-500/10"
-    >
+  return p.show ? (
+    <Button variant="outline" size="sm" onClick={p.onClick} className="border-cyan-500/50 hover:bg-cyan-500/10">
       <Edit2 className="w-4 h-4 mr-2" />
       Edit Profile
     </Button>
-  );
+  ) : <span />;
 }
 
 function BioDisplay(p: { show: boolean; text: string }): React.ReactElement {
-  if (!p.show) return <span />;
-  return <p className="text-muted-foreground text-sm mt-3 max-w-xl">{p.text}</p>;
+  return p.show ? <p className="text-muted-foreground text-sm mt-3 max-w-xl">{p.text}</p> : <span />;
 }
 
 function TwitterLink(p: { username: string | null }): React.ReactElement {
-  if (!p.username) return <span />;
-  const url = 'https://twitter.com/' + p.username;
-  const label = 'at' + p.username;
-  return (
-    
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
-    >
+  const url = 'https://twitter.com/' + (p.username ?? '');
+  const label = 'at' + (p.username ?? '');
+  return p.username ? (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors">
       <Twitter className="w-3.5 h-3.5" />
       <span>{label}</span>
       <ExternalLink className="w-3 h-3" />
     </a>
-  );
+  ) : <span />;
 }
 
 function DiscordDisplay(p: { username: string | null }): React.ReactElement {
-  if (!p.username) return <span />;
-  return (
+  return p.username ? (
     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
       <MessageSquare className="w-3.5 h-3.5" />
       <span>{p.username}</span>
     </span>
-  );
+  ) : <span />;
 }
 
 function SocialsRow(p: { show: boolean; twitter: string | null; discord: string | null }): React.ReactElement {
-  if (!p.show) return <span />;
-  if (!p.twitter && !p.discord) return <span />;
-  return (
+  return p.show && (p.twitter || p.discord) ? (
     <div className="flex items-center gap-3 mt-3 flex-wrap">
       <TwitterLink username={p.twitter} />
       <DiscordDisplay username={p.discord} />
     </div>
-  );
+  ) : <span />;
 }
 
 function EditSection(p: {
@@ -175,42 +151,24 @@ function EditSection(p: {
   onSave: () => void;
   onCancel: () => void;
 }): React.ReactElement {
-  if (!p.show) return <span />;
   const saveLabel = p.saving ? 'Saving...' : 'Save Changes';
   const charCount = p.form.bio.length + '/300';
-  return (
+  return p.show ? (
     <div className="mt-6 space-y-4">
       <Separator />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-muted-foreground block mb-1">First Name</label>
-          <Input
-            value={p.form.first_name}
-            onChange={(e) => p.onChange({ ...p.form, first_name: e.target.value })}
-            className="bg-muted/50"
-            placeholder="First name"
-          />
+          <Input value={p.form.first_name} onChange={(e) => p.onChange({ ...p.form, first_name: e.target.value })} className="bg-muted/50" placeholder="First name" />
         </div>
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Last Name</label>
-          <Input
-            value={p.form.last_name}
-            onChange={(e) => p.onChange({ ...p.form, last_name: e.target.value })}
-            className="bg-muted/50"
-            placeholder="Last name"
-          />
+          <Input value={p.form.last_name} onChange={(e) => p.onChange({ ...p.form, last_name: e.target.value })} className="bg-muted/50" placeholder="Last name" />
         </div>
       </div>
       <div>
         <label className="text-xs text-muted-foreground block mb-1">Bio</label>
-        <Textarea
-          value={p.form.bio}
-          onChange={(e) => p.onChange({ ...p.form, bio: e.target.value })}
-          className="bg-muted/50 resize-none"
-          rows={3}
-          placeholder="Tell the community about yourself..."
-          maxLength={300}
-        />
+        <Textarea value={p.form.bio} onChange={(e) => p.onChange({ ...p.form, bio: e.target.value })} className="bg-muted/50 resize-none" rows={3} placeholder="Tell the community about yourself..." maxLength={300} />
         <span className="text-xs text-muted-foreground mt-1 block">{charCount}</span>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -218,22 +176,12 @@ function EditSection(p: {
           <label className="text-xs text-muted-foreground block mb-1">Twitter Username</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-            <Input
-              value={p.form.twitter_username}
-              onChange={(e) => p.onChange({ ...p.form, twitter_username: e.target.value })}
-              className="pl-7 bg-muted/50"
-              placeholder="username"
-            />
+            <Input value={p.form.twitter_username} onChange={(e) => p.onChange({ ...p.form, twitter_username: e.target.value })} className="pl-7 bg-muted/50" placeholder="username" />
           </div>
         </div>
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Discord Username</label>
-          <Input
-            value={p.form.discord_username}
-            onChange={(e) => p.onChange({ ...p.form, discord_username: e.target.value })}
-            className="bg-muted/50"
-            placeholder="username#0000"
-          />
+          <Input value={p.form.discord_username} onChange={(e) => p.onChange({ ...p.form, discord_username: e.target.value })} className="bg-muted/50" placeholder="username#0000" />
         </div>
       </div>
       <div className="flex gap-2 justify-end">
@@ -247,7 +195,7 @@ function EditSection(p: {
         </Button>
       </div>
     </div>
-  );
+  ) : <span />;
 }
 
 function EmptyPosts(p: { isOwn: boolean }): React.ReactElement {
@@ -308,11 +256,7 @@ export function Profile(): React.ReactElement {
   const bannerInputRef = useRef<HTMLInputElement | null>(null);
 
   const [editForm, setEditForm] = useState<EditForm>({
-    first_name: '',
-    last_name: '',
-    bio: '',
-    discord_username: '',
-    twitter_username: '',
+    first_name: '', last_name: '', bio: '', discord_username: '', twitter_username: '',
   });
 
   const isOwnProfile = !username || username === ownProfile?.username;
@@ -345,8 +289,7 @@ export function Profile(): React.ReactElement {
           twitter_username: found.twitter_username ?? '',
         });
         const pr = await supabase
-          .from('posts')
-          .select('*')
+          .from('posts').select('*')
           .eq('author_id', found.id)
           .order('created_at', { ascending: false })
           .limit(10);
@@ -386,11 +329,7 @@ export function Profile(): React.ReactElement {
     const ext = file.name.split('.').pop();
     const path = user.id + '/' + suffix + '.' + ext;
     const up = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-    if (up.error) {
-      toast.error('Upload failed.');
-      setUploading(false);
-      return;
-    }
+    if (up.error) { toast.error('Upload failed.'); setUploading(false); return; }
     const pub = supabase.storage.from('avatars').getPublicUrl(path);
     const url = pub.data.publicUrl;
     const upd = await updateProfile({ [field]: url });
@@ -433,20 +372,14 @@ export function Profile(): React.ReactElement {
           <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h2 className="font-orbitron text-2xl font-bold mb-2">User Not Found</h2>
           <p className="text-muted-foreground mb-6">This profile does not exist.</p>
-          <Button asChild variant="outline">
-            <Link to="/">Back to Home</Link>
-          </Button>
+          <Button asChild variant="outline"><Link to="/">Back to Home</Link></Button>
         </div>
       </div>
     );
   }
 
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-  const bioText = profile.bio
-    ? profile.bio
-    : isOwnProfile
-      ? 'No bio yet - click Edit Profile to add one.'
-      : 'No bio yet.';
+  const bioText = profile.bio ? profile.bio : isOwnProfile ? 'No bio yet - click Edit Profile to add one.' : 'No bio yet.';
   const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
   const joinedDate = 'Joined ' + format(new Date(profile.created_at), 'MMMM yyyy');
   const avatarFallback = profile.username[0] ? profile.username[0].toUpperCase() : 'U';
@@ -458,17 +391,12 @@ export function Profile(): React.ReactElement {
 
         <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
           <BannerDisplay url={profile.banner_url} />
-          <BannerUploadBtn
-            show={isOwnProfile}
-            uploading={isUploadingBanner}
-            onClick={() => bannerInputRef.current?.click()}
-          />
+          <BannerUploadBtn show={isOwnProfile} uploading={isUploadingBanner} onClick={() => bannerInputRef.current?.click()} />
           <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={onBannerChange} />
         </div>
 
         <div className="gaming-card p-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
-
             <div className="relative -mt-16 flex-shrink-0">
               <Avatar className="w-24 h-24 border-4 border-background ring-2 ring-cyan-500/50">
                 <AvatarImage src={profile.avatar_url ?? ''} alt={profile.username} />
@@ -476,11 +404,7 @@ export function Profile(): React.ReactElement {
                   {avatarFallback}
                 </AvatarFallback>
               </Avatar>
-              <AvatarUploadBtn
-                show={isOwnProfile}
-                uploading={isUploadingAvatar}
-                onClick={() => avatarInputRef.current?.click()}
-              />
+              <AvatarUploadBtn show={isOwnProfile} uploading={isUploadingAvatar} onClick={() => avatarInputRef.current?.click()} />
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
             </div>
 
@@ -543,9 +467,7 @@ export function Profile(): React.ReactElement {
             <EmptyPosts isOwn={isOwnProfile} />
           ) : (
             <div className="space-y-3">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
+              {posts.map((post) => <PostCard key={post.id} post={post} />)}
             </div>
           )}
         </div>
