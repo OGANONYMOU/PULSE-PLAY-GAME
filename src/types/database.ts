@@ -212,6 +212,8 @@ export type AnnouncementRow = {
   content: string;
   author_id: string | null;
   pinned: boolean;
+  type: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 };
