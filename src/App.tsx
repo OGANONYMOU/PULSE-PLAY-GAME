@@ -5,7 +5,6 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ParticleBackground } from '@/components/ui-custom/ParticleBackground';
 import { Toaster } from '@/components/ui/sonner';
-
 import { Home } from '@/pages/Home';
 import { Games } from '@/pages/Games';
 import { Tournaments } from '@/pages/Tournaments';
@@ -15,17 +14,11 @@ import { SignIn } from '@/pages/SignIn';
 import { Register } from '@/pages/Register';
 import { AuthCallback } from '@/pages/AuthCallback';
 import { Profile } from '@/pages/Profile';
-
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
-import { AdminGames } from '@/pages/admin/AdminGames';
-import { AdminTournaments } from '@/pages/admin/AdminTournaments';
 import { AdminUsers } from '@/pages/admin/AdminUsers';
-import { AdminPosts } from '@/pages/admin/AdminPosts';
-import { AdminAnnouncements } from '@/pages/admin/AdminAnnouncements';
-import { AdminSettings } from '@/pages/admin/AdminSettings';
 
-function PublicLayout() {
+function AppContent() {
   return (
     <div className="relative min-h-screen">
       <ParticleBackground />
@@ -42,6 +35,10 @@ function PublicLayout() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:username" element={<Profile />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+          </Route>
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
@@ -55,18 +52,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <Routes>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="games" element={<AdminGames />} />
-              <Route path="tournaments" element={<AdminTournaments />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="posts" element={<AdminPosts />} />
-              <Route path="announcements" element={<AdminAnnouncements />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-            <Route path="/*" element={<PublicLayout />} />
-          </Routes>
+          <AppContent />
         </Router>
         <Toaster />
       </AuthProvider>

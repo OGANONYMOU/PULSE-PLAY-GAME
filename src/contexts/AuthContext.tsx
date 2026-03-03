@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { User, RealtimeChannel } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 export interface Profile {
   id: string;
@@ -27,12 +27,13 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (
-    email: string,
-    password: string,
-    metadata: { username: string; first_name?: string; last_name?: string; phone?: string }
-  ) => Promise<{ error: Error | null }>;
-  signInWithOAuth: (provider: 'google' | 'twitter' | 'discord' | 'facebook') => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, metadata: {
+    username: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+  }) => Promise<{ error: Error | null }>;
+  signInWithOAuth: (provider: 'google' | 'twitter' | 'discord') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -44,89 +45,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
-  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    const { data, error } = await supabase
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
-
-    if (error || !data) {
-      console.error('Profile fetch error:', error?.message);
-      return null;
-    }
-
-    const p = data as Profile;
-    setProfile(p);
-    return p;
+    if (data) setProfile(data as Profile);
+    return data as Profile | null;
   }, []);
-
-  // Subscribe to realtime profile changes (role updates reflect immediately)
-  const subscribeToProfile = useCallback((userId: string) => {
-    if (realtimeChannel) {
-      supabase.removeChannel(realtimeChannel);
-    }
-
-    const channel = supabase
-      .channel('profile-changes-' + userId)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + userId },
-        (payload) => {
-          setProfile(payload.new as Profile);
-        }
-      )
-      .subscribe();
-
-    setRealtimeChannel(channel);
-  }, []); // eslint-disable-line
 
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-
       if (session?.user) {
         setUser(session.user);
-        await fetchProfile(session.user.id);
-        subscribeToProfile(session.user.id);
-      }
-
-      setIsLoading(false);
-    };
-
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      if (session?.user) {
-        setUser(session.user);
-        // Small delay to let trigger create the profile row
-        setTimeout(async () => {
-          await fetchProfile(session.user.id);
-          subscribeToProfile(session.user.id);
-        }, 500);
+        fetchProfile(session.user.id).finally(() => {
+          if (mounted) setIsLoading(false);
+        });
       } else {
-        setUser(null);
-        setProfile(null);
-        if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-      }
-
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
         setIsLoading(false);
       }
     });
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+      if (session?.user) {
+        setUser(session.user);
+        await new Promise((r) => setTimeout(r, 1000));
+        await fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      if (mounted) setIsLoading(false);
+    });
+
+    const channel = supabase
+      .channel('profile-realtime')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+      }, (payload) => {
+        if (mounted && payload.new) {
+          setProfile((prev) => {
+            if (prev && prev.id === (payload.new as Profile).id) {
+              return payload.new as Profile;
+            }
+            return prev;
+          });
+        }
+      })
+      .subscribe();
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      supabase.removeChannel(channel);
     };
   }, []); // eslint-disable-line
 
@@ -136,8 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (data: Partial<Profile>): Promise<{ error: Error | null }> => {
     if (!user?.id) return { error: new Error('Not authenticated') };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('profiles') as any).update(data).eq('id', user.id);
+    const { error } = await supabase
+      .from('profiles')
+      .update(data as never)
+      .eq('id', user.id);
     if (!error) await fetchProfile(user.id);
     return { error: error as Error | null };
   };
@@ -160,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const handleSignInWithOAuth = async (provider: 'google' | 'twitter' | 'discord' | 'facebook') => {
+  const signInWithOAuth = async (provider: 'google' | 'twitter' | 'discord') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: window.location.origin + '/auth/callback' },
@@ -172,25 +153,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
-    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        isLoading,
-        isAuthenticated: !!user,
-        isAdmin: profile?.role === 'ADMIN' || profile?.role === 'MODERATOR',
-        signIn,
-        signUp,
-        signInWithOAuth: handleSignInWithOAuth,
-        signOut: handleSignOut,
-        refreshProfile,
-        updateProfile,
-      }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      profile,
+      isLoading,
+      isAuthenticated: !!user,
+      isAdmin: profile?.role === 'ADMIN' || profile?.role === 'MODERATOR',
+      signIn,
+      signUp,
+      signInWithOAuth,
+      signOut: handleSignOut,
+      refreshProfile,
+      updateProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );
