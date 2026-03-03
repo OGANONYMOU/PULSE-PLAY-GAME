@@ -57,7 +57,7 @@ function BannerSection(p: {
   label: string;
   onClickUpload: () => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }): React.ReactElement {
   return (
     <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
@@ -90,7 +90,7 @@ function AvatarSection(p: {
   uploading: boolean;
   onClickUpload: () => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }): React.ReactElement {
   const fallback = p.username[0] ? p.username[0].toUpperCase() : 'U';
   return (
