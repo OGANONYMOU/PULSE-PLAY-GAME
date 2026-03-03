@@ -9,19 +9,27 @@ interface Stats {
   banned: number;
 }
 
+interface ProfileRow {
+  role: string;
+  is_banned: boolean;
+}
+
 export function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({ total: 0, admins: 0, moderators: 0, banned: 0 });
 
   useEffect(() => {
-    supabase.from('profiles').select('role, is_banned').then(({ data }) => {
-      if (!data) return;
-      setStats({
-        total: data.length,
-        admins: data.filter((p) => p.role === 'ADMIN').length,
-        moderators: data.filter((p) => p.role === 'MODERATOR').length,
-        banned: data.filter((p) => p.is_banned).length,
+    supabase
+      .from('profiles')
+      .select('role, is_banned')
+      .then(({ data }) => {
+        const rows = (data ?? []) as ProfileRow[];
+        setStats({
+          total: rows.length,
+          admins: rows.filter((p) => p.role === 'ADMIN').length,
+          moderators: rows.filter((p) => p.role === 'MODERATOR').length,
+          banned: rows.filter((p) => p.is_banned).length,
+        });
       });
-    });
   }, []);
 
   return (
