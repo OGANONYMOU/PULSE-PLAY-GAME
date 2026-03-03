@@ -77,18 +77,12 @@ export function Profile(): React.ReactElement {
     const load = async () => {
       setIsLoading(true);
       let profileData: ProfileType | null = null;
-
       if (isOwnProfile && ownProfile) {
         profileData = ownProfile;
       } else if (username) {
-        const result = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('username', username)
-          .single();
+        const result = await supabase.from('profiles').select('*').eq('username', username).single();
         profileData = result.data as unknown as ProfileType;
       }
-
       if (profileData) {
         setProfile(profileData);
         setEditForm({
@@ -99,11 +93,8 @@ export function Profile(): React.ReactElement {
           twitter_username: profileData.twitter_username ?? '',
         });
         const postsResult = await supabase
-          .from('posts')
-          .select('*')
-          .eq('author_id', profileData.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
+          .from('posts').select('*').eq('author_id', profileData.id)
+          .order('created_at', { ascending: false }).limit(10);
         setPosts((postsResult.data as PostItem[]) ?? []);
       }
       setIsLoading(false);
@@ -163,7 +154,6 @@ export function Profile(): React.ReactElement {
   };
 
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
-  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
 
   if (isLoading) {
     return (
@@ -187,13 +177,13 @@ export function Profile(): React.ReactElement {
     );
   }
 
-  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username || '');
-  const bioText = profile.bio
-    ? profile.bio
-    : isOwnProfile
-      ? 'No bio yet - click Edit Profile to add one.'
-      : 'No bio yet.';
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+  const bioText = profile.bio ? profile.bio : isOwnProfile ? 'No bio yet - click Edit Profile to add one.' : 'No bio yet.';
   const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
+  const twitterHandle = profile.twitter_username ? 'at ' + profile.twitter_username : '';
+  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username ?? '');
+  const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
+  const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
@@ -212,7 +202,7 @@ export function Profile(): React.ReactElement {
               className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white text-xs transition-colors"
             >
               <Camera className="w-3 h-3" />
-              <span>{isUploadingBanner ? 'Uploading...' : 'Change Banner'}</span>
+              <span>{bannerLabel}</span>
             </button>
           )}
           <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
@@ -256,12 +246,7 @@ export function Profile(): React.ReactElement {
                   </div>
                 </div>
                 {isOwnProfile && !isEditing && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="border-cyan-500/50 hover:bg-cyan-500/10"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="border-cyan-500/50 hover:bg-cyan-500/10">
                     <Edit2 className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
@@ -275,14 +260,9 @@ export function Profile(): React.ReactElement {
               {!isEditing && (
                 <div className="flex items-center gap-3 mt-3 flex-wrap">
                   {profile.twitter_username && (
-                    
-                      href={twitterUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
-                    >
+                    <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors">
                       <Twitter className="w-3.5 h-3.5" />
-                      <span>@{profile.twitter_username}</span>
+                      <span>{twitterHandle}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
@@ -335,7 +315,7 @@ export function Profile(): React.ReactElement {
                 </Button>
                 <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-gradient-to-r from-cyan-500 to-purple-600">
                   <Save className="w-4 h-4 mr-1" />
-                  <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                  <span>{saveLabel}</span>
                 </Button>
               </div>
             </div>
@@ -362,7 +342,6 @@ export function Profile(): React.ReactElement {
 
         <div>
           <h2 className="font-orbitron font-bold text-lg mb-4">{postsTitle}</h2>
-
           {posts.length === 0 && (
             <div className="gaming-card p-12 text-center">
               <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
@@ -374,7 +353,6 @@ export function Profile(): React.ReactElement {
               )}
             </div>
           )}
-
           {posts.length > 0 && (
             <div className="space-y-3">
               {posts.map((post) => (
