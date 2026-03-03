@@ -59,6 +59,7 @@ export function Profile(): React.ReactElement {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -76,13 +77,32 @@ export function Profile(): React.ReactElement {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
+      setNotFound(false);
       let profileData: ProfileType | null = null;
-      if (isOwnProfile && ownProfile) {
-        profileData = ownProfile;
+
+      if (isOwnProfile) {
+        if (ownProfile) {
+          // Already loaded in context
+          profileData = ownProfile;
+        } else if (user) {
+          // Context hasn't loaded profile yet — fetch directly by user id
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          profileData = data as unknown as ProfileType;
+        }
       } else if (username) {
-        const result = await supabase.from('profiles').select('*').eq('username', username).single();
-        profileData = result.data as unknown as ProfileType;
+        // Public profile lookup by username
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', username)
+          .single();
+        profileData = data as unknown as ProfileType;
       }
+
       if (profileData) {
         setProfile(profileData);
         setEditForm({
@@ -93,14 +113,24 @@ export function Profile(): React.ReactElement {
           twitter_username: profileData.twitter_username ?? '',
         });
         const postsResult = await supabase
-          .from('posts').select('*').eq('author_id', profileData.id)
-          .order('created_at', { ascending: false }).limit(10);
+          .from('posts')
+          .select('*')
+          .eq('author_id', profileData.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
         setPosts((postsResult.data as PostItem[]) ?? []);
+      } else {
+        setNotFound(true);
       }
+
       setIsLoading(false);
     };
-    load();
-  }, [username, ownProfile, isOwnProfile]);
+
+    // Only load once user/ownProfile state is settled
+    if (!isOwnProfile || user !== undefined) {
+      load();
+    }
+  }, [username, ownProfile, user, isOwnProfile]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -125,7 +155,9 @@ export function Profile(): React.ReactElement {
     setUploading(true);
     const ext = file.name.split('.').pop();
     const path = user.id + '/' + pathSuffix + '.' + ext;
-    const uploadResult = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    const uploadResult = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
     if (uploadResult.error) {
       toast.error('Upload failed.');
       setUploading(false);
@@ -135,7 +167,7 @@ export function Profile(): React.ReactElement {
     const publicUrl = urlResult.data.publicUrl;
     const updateResult = await updateProfile({ [field]: publicUrl });
     if (updateResult.error) {
-      toast.error('Failed to save URL.');
+      toast.error('Failed to save image.');
     } else {
       setProfile((prev) => (prev ? { ...prev, [field]: publicUrl } : prev));
       toast.success('Image updated!');
@@ -154,6 +186,18 @@ export function Profile(): React.ReactElement {
   };
 
   const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
+  const fullName = profile
+    ? [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+    : '';
+  const bioText = profile?.bio
+    ? profile.bio
+    : isOwnProfile
+      ? 'No bio yet - click Edit Profile to add one.'
+      : 'No bio yet.';
+  const postsTitle = isOwnProfile ? 'My Posts' : (profile ? profile.username + "'s Posts" : 'Posts');
+  const twitterUrl = 'https://twitter.com/' + (profile?.twitter_username ?? '');
+  const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
+  const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
 
   if (isLoading) {
     return (
@@ -161,37 +205,38 @@ export function Profile(): React.ReactElement {
         <Skeleton className="h-48 rounded-2xl" />
         <Skeleton className="h-40 rounded-2xl" />
         <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
 
-  if (!profile) {
+  if (notFound || !profile) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
         <div className="text-center">
           <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h2 className="font-orbitron text-2xl font-bold mb-2">User Not Found</h2>
-          <p className="text-muted-foreground">This profile does not exist.</p>
+          <p className="text-muted-foreground mb-6">This profile does not exist.</p>
+          <Button asChild variant="outline">
+            <Link to="/">Back to Home</Link>
+          </Button>
         </div>
       </div>
     );
   }
 
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-  const bioText = profile.bio ? profile.bio : isOwnProfile ? 'No bio yet - click Edit Profile to add one.' : 'No bio yet.';
-  const postsTitle = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
-  const twitterHandle = profile.twitter_username ? 'at ' + profile.twitter_username : '';
-  const twitterUrl = 'https://twitter.com/' + (profile.twitter_username ?? '');
-  const bannerLabel = isUploadingBanner ? 'Uploading...' : 'Change Banner';
-  const saveLabel = isSaving ? 'Saving...' : 'Save Changes';
-
   return (
     <div className="min-h-screen pt-24 pb-16 px-6">
       <div className="max-w-4xl mx-auto space-y-4">
 
+        {/* Banner */}
         <div className="relative h-48 rounded-2xl overflow-hidden gaming-card">
           {profile.banner_url ? (
-            <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
+            <img
+              src={profile.banner_url}
+              alt="Profile banner"
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20" />
           )}
@@ -199,20 +244,29 @@ export function Profile(): React.ReactElement {
             <button
               onClick={() => bannerInputRef.current?.click()}
               disabled={isUploadingBanner}
-              className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white text-xs transition-colors"
+              className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-xs transition-colors border border-white/10"
             >
               <Camera className="w-3 h-3" />
               <span>{bannerLabel}</span>
             </button>
           )}
-          <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleBannerChange}
+          />
         </div>
 
+        {/* Profile Card */}
         <div className="gaming-card p-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
+
+            {/* Avatar */}
             <div className="relative -mt-16 flex-shrink-0">
               <Avatar className="w-24 h-24 border-4 border-background ring-2 ring-cyan-500/50">
-                <AvatarImage src={profile.avatar_url ?? ''} />
+                <AvatarImage src={profile.avatar_url ?? ''} alt={profile.username} />
                 <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-2xl font-bold text-white">
                   {profile.username[0]?.toUpperCase()}
                 </AvatarFallback>
@@ -221,14 +275,22 @@ export function Profile(): React.ReactElement {
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={isUploadingAvatar}
-                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-cyan-500 hover:bg-cyan-400 flex items-center justify-center transition-colors"
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-cyan-500 hover:bg-cyan-400 flex items-center justify-center transition-colors border-2 border-background"
+                  title="Change avatar"
                 >
                   <Camera className="w-3.5 h-3.5 text-white" />
                 </button>
               )}
-              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
 
+            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
@@ -239,14 +301,28 @@ export function Profile(): React.ReactElement {
                       <span>{profile.role}</span>
                     </Badge>
                   </div>
-                  {fullName && <p className="text-muted-foreground text-sm mb-1">{fullName}</p>}
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {fullName && (
+                    <p className="text-muted-foreground text-sm mb-1">{fullName}</p>
+                  )}
+                  {profile.email && isOwnProfile && (
+                    <p className="text-muted-foreground text-xs mb-1">{profile.email}</p>
+                  )}
+                  {profile.phone && isOwnProfile && (
+                    <p className="text-muted-foreground text-xs mb-1">{profile.phone}</p>
+                  )}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                     <Calendar className="w-3 h-3" />
                     <span>Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>
                   </div>
                 </div>
+
                 {isOwnProfile && !isEditing && (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="border-cyan-500/50 hover:bg-cyan-500/10">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="border-cyan-500/50 hover:bg-cyan-500/10"
+                  >
                     <Edit2 className="w-4 h-4 mr-2" />
                     Edit Profile
                   </Button>
@@ -257,12 +333,17 @@ export function Profile(): React.ReactElement {
                 <p className="text-muted-foreground text-sm mt-3 max-w-xl">{bioText}</p>
               )}
 
-              {!isEditing && (
+              {!isEditing && (profile.twitter_username || profile.discord_username) && (
                 <div className="flex items-center gap-3 mt-3 flex-wrap">
                   {profile.twitter_username && (
-                    <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors">
+                    
+                      href={twitterUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                    >
                       <Twitter className="w-3.5 h-3.5" />
-                      <span>{twitterHandle}</span>
+                      <span>{'@' + profile.twitter_username}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
@@ -277,43 +358,81 @@ export function Profile(): React.ReactElement {
             </div>
           </div>
 
+          {/* Edit Form */}
           {isEditing && (
             <div className="mt-6 space-y-4">
               <Separator />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-muted-foreground">First Name</label>
-                  <Input value={editForm.first_name} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} className="mt-1 bg-muted/50" />
+                  <label className="text-xs text-muted-foreground block mb-1">First Name</label>
+                  <Input
+                    value={editForm.first_name}
+                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                    className="bg-muted/50"
+                    placeholder="First name"
+                  />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Last Name</label>
-                  <Input value={editForm.last_name} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} className="mt-1 bg-muted/50" />
+                  <label className="text-xs text-muted-foreground block mb-1">Last Name</label>
+                  <Input
+                    value={editForm.last_name}
+                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                    className="bg-muted/50"
+                    placeholder="Last name"
+                  />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Bio</label>
-                <Textarea value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} className="mt-1 bg-muted/50 resize-none" rows={3} placeholder="Tell the community about yourself..." maxLength={300} />
+                <label className="text-xs text-muted-foreground block mb-1">Bio</label>
+                <Textarea
+                  value={editForm.bio}
+                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                  className="bg-muted/50 resize-none"
+                  rows={3}
+                  placeholder="Tell the community about yourself..."
+                  maxLength={300}
+                />
                 <p className="text-xs text-muted-foreground mt-1">{editForm.bio.length}/300</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-muted-foreground">Twitter Username</label>
-                  <div className="relative mt-1">
+                  <label className="text-xs text-muted-foreground block mb-1">Twitter Username</label>
+                  <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
-                    <Input value={editForm.twitter_username} onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })} className="pl-7 bg-muted/50" placeholder="username" />
+                    <Input
+                      value={editForm.twitter_username}
+                      onChange={(e) => setEditForm({ ...editForm, twitter_username: e.target.value })}
+                      className="pl-7 bg-muted/50"
+                      placeholder="username"
+                    />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Discord Username</label>
-                  <Input value={editForm.discord_username} onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })} className="mt-1 bg-muted/50" placeholder="username#0000" />
+                  <label className="text-xs text-muted-foreground block mb-1">Discord Username</label>
+                  <Input
+                    value={editForm.discord_username}
+                    onChange={(e) => setEditForm({ ...editForm, discord_username: e.target.value })}
+                    className="bg-muted/50"
+                    placeholder="username#0000"
+                  />
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                >
                   <X className="w-4 h-4 mr-1" />
                   <span>Cancel</span>
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-gradient-to-r from-cyan-500 to-purple-600">
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                >
                   <Save className="w-4 h-4 mr-1" />
                   <span>{saveLabel}</span>
                 </Button>
@@ -322,6 +441,7 @@ export function Profile(): React.ReactElement {
           )}
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="gaming-card p-4 text-center">
             <MessageSquare className="w-5 h-5 mx-auto text-cyan-400 mb-2" />
@@ -340,19 +460,26 @@ export function Profile(): React.ReactElement {
           </div>
         </div>
 
+        {/* Posts */}
         <div>
           <h2 className="font-orbitron font-bold text-lg mb-4">{postsTitle}</h2>
+
           {posts.length === 0 && (
             <div className="gaming-card p-12 text-center">
               <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No posts yet.</p>
               {isOwnProfile && (
-                <Button asChild size="sm" className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600">
+                <Button
+                  asChild
+                  size="sm"
+                  className="mt-4 bg-gradient-to-r from-cyan-500 to-purple-600"
+                >
                   <Link to="/community">Share your first post</Link>
                 </Button>
               )}
             </div>
           )}
+
           {posts.length > 0 && (
             <div className="space-y-3">
               {posts.map((post) => (
@@ -363,7 +490,9 @@ export function Profile(): React.ReactElement {
                       <span>{post.tag}</span>
                     </Badge>
                   </div>
-                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{post.content}</p>
+                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                    {post.content}
+                  </p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Flame className="w-3 h-3" />
