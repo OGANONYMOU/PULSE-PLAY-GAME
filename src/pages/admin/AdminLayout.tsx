@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Navigate, Outlet, Link, useNavigate } from 'react-router-dom';
 import { Shield, LayoutDashboard, Users, LogOut, ChevronRight, Menu, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -107,18 +106,9 @@ export function AdminLayout(): React.ReactElement {
           <span className="font-orbitron font-bold text-sm text-white">Admin Panel</span>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <div className="flex-1">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
