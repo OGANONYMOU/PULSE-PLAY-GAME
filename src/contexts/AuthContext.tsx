@@ -146,8 +146,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     last_name?: string;
     phone?: string;
   }) => {
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: metadata } });
-    return { error: error as Error | null };
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } });
+    if (error || !data.user) return { error: error as Error | null };
+
+    // Call backend API with service role key to create the profile row (bypasses RLS)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? '';
+      const res = await fetch('/api/create-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({
+          id:         data.user.id,
+          email:      data.user.email ?? email,
+          username:   metadata.username,
+          first_name: metadata.first_name ?? null,
+          last_name:  metadata.last_name  ?? null,
+          phone:      metadata.phone      ?? null,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        console.error('[AuthContext] create-profile API error:', body.error);
+      }
+    } catch (err) {
+      console.error('[AuthContext] create-profile fetch failed:', err);
+    }
+
+    return { error: null };
   };
 
   const signInWithOAuth = async (provider: 'google' | 'twitter' | 'discord' | 'facebook') => {
