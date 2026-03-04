@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Shield, UserCheck, Ban, TrendingUp, Activity, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';

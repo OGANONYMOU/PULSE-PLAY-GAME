@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Crown, Shield, ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';

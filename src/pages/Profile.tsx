@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Swords, Star, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -213,9 +213,11 @@ export function Profile(): React.ReactElement {
     setPageLoading(true);
     setFetchError('');
     setNotFound(false);
+    // Re-derive inside callback to avoid stale closure
+    const owning = !username || username === ownProfile?.username;
     let found: ProfileType | null = null;
     try {
-      if (isOwnProfile) {
+      if (owning) {
         if (ownProfile) { found = ownProfile; }
         else if (user) {
           const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -236,7 +238,7 @@ export function Profile(): React.ReactElement {
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally { setPageLoading(false); }
-  }, [username, ownProfile, user, isOwnProfile]);
+  }, [username, ownProfile, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { if (!authLoading) loadProfile(); }, [authLoading, loadProfile]);
 
