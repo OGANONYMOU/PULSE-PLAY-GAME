@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Calendar, Users, DollarSign, Clock, ArrowRight,
-  Filter, Flame, CheckCircle, ChevronDown, RefreshCw, Loader2, X,
+  Filter, Flame, CheckCircle, RefreshCw, Loader2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
