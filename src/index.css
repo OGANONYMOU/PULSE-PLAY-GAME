@@ -94,9 +94,10 @@
   /* Gaming Card Style */
   .gaming-card {
     @apply relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    contain: layout style;
   }
-  
+
   .gaming-card:hover {
     @apply border-primary/50;
     transform: translateY(-8px);
@@ -236,4 +237,44 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--purple) / 0.7);
+}
+
+/* ── Performance & Accessibility ──────────────────────────────────────── */
+
+/* Respect OS-level reduced motion preference — kills all animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Off-screen sections skip rendering until near viewport — cuts paint cost */
+.content-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 400px;
+}
+
+/* GPU-composited fade for page transitions — avoids layout recalculation */
+.page-fade {
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+/* Instant feedback on all interactive elements — no 300ms tap delay on mobile */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Skeleton shimmer — cheaper than animate-pulse on many elements */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
 }

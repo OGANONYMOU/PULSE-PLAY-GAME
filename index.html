@@ -6,12 +6,25 @@
     <meta name="description" content="PulsePay — Nigeria's premier mobile gaming tournament platform. Compete, win, and connect with the gaming community." />
     <meta name="theme-color" content="#0a0a12" />
 
-    <!-- Preconnect to speed up font loading -->
+    <!-- Preconnect: resolve DNS + TLS before the browser even parses CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.dicebear.com" />
 
-    <!-- Favicon fallback -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
+    <!-- Inline critical style — prevents white flash before CSS loads -->
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { background: hsl(240 20% 4%); }
+      body { background: hsl(240 20% 4%); color: #fff; overflow-x: hidden; }
+      #root { min-height: 100dvh; }
+      /* Prevent invisible content during font swap */
+      @font-face { font-family: 'Orbitron'; font-display: swap; }
+      @font-face { font-family: 'Space Mono'; font-display: swap; }
+    </style>
+
+    <!-- Emoji favicon — zero network request -->
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
 
     <title>PulsePay — Gaming Platform</title>
   </head>

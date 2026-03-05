@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { prefetchRoute } from '@/App';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -72,6 +73,7 @@ export function Navbar(): React.ReactElement {
                 <Link
                   key={link.href}
                   to={link.href}
+                  onMouseEnter={() => prefetchRoute(link.href)}
                   className={'nav-link ' + (location.pathname === link.href ? 'active' : '')}
                 >
                   {link.label}

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -11,52 +11,75 @@ import { AppLoader } from '@/components/AppLoader';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-// ── Lazy-load every page ─────────────────────────────────────────────────────
-// Each page loads only when first visited — reduces initial bundle ~60%
-const Home        = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
-const Games       = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
-const Tournaments = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
-const Community   = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
-const About       = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
-const SignIn      = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
-const Register    = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
+// ── Lazy pages — each becomes its own JS chunk ───────────────────────────────
+const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
+const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
+const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
+const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
+const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
+const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
+const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
 const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
-const Profile     = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
-const NotFound    = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
+const Profile      = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
+const NotFound     = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
 
-// Admin pages — separate chunk, only loaded for admins
+// Admin chunk — separate bundle, only downloaded when an admin visits /admin
 const AdminLayout    = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminUsers     = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
 const AdminGames     = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
 const AdminAnalytics = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
 
-// ── Page-level skeleton fallback (shown during lazy-load) ───────────────────
+// ── Route prefetching — fire chunk download on navbar hover, not on click ───
+// This means by the time the user finishes moving the cursor and clicks, the
+// JS is already downloaded and the page renders instantly.
+const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
+  '/':            () => import('@/pages/Home'),
+  '/games':       () => import('@/pages/Games'),
+  '/tournaments': () => import('@/pages/Tournaments'),
+  '/community':   () => import('@/pages/Community'),
+  '/about':       () => import('@/pages/About'),
+  '/signin':      () => import('@/pages/SignIn'),
+  '/register':    () => import('@/pages/Register'),
+  '/profile':     () => import('@/pages/Profile'),
+};
+
+export function prefetchRoute(path: string): void {
+  const fn = PREFETCH_MAP[path];
+  if (fn) fn();
+}
+
+// ── Lightweight skeleton — shown during Suspense while chunk loads ───────────
 function PageSkeleton(): React.ReactElement {
   return (
-    <div className="min-h-screen pt-24 px-6 max-w-7xl mx-auto">
-      <div className="h-12 w-64 rounded-2xl bg-white/5 animate-pulse mb-4" />
-      <div className="h-6 w-96 rounded-xl bg-white/5 animate-pulse mb-8" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" />
-        ))}
+    <div className="min-h-screen pt-24 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="h-10 w-56 rounded-2xl bg-white/5 animate-pulse mb-3" />
+        <div className="h-5 w-80 rounded-xl bg-white/5 animate-pulse mb-10" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="h-52 rounded-2xl bg-white/5 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Page transition wrapper ─────────────────────────────────────────────────
+// ── Page transition — sync (not "wait") so new page appears immediately ──────
+// Using mode="sync" means old page fades out while new page fades in together.
+// mode="wait" was stalling navigation by forcing the old page to fully exit first.
 function PageTransition({ children }: { children: React.ReactNode }): React.ReactElement {
-  const location = useLocation();
+  const { pathname } = useLocation();
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="sync" initial={false}>
       <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
+        key={pathname}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.12, ease: 'linear' }}
+        style={{ willChange: 'opacity' }}
       >
         {children}
       </motion.div>
@@ -64,7 +87,21 @@ function PageTransition({ children }: { children: React.ReactNode }): React.Reac
   );
 }
 
-// ── App shell ───────────────────────────────────────────────────────────────
+// ── Prefetch Home + Games on first load so they're instant ───────────────────
+function PrefetchCritical(): null {
+  useEffect(() => {
+    // Delay slightly so auth + first render get priority
+    const t = setTimeout(() => {
+      import('@/pages/Home');
+      import('@/pages/Games');
+      import('@/pages/Tournaments');
+    }, 800);
+    return () => clearTimeout(t);
+  }, []);
+  return null;
+}
+
+// ── Main app shell ───────────────────────────────────────────────────────────
 function AppContent(): React.ReactElement {
   const { isLoading } = useAuth();
   const location = useLocation();
@@ -111,6 +148,7 @@ function App(): React.ReactElement {
       <AuthProvider>
         <Router>
           <ScrollToTop />
+          <PrefetchCritical />
           <AppContent />
           <Toaster richColors closeButton position="top-right" />
         </Router>
