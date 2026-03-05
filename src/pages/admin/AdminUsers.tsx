@@ -125,36 +125,20 @@ export function AdminUsers(): React.ReactElement {
 
   useEffect(() => { load(); }, []);
 
-  const getToken = async (): Promise<string> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ?? '';
-  };
-
   const changeRole = async (userId: string, email: string, role: Role) => {
     if (email === PRIMARY_ADMIN_EMAIL) { toast.error('Cannot change the primary admin.'); return; }
-    const token = await getToken();
-    const res = await fetch('/api/admin/set-role', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ userId, role }),
-    });
-    const body = await res.json().catch(() => ({})) as { error?: string };
-    if (!res.ok) { toast.error('Failed: ' + (body.error ?? 'Unknown error')); }
-    else { toast.success('Role updated.'); load(); }
+    const { error } = await supabase.from('profiles').update({ role } as never).eq('id', userId);
+    if (error) { toast.error('Failed: ' + error.message); } else { toast.success('Role updated.'); load(); }
   };
 
   const toggleBan = async (u: Profile) => {
     if (u.email === PRIMARY_ADMIN_EMAIL) { toast.error('Cannot ban the primary admin.'); return; }
     if (self && u.id === self.id) { toast.error('You cannot ban yourself.'); return; }
-    const token = await getToken();
-    const res = await fetch('/api/admin/set-ban', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ userId: u.id, is_banned: !u.is_banned }),
-    });
-    const body = await res.json().catch(() => ({})) as { error?: string };
-    if (!res.ok) { toast.error('Failed: ' + (body.error ?? 'Unknown error')); }
-    else { toast.success(u.is_banned ? 'User unbanned.' : 'User banned.'); load(); }
+    const { error } = await supabase.from('profiles').update({ is_banned: !u.is_banned } as never).eq('id', u.id);
+    if (error) { toast.error('Failed: ' + error.message); } else {
+      toast.success(u.is_banned ? 'User unbanned.' : 'User banned.');
+      load();
+    }
   };
 
   const filtered = users.filter((u) => {
