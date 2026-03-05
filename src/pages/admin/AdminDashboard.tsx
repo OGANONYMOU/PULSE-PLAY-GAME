@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, Shield, UserCheck, Ban, TrendingUp, Activity,
-  Loader2, RefreshCw, ArrowUpRight, ArrowDownRight,
+  RefreshCw, ArrowUpRight, ArrowDownRight,
   Gamepad2, Trophy, MessageSquare, Clock,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';

@@ -66,8 +66,8 @@ function GameModal(p: {
       featured: form.featured,
     };
     const { error } = isEdit
-      ? await supabase.from('games').update(payload).eq('id', p.game.id!)
-      : await supabase.from('games').insert(payload);
+      ? await supabase.from('games').update(payload as never).eq('id', p.game.id!)
+      : await supabase.from('games').insert(payload as never);
     if (error) { toast.error(error.message); }
     else { toast.success(isEdit ? 'Game updated.' : 'Game added.'); p.onSaved(); p.onClose(); }
     setSaving(false);

@@ -73,9 +73,6 @@ export function AdminLayout(): React.ReactElement {
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           <p className="text-[10px] text-white/25 font-mono uppercase tracking-widest px-3 pb-2 pt-1">Navigation</p>
           {NAV.map((item) => {
-            const active = item.exact
-              ? location.pathname === item.href
-              : location.pathname.startsWith(item.href) && item.href !== '/admin';
             // Special-case dashboard: only active on exact /admin
             const isActive = item.href === '/admin'
               ? location.pathname === '/admin'
