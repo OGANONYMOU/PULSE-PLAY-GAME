@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -44,9 +44,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  // isLoading only tracks whether we know the *auth state* yet — NOT profile loading.
   const [isLoading, setIsLoading] = useState(true);
+  // Guard against double-fetch: init() and onAuthStateChange both fire on mount.
+  const initDone = useRef(false);
+  const fetchingProfile = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    if (fetchingProfile.current) return null;
+    fetchingProfile.current = true;
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -63,34 +69,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('[Auth] fetchProfile threw:', err);
       return null;
+    } finally {
+      fetchingProfile.current = false;
     }
   }, []);
 
   useEffect(() => {
     let mounted = true;
 
+    // ── FIX 1: Hard timeout — unblock the app even if Supabase is slow/offline ──
+    const loadingTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('[Auth] Loading timeout — unblocking app render');
+        setIsLoading(false);
+        initDone.current = true;
+      }
+    }, 4000);
+
+    // ── FIX 2: Unblock the UI right after getSession() — don't wait for profile ──
+    // The auth state (logged in / not) is all that routing logic needs.
+    // Profile data loads in the background; pages that need it show their own skeletons.
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!mounted) return;
+        clearTimeout(loadingTimeout);
+
         if (session?.user) {
           setUser(session.user);
-          await fetchProfile(session.user.id);
+          setIsLoading(false);       // ← unblock UI immediately
+          initDone.current = true;
+          fetchProfile(session.user.id); // ← profile loads in background
+        } else {
+          setIsLoading(false);
+          initDone.current = true;
         }
       } catch (err) {
         console.error('[Auth] init error:', err);
-      } finally {
+        clearTimeout(loadingTimeout);
         if (mounted) setIsLoading(false);
+        initDone.current = true;
       }
     };
 
     init();
 
+    // ── FIX 3: Skip the initial onAuthStateChange fire (init() already handles it) ──
+    // Without this guard, both init() AND onAuthStateChange call fetchProfile()
+    // for the same session simultaneously — causing two parallel Supabase queries
+    // and a potential state flicker.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
+      if (!initDone.current) return; // let init() handle the first check
+
       if (session?.user) {
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        fetchProfile(session.user.id);
       } else {
         setUser(null);
         setProfile(null);
@@ -113,9 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchProfile]);
 
   const refreshProfile = async () => {

@@ -1,10 +1,17 @@
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+import compression from 'vite-plugin-compression';
 
 export default defineConfig({
   base: '/',
-  plugins: [react()],   // removed kimi-plugin-inspect-react (dev-only, adds overhead)
+  plugins: [
+    react(), 
+    visualizer({ filename: 'dist/stats.html', open: false, gzipSize: true, brotliSize: true }),
+    compression({ algorithm: 'gzip' as any, threshold: 1024, deleteOriginFile: false }),
+    compression({ algorithm: 'brotli' as any, threshold: 1024, deleteOriginFile: false }),
+  ],
 
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
@@ -58,5 +65,24 @@ export default defineConfig({
       'sonner',
       'date-fns',
     ],
+    exclude: [
+      'recharts',  // Only load when admin analytics accessed
+      'd3-*',      // Heavy dep, exclude from prebundle
+    ],
+  },
+
+  server: {
+    // Development optimizations
+    middlewareMode: false,
+    headers: {
+      'Cache-Control': 'no-cache',
+    },
+  },
+
+  preview: {
+    // Production preview settings
+    headers: [
+      { key: 'Cache-Control', value: 'public, max-age=3600' },
+    ] as any,
   },
 });

@@ -16,7 +16,8 @@ export function useGames() {
         .from('games')
         .select('*')
         .order('featured', { ascending: false })
-        .order('tournament_count', { ascending: false });
+        .order('tournament_count', { ascending: false })
+        .limit(20);  // Limit initial fetch to 20 games
 
       if (error) {
         setError(error.message);

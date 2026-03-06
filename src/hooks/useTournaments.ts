@@ -28,7 +28,8 @@ export function useTournaments() {
             icon
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(25);  // Limit to 25 tournaments
 
       if (error) {
         setError(error.message);

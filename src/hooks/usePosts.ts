@@ -34,7 +34,8 @@ export function usePosts(tagFilter?: string) {
           avatar_url
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(15);  // Limit to 15 posts per request
 
     if (tagFilter && tagFilter !== 'all') {
       query = query.eq('tag', tagFilter);

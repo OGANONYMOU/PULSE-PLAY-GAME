@@ -6,20 +6,42 @@
     <meta name="description" content="PulsePay — Nigeria's premier mobile gaming tournament platform. Compete, win, and connect with the gaming community." />
     <meta name="theme-color" content="#0a0a12" />
 
-    <!-- Preconnect: resolve DNS + TLS before the browser even parses CSS -->
+    <!-- FIX: Preconnect so DNS + TLS is resolved before the font link fires -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://api.dicebear.com" />
 
-    <!-- Inline critical style — prevents white flash before CSS loads -->
+    <!-- FIX: Load Google Fonts as a non-render-blocking <link> instead of
+         CSS @import. @import in a stylesheet halts CSS parsing until the font
+         stylesheet is fetched. A <link rel="stylesheet"> in <head> is loaded
+         in parallel with other resources and does NOT block rendering when
+         combined with font-display:swap (set in the URL below). -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <!-- Fallback for no-JS environments -->
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" />
+    </noscript>
+
+    <!-- Inline critical styles — prevents dark flash and FOUC before CSS loads -->
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html { background: hsl(240 20% 4%); }
-      body { background: hsl(240 20% 4%); color: #fff; overflow-x: hidden; }
+      body {
+        background: hsl(240 20% 4%);
+        color: #fff;
+        overflow-x: hidden;
+        /* System font stack as fallback until Space Mono loads */
+        font-family: 'Space Mono', 'Courier New', monospace;
+      }
       #root { min-height: 100dvh; }
-      /* Prevent invisible content during font swap */
-      @font-face { font-family: 'Orbitron'; font-display: swap; }
-      @font-face { font-family: 'Space Mono'; font-display: swap; }
+      /* font-display: swap prevents invisible text during font load */
+      @font-face { font-family: 'Orbitron'; font-display: swap; src: local('Orbitron'); }
+      @font-face { font-family: 'Space Mono'; font-display: swap; src: local('Space Mono'); }
     </style>
 
     <!-- Emoji favicon — zero network request -->

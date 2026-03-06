@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap');
+/* FIX: Removed @import url('https://fonts.googleapis.com/...') from here.
+   CSS @import is render-blocking — it halts the entire stylesheet parse until
+   the imported URL resolves. The font is now loaded via <link> in index.html,
+   which the browser fetches in parallel without blocking page render. */
 
 @tailwind base;
 @tailwind components;
@@ -33,7 +36,7 @@
     --purple: 270 60% 55%;
     --pink: 330 100% 50%;
     --green: 150 100% 50%;
-    
+
     /* Glow Effects */
     --glow-cyan: 0 0 20px hsl(var(--cyan) / 0.5);
     --glow-purple: 0 0 20px hsl(var(--purple) / 0.5);
@@ -67,24 +70,24 @@
   * {
     @apply border-border;
   }
-  
+
   html {
-    /* scroll-behavior is intentionally NOT set here.
+    /* scroll-behavior intentionally NOT set here.
        ScrollToTop.tsx uses window.scrollTo with behavior:'instant'.
-       Setting smooth here would fight that and cause scroll glitches. */
+       Setting smooth here fights that and causes scroll glitches. */
     overflow-x: hidden;
   }
-  
+
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Space Mono', 'Courier New', monospace;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
   }
@@ -113,12 +116,12 @@
   .btn-glow {
     @apply relative overflow-hidden;
   }
-  
+
   .btn-glow::before {
     content: '';
     @apply absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 opacity-0 transition-opacity duration-300;
   }
-  
+
   .btn-glow:hover::before {
     @apply opacity-100;
   }
@@ -127,7 +130,7 @@
   .live-badge {
     @apply relative inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm font-bold;
   }
-  
+
   .live-badge::before {
     content: '';
     @apply w-2 h-2 rounded-full bg-red-500 animate-pulse;
@@ -136,7 +139,7 @@
   /* Particle Background */
   .particles-bg {
     @apply fixed inset-0 pointer-events-none z-0;
-    background: 
+    background:
       radial-gradient(circle at 20% 30%, hsl(var(--purple) / 0.1) 0%, transparent 50%),
       radial-gradient(circle at 80% 70%, hsl(var(--cyan) / 0.1) 0%, transparent 50%),
       linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
@@ -151,17 +154,17 @@
   .nav-link {
     @apply relative text-muted-foreground font-bold uppercase tracking-wider text-sm transition-colors duration-300;
   }
-  
+
   .nav-link::after {
     content: '';
     @apply absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-300;
   }
-  
+
   .nav-link:hover,
   .nav-link.active {
     @apply text-cyan-400;
   }
-  
+
   .nav-link:hover::after,
   .nav-link.active::after {
     @apply w-full;
@@ -183,11 +186,11 @@
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-  
+
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }
-  
+
   .animate-gradient {
     animation: gradient 8s linear infinite;
     background-size: 200% 200%;
@@ -198,7 +201,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -239,9 +242,9 @@
   background: hsl(var(--purple) / 0.7);
 }
 
-/* ── Performance & Accessibility ──────────────────────────────────────── */
+/* ── Performance & Accessibility ──────────────────────────────────── */
 
-/* Respect OS-level reduced motion preference — kills all animations */
+/* Respect OS-level reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -251,30 +254,38 @@
   }
 }
 
-/* Off-screen sections skip rendering until near viewport — cuts paint cost */
+/* Off-screen sections skip rendering until near viewport */
 .content-section {
   content-visibility: auto;
   contain-intrinsic-size: 0 400px;
 }
 
-/* GPU-composited fade for page transitions — avoids layout recalculation */
+/* GPU-composited fade — avoids layout recalculation during page transitions */
 .page-fade {
   will-change: opacity;
   backface-visibility: hidden;
 }
 
-/* Instant feedback on all interactive elements — no 300ms tap delay on mobile */
+/* Instant tap feedback — eliminates 300ms delay on mobile */
 button, a, [role="button"] {
   touch-action: manipulation;
 }
 
-/* Skeleton shimmer — cheaper than animate-pulse on many elements */
+/* Skeleton shimmer — cheaper than animate-pulse for many concurrent elements */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
 }
+
 .skeleton {
   background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Page transition smoothing ────────────────────────────────────── */
+/* Prevent layout shift during enter/exit animations */
+.page-transition-enter {
+  position: relative;
+  z-index: 1;
 }

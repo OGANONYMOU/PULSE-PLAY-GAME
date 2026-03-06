@@ -11,7 +11,7 @@ import { AppLoader } from '@/components/AppLoader';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-// ── Lazy pages — each becomes its own JS chunk ───────────────────────────────
+// ── Lazy pages — each becomes its own JS chunk ────────────────────────────────
 const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
 const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
 const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
@@ -23,16 +23,14 @@ const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ defa
 const Profile      = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
 const NotFound     = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
 
-// Admin chunk — separate bundle, only downloaded when an admin visits /admin
+// Admin chunk — separate bundle, only downloaded when admin visits /admin
 const AdminLayout    = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminUsers     = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
 const AdminGames     = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
 const AdminAnalytics = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
 
-// ── Route prefetching — fire chunk download on navbar hover, not on click ───
-// This means by the time the user finishes moving the cursor and clicks, the
-// JS is already downloaded and the page renders instantly.
+// ── Route prefetching — fire chunk download on hover, so click feels instant ──
 const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/':            () => import('@/pages/Home'),
   '/games':       () => import('@/pages/Games'),
@@ -49,7 +47,7 @@ export function prefetchRoute(path: string): void {
   if (fn) fn();
 }
 
-// ── Lightweight skeleton — shown during Suspense while chunk loads ───────────
+// ── Lightweight skeleton — shown by Suspense while a lazy chunk loads ─────────
 function PageSkeleton(): React.ReactElement {
   return (
     <div className="min-h-screen pt-24 px-6">
@@ -66,20 +64,21 @@ function PageSkeleton(): React.ReactElement {
   );
 }
 
-// ── Page transition — sync (not "wait") so new page appears immediately ──────
-// Using mode="sync" means old page fades out while new page fades in together.
-// mode="wait" was stalling navigation by forcing the old page to fully exit first.
+// ── FIX: Page transition wrapper ──────────────────────────────────────────────
+// Key is on the motion.div (not on Routes), so React Router's internal state
+// is preserved across navigations. The old key approach caused Routes to fully
+// unmount+remount on every navigation, re-triggering Suspense even for cached chunks.
 function PageTransition({ children }: { children: React.ReactNode }): React.ReactElement {
   const { pathname } = useLocation();
   return (
     <AnimatePresence mode="sync" initial={false}>
       <motion.div
         key={pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.12, ease: 'linear' }}
-        style={{ willChange: 'opacity' }}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
+        style={{ willChange: 'opacity, transform' }}
       >
         {children}
       </motion.div>
@@ -87,21 +86,21 @@ function PageTransition({ children }: { children: React.ReactNode }): React.Reac
   );
 }
 
-// ── Prefetch Home + Games on first load so they're instant ───────────────────
+// ── FIX: Prefetch critical routes after first paint (reduced delay) ───────────
 function PrefetchCritical(): null {
   useEffect(() => {
-    // Delay slightly so auth + first render get priority
+    // 150ms gives the first render priority, then we start background downloads
     const t = setTimeout(() => {
       import('@/pages/Home');
       import('@/pages/Games');
       import('@/pages/Tournaments');
-    }, 800);
+    }, 150);
     return () => clearTimeout(t);
   }, []);
   return null;
 }
 
-// ── Main app shell ───────────────────────────────────────────────────────────
+// ── Main app shell ─────────────────────────────────────────────────────────────
 function AppContent(): React.ReactElement {
   const { isLoading } = useAuth();
   const location = useLocation();
@@ -113,9 +112,12 @@ function AppContent(): React.ReactElement {
       <ParticleBackground />
       <Navbar />
       <main className="relative z-10">
+        {/* FIX: Suspense wraps Routes. Routes has no key prop — removing it prevents
+            full unmount/remount on navigation. PageTransition wraps the Suspense
+            boundary so the skeleton animates in/out cleanly. */}
         <PageTransition>
           <Suspense fallback={<PageSkeleton />}>
-            <Routes location={location} key={location.pathname}>
+            <Routes location={location}>
               <Route path="/"                  element={<Home />} />
               <Route path="/games"             element={<Games />} />
               <Route path="/tournaments"       element={<Tournaments />} />
