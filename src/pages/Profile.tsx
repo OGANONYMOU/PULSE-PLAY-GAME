@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Swords, Star, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
@@ -189,6 +190,63 @@ function TabAchievements(p: { active: boolean }): React.ReactElement {
       ))}
     </div>
   ) : <span />;
+}
+
+// ── Loyalty bar for users/moderators ─────────────────────────────────────────
+interface PLvl { name: string; emoji: string; min: number; max: number; from: string; to: string; color: string }
+const P_LEVELS: PLvl[] = [
+  { name: 'Newcomer',   emoji: '🌱', min: 0,   max: 99,  from: '#6b7280', to: '#9ca3af', color: 'text-gray-400'   },
+  { name: 'Regular',    emoji: '⚡', min: 100,  max: 299, from: '#06b6d4', to: '#3b82f6', color: 'text-cyan-400'   },
+  { name: 'Competitor', emoji: '🎯', min: 300,  max: 699, from: '#8b5cf6', to: '#ec4899', color: 'text-purple-400' },
+  { name: 'Pro',        emoji: '🏆', min: 700,  max: 1499, from: '#eab308', to: '#f97316', color: 'text-yellow-400' },
+  { name: 'Legend',     emoji: '👑', min: 1500, max: Infinity, from: '#ec4899', to: '#a855f7', color: 'text-pink-400' },
+];
+
+function ProfileLoyaltyBar(p: { posts: number; likes: number; role: string }): React.ReactElement {
+  const xp = 50 + p.posts * 15 + p.likes * 5;
+  const lvl = P_LEVELS.find(l => xp >= l.min && xp <= l.max) ?? P_LEVELS[0];
+  const nextLvl = P_LEVELS[P_LEVELS.indexOf(lvl) + 1];
+  const pct = lvl.max === Infinity ? 100 : Math.min(100, Math.round(((xp - lvl.min) / (lvl.max - lvl.min)) * 100));
+  const isMod = p.role === 'MODERATOR';
+
+  return (
+    <div className="mb-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{lvl.emoji}</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={'font-orbitron font-black text-sm ' + lvl.color}>{lvl.name}</span>
+              {isMod ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-bold">MOD</span> : null}
+            </div>
+            <p className="text-[11px] text-white/35 font-mono">{xp.toLocaleString()} XP</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-white/40">
+            {nextLvl ? `${(nextLvl.min - xp).toLocaleString()} XP to ${nextLvl.emoji} ${nextLvl.name}` : 'Max level reached!'}
+          </p>
+          <p className="text-[10px] text-white/25">{pct}% complete</p>
+        </div>
+      </div>
+      <div className="h-3 rounded-full bg-white/8 overflow-hidden border border-white/8 relative">
+        <motion.div
+          initial={{ width: 0 }} animate={{ width: pct + '%' }}
+          transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+          className="h-full rounded-full relative overflow-hidden"
+          style={{ background: `linear-gradient(90deg, ${lvl.from}, ${lvl.to})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full animate-[shimmerP_2s_ease-in-out_infinite]" />
+        </motion.div>
+      </div>
+      <div className="flex items-center gap-4 mt-2.5 text-[10px] text-white/30">
+        <span>📝 {p.posts} posts × 15 XP</span>
+        <span>🔥 {p.likes} likes × 5 XP</span>
+        <span>🎁 +50 joining bonus</span>
+      </div>
+      <style>{`@keyframes shimmerP { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }`}</style>
+    </div>
+  );
 }
 
 export function Profile(): React.ReactElement {
@@ -385,6 +443,11 @@ export function Profile(): React.ReactElement {
             </div>
           ))}
         </div>
+
+        {/* Loyalty bar — visible for USER and MODERATOR only, hidden for ADMIN */}
+        {profile.role !== 'ADMIN' ? (
+          <ProfileLoyaltyBar posts={posts.length} likes={totalLikes} role={profile.role} />
+        ) : null}
 
         <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
           <div className="flex border-b border-white/10">

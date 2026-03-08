@@ -2,13 +2,10 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trophy, DollarSign, Gamepad2, Users, Check, ArrowRight, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
-const stats = [
-  { value: '10K+', label: 'Active Gamers', icon: Users },
-  { value: '50+', label: 'Tournaments Hosted', icon: Trophy },
-  { value: '₦5M+', label: 'Total Prize Pool', icon: DollarSign },
-  { value: '15+', label: 'Partner Games', icon: Gamepad2 },
-];
+
+
 
 const features = [
   {
@@ -62,7 +59,7 @@ const timeline = [
   },
   {
     year: 'Mid 2025',
-    title: '₦1M in Prizes Distributed',
+    title: 'Prize Distribution Launched',
     description: 'Players earned real cash through PulsePay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.',
   },
   {
@@ -74,6 +71,14 @@ const timeline = [
 ];
 
 export function About() {
+  const { symbol } = useCurrency();
+
+  const stats = [
+    { value: '10K+',      label: 'Active Gamers',       icon: Users },
+    { value: '50+',       label: 'Tournaments Hosted',   icon: Trophy },
+    { value: symbol + '0', label: 'Total Prize Pool',    icon: DollarSign },
+    { value: '15+',       label: 'Partner Games',        icon: Gamepad2 },
+  ];
   return (
     <div className="min-h-screen pt-24">
       {/* Hero Section */}

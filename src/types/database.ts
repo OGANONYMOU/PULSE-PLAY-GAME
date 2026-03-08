@@ -193,6 +193,41 @@ export interface Database {
           created_at?: string;
         };
       };
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          type: 'info' | 'warning' | 'success' | 'event';
+          pinned: boolean;
+          is_active: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          type: 'info' | 'warning' | 'success' | 'event';
+          pinned?: boolean;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          type?: 'info' | 'warning' | 'success' | 'event';
+          pinned?: boolean;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -206,14 +241,4 @@ export interface Database {
   };
 }
 
-export type AnnouncementRow = {
-  id: string;
-  title: string;
-  content: string;
-  author_id: string | null;
-  pinned: boolean;
-  type: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
+export type AnnouncementRow = Database['public']['Tables']['announcements']['Row'];

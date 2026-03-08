@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search,
-  X, Save, Loader2, Star, AlertTriangle,
+  X, Save, Loader2, Star, AlertTriangle, Sparkles, Database,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -22,12 +22,61 @@ interface Game {
   created_at: string;
 }
 
+type GameInsert = {
+  name: string; description: string; icon: string; badge?: string | null;
+  player_count?: number; tournament_count?: number; category: string; featured?: boolean;
+};
+
 const BLANK: Omit<Game, 'id' | 'created_at'> = {
   name: '', description: '', icon: '🎮', badge: null,
   player_count: 0, tournament_count: 0, category: 'other', featured: false,
 };
 
 const CATEGORIES = ['fps','battle-royale','moba','sports','fighting','rpg','strategy','other'];
+
+// ── Default games seed data ─────────────────────────────────────────────────
+const DEFAULT_GAMES: GameInsert[] = [
+  {
+    name: 'eFootball',
+    description: 'The ultimate mobile football experience with real-time matchmaking and seasonal competitions.',
+    icon: '⚽',
+    badge: 'Popular',
+    player_count: 12500,
+    tournament_count: 18,
+    category: 'sports',
+    featured: false,
+  },
+  {
+    name: 'Call of Duty Mobile',
+    description: 'Iconic FPS combat brought to mobile — battle royale, multiplayer, and ranked modes.',
+    icon: '🔫',
+    badge: 'Hot',
+    player_count: 28400,
+    tournament_count: 32,
+    category: 'fps',
+    featured: true,
+  },
+  {
+    name: 'PUBG Mobile',
+    description: 'Drop in, loot up, and outlast 99 rivals in the original mobile battle royale.',
+    icon: '🪖',
+    badge: 'Trending',
+    player_count: 19800,
+    tournament_count: 25,
+    category: 'battle-royale',
+    featured: false,
+  },
+  {
+    name: 'Free Fire',
+    description: 'Fast-paced 10-minute battle royale built for mobile — quick games, big wins.',
+    icon: '🔥',
+    badge: 'New',
+    player_count: 22100,
+    tournament_count: 21,
+    category: 'battle-royale',
+    featured: false,
+  },
+];
 
 // ── Field row ──────────────────────────────────────────────────────────────
 function Field(p: { label: string; children: React.ReactNode }): React.ReactElement {
@@ -55,7 +104,7 @@ function GameModal(p: {
   const save = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
-    const payload = {
+    const payload: GameInsert = {
       name: form.name.trim(),
       description: form.description.trim(),
       icon: form.icon.trim() || '🎮',
@@ -65,11 +114,27 @@ function GameModal(p: {
       category: form.category,
       featured: form.featured,
     };
-    const { error } = isEdit
-      ? await supabase.from('games').update(payload as never).eq('id', p.game.id!)
-      : await supabase.from('games').insert(payload as never);
-    if (error) { toast.error(error.message); }
-    else { toast.success(isEdit ? 'Game updated.' : 'Game added.'); p.onSaved(); p.onClose(); }
+
+    let error: { message: string } | null = null;
+    if (isEdit) {
+      const res = await supabase.from('games').update(payload).eq('id', p.game.id!);
+      error = res.error;
+    } else {
+      const res = await supabase.from('games').insert(payload);
+      error = res.error;
+    }
+
+    if (error) {
+      // Surface RLS and other errors clearly
+      const msg = error.message.includes('row-level security') || error.message.includes('permission')
+        ? 'Permission denied — ensure your Supabase RLS policy allows admin inserts on the games table.'
+        : error.message;
+      toast.error(msg);
+    } else {
+      toast.success(isEdit ? 'Game updated.' : 'Game added.');
+      p.onSaved();
+      p.onClose();
+    }
     setSaving(false);
   };
 
@@ -78,13 +143,10 @@ function GameModal(p: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 8 }}
-        transition={{ duration: 0.18 }}
+        initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.18 }}
         className="w-full max-w-lg bg-card border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-lg">
@@ -97,7 +159,6 @@ function GameModal(p: {
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Game Name">
@@ -156,11 +217,8 @@ function GameModal(p: {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/8">
-          <Button variant="ghost" size="sm" onClick={p.onClose} className="text-white/50 hover:text-white hover:bg-white/8 text-xs">
-            Cancel
-          </Button>
+          <Button variant="ghost" size="sm" onClick={p.onClose} className="text-white/50 hover:text-white hover:bg-white/8 text-xs">Cancel</Button>
           <Button size="sm" onClick={save} disabled={saving} className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold gap-2">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {isEdit ? 'Save Changes' : 'Add Game'}
@@ -174,20 +232,16 @@ function GameModal(p: {
 // ── Delete confirm ─────────────────────────────────────────────────────────
 function DeleteConfirm(p: { game: Game; onClose: () => void; onDeleted: () => void }): React.ReactElement {
   const [deleting, setDeleting] = useState(false);
-
   const confirm = async () => {
     setDeleting(true);
     const { error } = await supabase.from('games').delete().eq('id', p.game.id);
     if (error) { toast.error(error.message); setDeleting(false); }
     else { toast.success('Game deleted.'); p.onDeleted(); p.onClose(); }
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-sm bg-card border border-white/10 rounded-2xl p-6 shadow-2xl"
-      >
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm bg-card border border-white/10 rounded-2xl p-6 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -198,18 +252,89 @@ function DeleteConfirm(p: { game: Game; onClose: () => void; onDeleted: () => vo
           </div>
         </div>
         <p className="text-sm text-white/60 mb-6">
-          Are you sure you want to delete <span className="font-bold text-white">{p.game.name}</span>?
-          All tournaments linked to this game will lose their game reference.
+          Delete <span className="font-bold text-white">{p.game.name}</span>? Linked tournaments will lose their game reference.
         </p>
         <div className="flex gap-3">
-          <Button variant="ghost" size="sm" onClick={p.onClose} className="flex-1 border border-white/10 text-white/50 hover:text-white hover:bg-white/8 text-xs">
-            Cancel
-          </Button>
+          <Button variant="ghost" size="sm" onClick={p.onClose} className="flex-1 border border-white/10 text-white/50 hover:text-white text-xs">Cancel</Button>
           <Button size="sm" onClick={confirm} disabled={deleting} className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold gap-2">
-            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Delete
+            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}Delete
           </Button>
         </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Seed confirm modal ──────────────────────────────────────────────────────
+function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.ReactElement {
+  const [seeding, setSeeding] = useState(false);
+  const [done, setDone] = useState(false);
+  const [results, setResults] = useState<string[]>([]);
+
+  const runSeed = async () => {
+    setSeeding(true);
+    const msgs: string[] = [];
+    for (const game of DEFAULT_GAMES) {
+      const { error } = await supabase.from('games').insert(game);
+      if (error) {
+        msgs.push(`✗ ${game.name}: ${error.message.includes('row-level') ? 'RLS denied — check Supabase policies' : error.message}`);
+      } else {
+        msgs.push(`✓ ${game.name} added`);
+      }
+    }
+    setResults(msgs);
+    setDone(true);
+    setSeeding(false);
+    p.onSeeded();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md bg-card border border-white/10 rounded-2xl p-6 shadow-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+            <Database className="w-5 h-5 text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="font-orbitron font-bold text-sm text-white">Seed Default Games</h3>
+            <p className="text-xs text-white/40">Adds eFootball, CoD, PUBG, Free Fire</p>
+          </div>
+        </div>
+
+        {!done ? (
+          <>
+            <div className="space-y-2 mb-5">
+              {DEFAULT_GAMES.map(g => (
+                <div key={g.name} className="flex items-center gap-2 p-2 rounded-lg bg-white/4 border border-white/8">
+                  <span className="text-xl">{g.icon}</span>
+                  <div>
+                    <p className="text-sm text-white font-medium">{g.name}</p>
+                    <p className="text-xs text-white/40 capitalize">{g.category} · {g.player_count?.toLocaleString()} players</p>
+                  </div>
+                  {g.featured ? <span className="ml-auto text-[10px] text-yellow-400 border border-yellow-500/30 px-1.5 py-0.5 rounded-full">Featured</span> : null}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-white/35 mb-5">This will insert these games into your Supabase games table. Existing games are not affected.</p>
+            <div className="flex gap-3">
+              <Button variant="ghost" size="sm" onClick={p.onClose} className="flex-1 border border-white/10 text-white/50 text-xs">Cancel</Button>
+              <Button size="sm" onClick={runSeed} disabled={seeding} className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold gap-2">
+                {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {seeding ? 'Seeding…' : 'Seed Games'}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-1.5 mb-5">
+              {results.map((r, i) => (
+                <p key={i} className={'text-xs font-mono px-3 py-1.5 rounded-lg ' + (r.startsWith('✓') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400')}>{r}</p>
+              ))}
+            </div>
+            <Button size="sm" onClick={p.onClose} className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold">Close</Button>
+          </>
+        )}
       </motion.div>
     </div>
   );
@@ -220,17 +345,12 @@ function GameRow(p: { game: Game; index: number; onEdit: () => void; onDelete: (
   const g = p.game;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: p.index * 0.04 }}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: p.index * 0.04 }}
       className="flex items-center gap-4 p-4 rounded-xl bg-white/4 border border-white/8 hover:border-white/15 hover:bg-white/6 transition-all group"
     >
-      {/* Icon */}
       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/8 to-white/4 border border-white/10 flex items-center justify-center text-2xl flex-shrink-0">
         {g.icon}
       </div>
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <span className="font-orbitron font-bold text-sm text-white">{g.name}</span>
@@ -239,9 +359,7 @@ function GameRow(p: { game: Game; index: number; onEdit: () => void; onDelete: (
               <Star className="w-2.5 h-2.5" />Featured
             </span>
           ) : null}
-          {g.badge ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">{g.badge}</span>
-          ) : null}
+          {g.badge ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">{g.badge}</span> : null}
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/8 text-white/40 border border-white/10 capitalize">{g.category}</span>
         </div>
         <p className="text-xs text-white/35 truncate">{g.description || 'No description'}</p>
@@ -250,21 +368,11 @@ function GameRow(p: { game: Game; index: number; onEdit: () => void; onDelete: (
           <span className="text-xs text-white/30">{g.tournament_count} tournaments</span>
         </div>
       </div>
-
-      {/* Actions */}
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={p.onEdit}
-          className="p-2 rounded-lg bg-white/8 hover:bg-cyan-500/20 text-white/40 hover:text-cyan-400 transition-all"
-          title="Edit game"
-        >
+        <button onClick={p.onEdit} className="p-2 rounded-lg bg-white/8 hover:bg-cyan-500/20 text-white/40 hover:text-cyan-400 transition-all" title="Edit">
           <Pencil className="w-3.5 h-3.5" />
         </button>
-        <button
-          onClick={p.onDelete}
-          className="p-2 rounded-lg bg-white/8 hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all"
-          title="Delete game"
-        >
+        <button onClick={p.onDelete} className="p-2 rounded-lg bg-white/8 hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all" title="Delete">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -280,10 +388,10 @@ export function AdminGames(): React.ReactElement {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<null | 'add' | Game>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
+  const [showSeed, setShowSeed] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setFetchError('');
+    setLoading(true); setFetchError('');
     const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
     if (error) setFetchError(error.message);
     else setGames((data as Game[]) ?? []);
@@ -297,34 +405,31 @@ export function AdminGames(): React.ReactElement {
     g.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const editForm = modal && modal !== 'add'
-    ? { ...modal }
-    : { ...BLANK };
+  const editForm = modal && modal !== 'add' ? { ...modal } : { ...BLANK };
 
   return (
     <div className="p-5 sm:p-7 max-w-5xl">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7"
-      >
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
         <div>
           <h1 className="font-orbitron text-2xl font-black text-white mb-1">Games</h1>
           <p className="text-white/35 text-sm">{games.length} games in the platform</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-            <Input
-              value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search games…"
-              className="pl-8 h-9 bg-white/5 border-white/10 text-white placeholder:text-white/25 text-sm w-48"
-            />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
+              className="pl-8 h-9 bg-white/5 border-white/10 text-white placeholder:text-white/25 text-sm w-40" />
           </div>
-          <Button variant="ghost" size="sm" onClick={load} disabled={loading}
-            className="text-white/40 hover:text-white hover:bg-white/8 h-9 w-9 p-0">
+          <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="text-white/40 hover:text-white hover:bg-white/8 h-9 w-9 p-0">
             <RefreshCw className={'w-3.5 h-3.5 ' + (loading ? 'animate-spin' : '')} />
           </Button>
+          {games.length === 0 ? (
+            <Button size="sm" onClick={() => setShowSeed(true)}
+              className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold h-9 gap-2">
+              <Sparkles className="w-3.5 h-3.5" />Seed Defaults
+            </Button>
+          ) : null}
           <Button size="sm" onClick={() => setModal('add')}
             className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold h-9 gap-2">
             <Plus className="w-3.5 h-3.5" />Add Game
@@ -332,7 +437,6 @@ export function AdminGames(): React.ReactElement {
         </div>
       </motion.div>
 
-      {/* Error */}
       {fetchError ? (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-5 flex items-center justify-between">
           <span>{fetchError}</span>
@@ -340,46 +444,38 @@ export function AdminGames(): React.ReactElement {
         </div>
       ) : null}
 
-      {/* List */}
+      {/* Seed hint when empty */}
+      {!loading && games.length === 0 && !fetchError ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="p-6 rounded-2xl border border-dashed border-white/15 text-center mb-5">
+          <Gamepad2 className="w-12 h-12 mx-auto text-white/15 mb-3" />
+          <p className="text-white/40 text-sm mb-4">No games yet. Add one manually or seed the 4 default games.</p>
+          <Button size="sm" onClick={() => setShowSeed(true)}
+            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold gap-2">
+            <Sparkles className="w-3.5 h-3.5" />Seed Default Games
+          </Button>
+        </motion.div>
+      ) : null}
+
       {loading ? (
-        <div className="space-y-3">
-          {[1,2,3,4].map(i => <div key={i} className="h-20 rounded-xl bg-white/5 animate-pulse" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Gamepad2 className="w-12 h-12 mx-auto text-white/15 mb-4" />
-          <p className="text-white/35 text-sm">{search ? 'No games match your search.' : 'No games yet. Add one to get started.'}</p>
-        </div>
+        <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-20 rounded-xl bg-white/5 animate-pulse" />)}</div>
       ) : (
         <div className="space-y-2">
           {filtered.map((g, i) => (
-            <GameRow
-              key={g.id} game={g} index={i}
-              onEdit={() => setModal(g)}
-              onDelete={() => setDeleteTarget(g)}
-            />
+            <GameRow key={g.id} game={g} index={i} onEdit={() => setModal(g)} onDelete={() => setDeleteTarget(g)} />
           ))}
+          {filtered.length === 0 && games.length > 0 ? (
+            <div className="text-center py-12">
+              <p className="text-white/35 text-sm">No games match your search.</p>
+            </div>
+          ) : null}
         </div>
       )}
 
-      {/* Modals */}
       <AnimatePresence>
-        {modal ? (
-          <GameModal
-            key="game-modal"
-            game={editForm}
-            onClose={() => setModal(null)}
-            onSaved={load}
-          />
-        ) : null}
-        {deleteTarget ? (
-          <DeleteConfirm
-            key="delete-modal"
-            game={deleteTarget}
-            onClose={() => setDeleteTarget(null)}
-            onDeleted={load}
-          />
-        ) : null}
+        {modal ? <GameModal key="game-modal" game={editForm} onClose={() => setModal(null)} onSaved={load} /> : null}
+        {deleteTarget ? <DeleteConfirm key="delete-modal" game={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={load} /> : null}
+        {showSeed ? <SeedModal key="seed-modal" onClose={() => setShowSeed(false)} onSeeded={load} /> : null}
       </AnimatePresence>
     </div>
   );

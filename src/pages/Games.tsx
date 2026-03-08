@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 type Game = {
   id: string;
@@ -60,6 +61,7 @@ function GameSkeleton(): React.ReactElement {
 }
 
 function FeaturedBanner(p: { game: Game }): React.ReactElement {
+  const { symbol } = useCurrency();
   const g = p.game;
   const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
@@ -80,7 +82,7 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
                 <div className="text-xs text-muted-foreground">Active Players</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-muted/50">
-                <div className="font-orbitron text-2xl font-bold gradient-text">&#x20A6;10M</div>
+                <div className="font-orbitron text-2xl font-bold gradient-text">{symbol}0</div>
                 <div className="text-xs text-muted-foreground">Prize Pool</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-muted/50">
