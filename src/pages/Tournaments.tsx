@@ -205,7 +205,6 @@ export function Tournaments(): React.ReactElement {
     completed: tournaments.filter((t) => t.status === 'completed').length,
   };
   // Prize pool defaults to zero — prize logic not yet implemented
-  const totalPrize = 0;
   const selectedTournament = tournaments.find((t) => t.id === selectedId) ?? null;
 
   const FILTERS: { value: 'all' | TStatus; label: string }[] = [
