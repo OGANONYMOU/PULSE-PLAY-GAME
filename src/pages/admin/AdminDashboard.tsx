@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Shield, UserCheck, Ban, TrendingUp, Activity, RefreshCw,
-  ArrowUpRight, Gamepad2, Trophy, Clock, Zap,
+  ArrowUpRight, Gamepad2, Trophy, Clock, Zap, Star,
   CheckCircle, Target, FileText, Megaphone,
   ChevronRight, Flame,
 } from 'lucide-react';
