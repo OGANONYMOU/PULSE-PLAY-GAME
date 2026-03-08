@@ -3,7 +3,7 @@ import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-d
 import {
   Shield, LayoutDashboard, Users, Gamepad2, LogOut,
   ChevronRight, Menu, X, Loader2, BarChart2, Settings,
-  Trophy, Megaphone, FileText, Star, Zap, Award,
+  Trophy, Megaphone, FileText, Zap,
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';

@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Shield, UserCheck, Ban, TrendingUp, Activity, RefreshCw,
-  ArrowUpRight, Gamepad2, Trophy, MessageSquare, Clock, Zap,
-  Star, Award, CheckCircle, Target, FileText, Megaphone,
+  ArrowUpRight, Gamepad2, Trophy, Clock, Zap,
+  CheckCircle, Target, FileText, Megaphone,
   ChevronRight, Flame,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
