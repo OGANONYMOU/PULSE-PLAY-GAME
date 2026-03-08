@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Gamepad2, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export function SignIn(): React.ReactElement {
-  const { signIn } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,6 +45,9 @@ export function SignIn(): React.ReactElement {
   };
 
   const btnLabel = loading ? 'Signing In...' : 'Sign In';
+
+  // Already signed in — bounce to home immediately
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-12">

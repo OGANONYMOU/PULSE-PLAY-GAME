@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -138,6 +139,7 @@ function EmptyTournaments(p: { filter: string; onClear: () => void }): React.Rea
 
 export function Tournaments(): React.ReactElement {
   const { user, isAuthenticated } = useAuth();
+  const { symbol } = useCurrency();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
@@ -202,10 +204,8 @@ export function Tournaments(): React.ReactElement {
     ongoing:  tournaments.filter((t) => t.status === 'ongoing').length,
     completed: tournaments.filter((t) => t.status === 'completed').length,
   };
-  const totalPrize = tournaments.reduce((sum, t) => {
-    const n = parseFloat(t.prize_pool.replace(/[^0-9.]/g, ''));
-    return sum + (isNaN(n) ? 0 : n);
-  }, 0);
+  // Prize pool defaults to zero — prize logic not yet implemented
+  const totalPrize = 0;
   const selectedTournament = tournaments.find((t) => t.id === selectedId) ?? null;
 
   const FILTERS: { value: 'all' | TStatus; label: string }[] = [
@@ -234,7 +234,7 @@ export function Tournaments(): React.ReactElement {
           <div className="gaming-card p-6">
             <DollarSign className="w-8 h-8 text-purple-400 mx-auto mb-2" />
             <div className="font-orbitron text-2xl font-bold">
-              {loading ? '—' : '&#x20A6;' + (totalPrize >= 1000000 ? (totalPrize / 1000000).toFixed(1) + 'M' : (totalPrize / 1000).toFixed(0) + 'K')}
+              {loading ? '—' : symbol + '0'}
             </div>
             <div className="text-sm text-muted-foreground">Total Prize Pool</div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Gamepad2, User, Mail, Lock, Phone, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +59,7 @@ function StrengthBar(p: { password: string }): React.ReactElement {
 }
 
 export function Register(): React.ReactElement {
-  const { signUp } = useAuth();
+  const { signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormData>({
     first_name: '', last_name: '', username: '',
@@ -150,6 +150,9 @@ export function Register(): React.ReactElement {
   };
 
   const pwMatch = form.confirm_password && form.password === form.confirm_password;
+
+  // Already signed in — bounce to home immediately
+  if (isAuthenticated) return <Navigate to="/" replace />;
 
   if (success) {
     return (

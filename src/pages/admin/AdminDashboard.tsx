@@ -320,29 +320,31 @@ export function AdminDashboard(): React.ReactElement {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      // Profiles
+      // Profiles stats — fetch all for display, but loyalty XP uses USER-only count
       const { data: profiles, error: pErr } = await supabase
         .from('profiles').select('role, is_banned, created_at, username').order('created_at', { ascending: false });
       if (pErr) throw pErr;
       const rows = (profiles ?? []) as ProfileRow[];
+      // Loyalty: exclude ADMIN and MODERATOR accounts
+      const userRows = rows.filter(r => r.role === 'USER');
       const weekAgo = subDays(new Date(), 7).toISOString();
       setStats({
-        total: rows.length,
+        total: userRows.length,
         admins: rows.filter(r => r.role === 'ADMIN').length,
         moderators: rows.filter(r => r.role === 'MODERATOR').length,
-        banned: rows.filter(r => r.is_banned).length,
-        newThisWeek: rows.filter(r => r.created_at >= weekAgo).length,
+        banned: userRows.filter(r => r.is_banned).length,
+        newThisWeek: userRows.filter(r => r.created_at >= weekAgo).length,
       });
 
-      // 7-day chart
+      // 7-day chart — user-role signups only
       setChart(Array.from({ length: 7 }, (_, i) => {
         const d = subDays(new Date(), 6 - i);
         const iso = format(d, 'yyyy-MM-dd');
-        return { date: format(d, 'MMM d'), users: rows.filter(r => r.created_at.startsWith(iso)).length };
+        return { date: format(d, 'MMM d'), users: userRows.filter(r => r.created_at.startsWith(iso)).length };
       }));
 
-      // Activity feed
-      setActivity(rows.slice(0, 8).map((r, i) => ({
+      // Activity feed — user-role only
+      setActivity(userRows.slice(0, 8).map((r, i) => ({
         id: String(i), username: r.username, action: 'joined the platform', created_at: r.created_at,
       })));
 

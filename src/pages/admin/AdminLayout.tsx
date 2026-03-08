@@ -60,7 +60,8 @@ interface AdminMetrics { users: number; posts: number; tournaments: number; anno
 
 async function loadMetrics(): Promise<AdminMetrics> {
   const [u, p, t, a, g] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    // Count only USER-role accounts — admins excluded from loyalty XP
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'USER'),
     supabase.from('posts').select('*', { count: 'exact', head: true }),
     supabase.from('tournaments').select('*', { count: 'exact', head: true }),
     supabase.from('announcements').select('*', { count: 'exact', head: true }),

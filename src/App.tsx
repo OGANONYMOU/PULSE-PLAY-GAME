@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ParticleBackground } from '@/components/ui-custom/ParticleBackground';
@@ -150,14 +151,16 @@ function AppContent(): React.ReactElement {
 function App(): React.ReactElement {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <PrefetchCritical />
-          <AppContent />
-          <Toaster richColors closeButton position="top-right" />
-        </Router>
-      </AuthProvider>
+      <CurrencyProvider>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <PrefetchCritical />
+            <AppContent />
+            <Toaster richColors closeButton position="top-right" />
+          </Router>
+        </AuthProvider>
+      </CurrencyProvider>
     </ThemeProvider>
   );
 }
