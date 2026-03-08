@@ -68,6 +68,7 @@ export interface Database {
           name: string;
           description: string;
           icon: string;
+          logo_url: string | null;
           badge: string | null;
           player_count: number;
           tournament_count: number;
@@ -80,6 +81,7 @@ export interface Database {
           name: string;
           description: string;
           icon: string;
+          logo_url?: string | null;
           badge?: string | null;
           player_count?: number;
           tournament_count?: number;
@@ -92,6 +94,7 @@ export interface Database {
           name?: string;
           description?: string;
           icon?: string;
+          logo_url?: string | null;
           badge?: string | null;
           player_count?: number;
           tournament_count?: number;
@@ -229,15 +232,9 @@ export interface Database {
         };
       };
     };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      [_ in never]: never;
-    };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
   };
 }
 

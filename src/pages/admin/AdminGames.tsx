@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search,
   X, Save, Loader2, Star, AlertTriangle, Sparkles, Database,
+  Upload, Image as ImageIcon, Link as LinkIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ interface Game {
   name: string;
   description: string;
   icon: string;
+  logo_url: string | null;
   badge: string | null;
   player_count: number;
   tournament_count: number;
@@ -22,61 +24,66 @@ interface Game {
   created_at: string;
 }
 
-type GameInsert = {
-  name: string; description: string; icon: string; badge?: string | null;
-  player_count?: number; tournament_count?: number; category: string; featured?: boolean;
+type GamePayload = {
+  name: string; description: string; icon: string; logo_url?: string | null;
+  badge?: string | null; player_count?: number; tournament_count?: number;
+  category: string; featured?: boolean;
 };
 
 const BLANK: Omit<Game, 'id' | 'created_at'> = {
-  name: '', description: '', icon: '🎮', badge: null,
+  name: '', description: '', icon: '🎮', logo_url: null, badge: null,
   player_count: 0, tournament_count: 0, category: 'other', featured: false,
 };
 
 const CATEGORIES = ['fps','battle-royale','moba','sports','fighting','rpg','strategy','other'];
 
-// ── Default games seed data ─────────────────────────────────────────────────
-const DEFAULT_GAMES: GameInsert[] = [
+const DEFAULT_GAMES: GamePayload[] = [
   {
     name: 'eFootball',
     description: 'The ultimate mobile football experience with real-time matchmaking and seasonal competitions.',
-    icon: '⚽',
-    badge: 'Popular',
-    player_count: 12500,
-    tournament_count: 18,
-    category: 'sports',
-    featured: false,
+    icon: '⚽', logo_url: '/games/efootball.webp', badge: 'Popular',
+    player_count: 12500, tournament_count: 18, category: 'sports', featured: false,
+  },
+  {
+    name: 'EA FC Mobile',
+    description: 'EA Sports FC Mobile brings the world\'s most popular sport to your fingertips with stunning graphics and real player likenesses.',
+    icon: '⚽', logo_url: '/games/fifa-mobile.webp', badge: 'Hot',
+    player_count: 18200, tournament_count: 22, category: 'sports', featured: false,
   },
   {
     name: 'Call of Duty Mobile',
     description: 'Iconic FPS combat brought to mobile — battle royale, multiplayer, and ranked modes.',
-    icon: '🔫',
-    badge: 'Hot',
-    player_count: 28400,
-    tournament_count: 32,
-    category: 'fps',
-    featured: true,
+    icon: '🔫', logo_url: '/games/cod-mobile.webp', badge: 'Trending',
+    player_count: 28400, tournament_count: 32, category: 'fps', featured: true,
   },
   {
     name: 'PUBG Mobile',
     description: 'Drop in, loot up, and outlast 99 rivals in the original mobile battle royale.',
-    icon: '🪖',
-    badge: 'Trending',
-    player_count: 19800,
-    tournament_count: 25,
-    category: 'battle-royale',
-    featured: false,
+    icon: '🪖', logo_url: '/games/pubg.webp', badge: 'Popular',
+    player_count: 19800, tournament_count: 25, category: 'battle-royale', featured: false,
   },
   {
     name: 'Free Fire',
     description: 'Fast-paced 10-minute battle royale built for mobile — quick games, big wins.',
-    icon: '🔥',
-    badge: 'New',
-    player_count: 22100,
-    tournament_count: 21,
-    category: 'battle-royale',
-    featured: false,
+    icon: '🔥', logo_url: '/games/free-fire.webp', badge: 'New',
+    player_count: 22100, tournament_count: 21, category: 'battle-royale', featured: false,
   },
 ];
+
+// ── Logo preview component ─────────────────────────────────────────────────
+function LogoPreview(p: { logoUrl: string | null; icon: string; size?: string }): React.ReactElement {
+  const [err, setErr] = useState(false);
+  const sz = p.size ?? 'w-12 h-12';
+  const hasImg = p.logoUrl && !err;
+  return (
+    <div className={sz + ' rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/8 to-white/4 flex items-center justify-center text-xl flex-shrink-0'}>
+      {hasImg
+        ? <img src={p.logoUrl!} alt="" className="w-full h-full object-cover" onError={() => setErr(true)} />
+        : <span>{p.icon}</span>
+      }
+    </div>
+  );
+}
 
 // ── Field row ──────────────────────────────────────────────────────────────
 function Field(p: { label: string; children: React.ReactNode }): React.ReactElement {
@@ -85,6 +92,91 @@ function Field(p: { label: string; children: React.ReactNode }): React.ReactElem
       <label className="text-xs text-white/50 font-medium uppercase tracking-wider">{p.label}</label>
       {p.children}
     </div>
+  );
+}
+
+// ── Logo upload section ────────────────────────────────────────────────────
+function LogoUpload(p: {
+  gameId?: string;
+  logoUrl: string | null;
+  icon: string;
+  onChange: (url: string | null) => void;
+}): React.ReactElement {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [urlMode, setUrlMode] = useState(!p.gameId || !!p.logoUrl?.startsWith('/'));
+
+  const handleFile = async (file: File) => {
+    if (!p.gameId) {
+      toast.error('Save the game first before uploading an image, or use a URL instead.');
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split('.').pop();
+    const path = 'games/' + p.gameId + '-' + Date.now() + '.' + ext;
+    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    if (error) {
+      toast.error('Upload failed: ' + error.message + '. Use URL mode instead.');
+    } else {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      p.onChange(data.publicUrl);
+      toast.success('Logo uploaded!');
+    }
+    setUploading(false);
+  };
+
+  return (
+    <Field label="Game Logo">
+      <div className="flex items-center gap-3 mb-2">
+        <LogoPreview logoUrl={p.logoUrl} icon={p.icon} size="w-14 h-14" />
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setUrlMode(false)}
+            className={'text-[10px] px-2.5 py-1.5 rounded-lg border font-bold transition-all ' +
+              (!urlMode ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'bg-white/5 text-white/40 border-white/10 hover:text-white')}
+          >
+            <Upload className="w-3 h-3 inline mr-1" />File Upload
+          </button>
+          <button
+            onClick={() => setUrlMode(true)}
+            className={'text-[10px] px-2.5 py-1.5 rounded-lg border font-bold transition-all ' +
+              (urlMode ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'bg-white/5 text-white/40 border-white/10 hover:text-white')}
+          >
+            <LinkIcon className="w-3 h-3 inline mr-1" />Image URL
+          </button>
+          {p.logoUrl ? (
+            <button onClick={() => p.onChange(null)}
+              className="text-[10px] px-2.5 py-1.5 rounded-lg border bg-red-500/10 text-red-400 border-red-500/20 font-bold">
+              Remove
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {urlMode ? (
+        <Input
+          value={p.logoUrl ?? ''}
+          onChange={e => p.onChange(e.target.value || null)}
+          placeholder="https://… or /games/pubg.webp"
+          className="bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-cyan-500/50 h-9 text-sm"
+        />
+      ) : (
+        <div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="w-full flex items-center justify-center gap-2 h-20 rounded-xl border-2 border-dashed border-white/15 hover:border-cyan-500/40 hover:bg-cyan-500/5 text-white/40 hover:text-cyan-400 transition-all text-sm"
+          >
+            {uploading
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Uploading…</>
+              : <><ImageIcon className="w-4 h-4" />Click to select image</>}
+          </button>
+          <p className="text-[10px] text-white/25 mt-1.5">Uploads to Supabase Storage. Requires the avatars bucket to be public.</p>
+        </div>
+      )}
+    </Field>
   );
 }
 
@@ -98,16 +190,17 @@ function GameModal(p: {
   const [saving, setSaving] = useState(false);
   const isEdit = !!p.game.id;
 
-  const set = (k: keyof typeof form, v: string | number | boolean | null) =>
+  const set = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
     setForm(prev => ({ ...prev, [k]: v }));
 
   const save = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
-    const payload: GameInsert = {
+    const payload: GamePayload = {
       name: form.name.trim(),
       description: form.description.trim(),
       icon: form.icon.trim() || '🎮',
+      logo_url: form.logo_url || null,
       badge: form.badge?.trim() || null,
       player_count: Number(form.player_count) || 0,
       tournament_count: Number(form.tournament_count) || 0,
@@ -125,15 +218,13 @@ function GameModal(p: {
     }
 
     if (error) {
-      // Surface RLS and other errors clearly
       const msg = error.message.includes('row-level security') || error.message.includes('permission')
-        ? 'Permission denied — ensure your Supabase RLS policy allows admin inserts on the games table.'
+        ? 'Permission denied — run the SQL migration to set up RLS policies.'
         : error.message;
       toast.error(msg);
     } else {
       toast.success(isEdit ? 'Game updated.' : 'Game added.');
-      p.onSaved();
-      p.onClose();
+      p.onSaved(); p.onClose();
     }
     setSaving(false);
   };
@@ -149,9 +240,7 @@ function GameModal(p: {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-lg">
-              {form.icon}
-            </div>
+            <LogoPreview logoUrl={form.logo_url} icon={form.icon} />
             <h2 className="font-orbitron font-bold text-sm text-white">{isEdit ? 'Edit Game' : 'Add New Game'}</h2>
           </div>
           <button onClick={p.onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all">
@@ -159,21 +248,28 @@ function GameModal(p: {
           </button>
         </div>
 
-        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="p-6 space-y-4 max-h-[72vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Game Name">
               <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. PUBG Mobile" className={inputCls} />
             </Field>
-            <Field label="Icon (emoji)">
+            <Field label="Fallback Icon">
               <Input value={form.icon} onChange={e => set('icon', e.target.value)} placeholder="🎮" className={inputCls + ' text-2xl'} maxLength={4} />
             </Field>
           </div>
+
+          <LogoUpload
+            gameId={p.game.id}
+            logoUrl={form.logo_url}
+            icon={form.icon}
+            onChange={url => set('logo_url', url)}
+          />
 
           <Field label="Description">
             <textarea
               value={form.description}
               onChange={e => set('description', e.target.value)}
-              placeholder="Short description of the game…"
+              placeholder="Short description…"
               rows={2}
               className="w-full bg-white/5 border border-white/10 text-white placeholder:text-white/25 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 resize-none"
             />
@@ -181,25 +277,22 @@ function GameModal(p: {
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Category">
-              <select
-                value={form.category}
-                onChange={e => set('category', e.target.value)}
-                className="bg-white/5 border border-white/10 text-white rounded-lg px-3 h-9 text-sm focus:outline-none focus:border-cyan-500/50"
-              >
+              <select value={form.category} onChange={e => set('category', e.target.value)}
+                className="bg-white/5 border border-white/10 text-white rounded-lg px-3 h-9 text-sm focus:outline-none focus:border-cyan-500/50">
                 {CATEGORIES.map(c => <option key={c} value={c} className="bg-card">{c}</option>)}
               </select>
             </Field>
             <Field label="Badge (optional)">
-              <Input value={form.badge ?? ''} onChange={e => set('badge', e.target.value || null)} placeholder="e.g. Hot, New" className={inputCls} />
+              <Input value={form.badge ?? ''} onChange={e => set('badge', e.target.value || null)} placeholder="Hot, New, Trending…" className={inputCls} />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Player Count">
-              <Input type="number" value={form.player_count} onChange={e => set('player_count', e.target.value)} className={inputCls} min={0} />
+              <Input type="number" value={form.player_count} onChange={e => set('player_count', Number(e.target.value))} className={inputCls} min={0} />
             </Field>
             <Field label="Tournament Count">
-              <Input type="number" value={form.tournament_count} onChange={e => set('tournament_count', e.target.value)} className={inputCls} min={0} />
+              <Input type="number" value={form.tournament_count} onChange={e => set('tournament_count', Number(e.target.value))} className={inputCls} min={0} />
             </Field>
           </div>
 
@@ -218,7 +311,7 @@ function GameModal(p: {
         </div>
 
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/8">
-          <Button variant="ghost" size="sm" onClick={p.onClose} className="text-white/50 hover:text-white hover:bg-white/8 text-xs">Cancel</Button>
+          <Button variant="ghost" size="sm" onClick={p.onClose} className="text-white/50 hover:text-white text-xs">Cancel</Button>
           <Button size="sm" onClick={save} disabled={saving} className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold gap-2">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {isEdit ? 'Save Changes' : 'Add Game'}
@@ -248,14 +341,12 @@ function DeleteConfirm(p: { game: Game; onClose: () => void; onDeleted: () => vo
           </div>
           <div>
             <h3 className="font-orbitron font-bold text-sm text-white">Delete Game</h3>
-            <p className="text-xs text-white/40">This cannot be undone</p>
+            <p className="text-xs text-white/40">Cannot be undone</p>
           </div>
         </div>
-        <p className="text-sm text-white/60 mb-6">
-          Delete <span className="font-bold text-white">{p.game.name}</span>? Linked tournaments will lose their game reference.
-        </p>
+        <p className="text-sm text-white/60 mb-6">Delete <span className="font-bold text-white">{p.game.name}</span>?</p>
         <div className="flex gap-3">
-          <Button variant="ghost" size="sm" onClick={p.onClose} className="flex-1 border border-white/10 text-white/50 hover:text-white text-xs">Cancel</Button>
+          <Button variant="ghost" size="sm" onClick={p.onClose} className="flex-1 border border-white/10 text-white/50 text-xs">Cancel</Button>
           <Button size="sm" onClick={confirm} disabled={deleting} className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold gap-2">
             {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}Delete
           </Button>
@@ -265,7 +356,7 @@ function DeleteConfirm(p: { game: Game; onClose: () => void; onDeleted: () => vo
   );
 }
 
-// ── Seed confirm modal ──────────────────────────────────────────────────────
+// ── Seed modal ─────────────────────────────────────────────────────────────
 function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.ReactElement {
   const [seeding, setSeeding] = useState(false);
   const [done, setDone] = useState(false);
@@ -276,11 +367,10 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
     const msgs: string[] = [];
     for (const game of DEFAULT_GAMES) {
       const { error } = await supabase.from('games').insert(game as never);
-      if (error) {
-        msgs.push(`✗ ${game.name}: ${error.message.includes('row-level') ? 'RLS denied — check Supabase policies' : error.message}`);
-      } else {
-        msgs.push(`✓ ${game.name} added`);
-      }
+      msgs.push(error
+        ? `✗ ${game.name}: ${error.message.includes('row-level') ? 'RLS denied — run migration SQL' : error.message}`
+        : `✓ ${game.name} added`
+      );
     }
     setResults(msgs);
     setDone(true);
@@ -292,13 +382,13 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md bg-card border border-white/10 rounded-2xl p-6 shadow-2xl">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
             <Database className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
             <h3 className="font-orbitron font-bold text-sm text-white">Seed Default Games</h3>
-            <p className="text-xs text-white/40">Adds eFootball, CoD, PUBG, Free Fire</p>
+            <p className="text-xs text-white/40">Adds 5 games with official logos</p>
           </div>
         </div>
 
@@ -306,8 +396,11 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
           <>
             <div className="space-y-2 mb-5">
               {DEFAULT_GAMES.map(g => (
-                <div key={g.name} className="flex items-center gap-2 p-2 rounded-lg bg-white/4 border border-white/8">
-                  <span className="text-xl">{g.icon}</span>
+                <div key={g.name} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/4 border border-white/8">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/8 flex items-center justify-center text-xl flex-shrink-0">
+                    {g.logo_url ? <img src={g.logo_url} alt={g.name} className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} /> : null}
+                    <span className={g.logo_url ? 'hidden' : ''}>{g.icon}</span>
+                  </div>
                   <div>
                     <p className="text-sm text-white font-medium">{g.name}</p>
                     <p className="text-xs text-white/40 capitalize">{g.category} · {g.player_count?.toLocaleString()} players</p>
@@ -316,12 +409,11 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
                 </div>
               ))}
             </div>
-            <p className="text-xs text-white/35 mb-5">This will insert these games into your Supabase games table. Existing games are not affected.</p>
             <div className="flex gap-3">
               <Button variant="ghost" size="sm" onClick={p.onClose} className="flex-1 border border-white/10 text-white/50 text-xs">Cancel</Button>
               <Button size="sm" onClick={runSeed} disabled={seeding} className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold gap-2">
                 {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                {seeding ? 'Seeding…' : 'Seed Games'}
+                {seeding ? 'Seeding…' : 'Seed All Games'}
               </Button>
             </div>
           </>
@@ -332,7 +424,7 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
                 <p key={i} className={'text-xs font-mono px-3 py-1.5 rounded-lg ' + (r.startsWith('✓') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400')}>{r}</p>
               ))}
             </div>
-            <Button size="sm" onClick={p.onClose} className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold">Close</Button>
+            <Button size="sm" onClick={p.onClose} className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold">Done</Button>
           </>
         )}
       </motion.div>
@@ -348,9 +440,7 @@ function GameRow(p: { game: Game; index: number; onEdit: () => void; onDelete: (
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: p.index * 0.04 }}
       className="flex items-center gap-4 p-4 rounded-xl bg-white/4 border border-white/8 hover:border-white/15 hover:bg-white/6 transition-all group"
     >
-      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/8 to-white/4 border border-white/10 flex items-center justify-center text-2xl flex-shrink-0">
-        {g.icon}
-      </div>
+      <LogoPreview logoUrl={g.logo_url} icon={g.icon} size="w-12 h-12" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <span className="font-orbitron font-bold text-sm text-white">{g.name}</span>
@@ -366,6 +456,7 @@ function GameRow(p: { game: Game; index: number; onEdit: () => void; onDelete: (
         <div className="flex items-center gap-4 mt-1">
           <span className="text-xs text-white/30">{g.player_count.toLocaleString()} players</span>
           <span className="text-xs text-white/30">{g.tournament_count} tournaments</span>
+          {g.logo_url ? <span className="text-xs text-green-400/60">✓ has logo</span> : <span className="text-xs text-white/20">emoji only</span>}
         </div>
       </div>
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -406,6 +497,7 @@ export function AdminGames(): React.ReactElement {
   );
 
   const editForm = modal && modal !== 'add' ? { ...modal } : { ...BLANK };
+  const withLogos = games.filter(g => g.logo_url).length;
 
   return (
     <div className="p-5 sm:p-7 max-w-5xl">
@@ -413,7 +505,7 @@ export function AdminGames(): React.ReactElement {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
         <div>
           <h1 className="font-orbitron text-2xl font-black text-white mb-1">Games</h1>
-          <p className="text-white/35 text-sm">{games.length} games in the platform</p>
+          <p className="text-white/35 text-sm">{games.length} games · {withLogos} with logos</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
@@ -440,16 +532,15 @@ export function AdminGames(): React.ReactElement {
       {fetchError ? (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-5 flex items-center justify-between">
           <span>{fetchError}</span>
-          <Button variant="ghost" size="sm" onClick={load} className="text-red-400 hover:text-red-300 text-xs h-7">Retry</Button>
+          <Button variant="ghost" size="sm" onClick={load} className="text-red-400 text-xs h-7">Retry</Button>
         </div>
       ) : null}
 
-      {/* Seed hint when empty */}
       {!loading && games.length === 0 && !fetchError ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="p-6 rounded-2xl border border-dashed border-white/15 text-center mb-5">
+          className="p-8 rounded-2xl border border-dashed border-white/15 text-center mb-5">
           <Gamepad2 className="w-12 h-12 mx-auto text-white/15 mb-3" />
-          <p className="text-white/40 text-sm mb-4">No games yet. Add one manually or seed the 4 default games.</p>
+          <p className="text-white/40 text-sm mb-5">No games yet. Seed the 5 default games (with logos!) or add manually.</p>
           <Button size="sm" onClick={() => setShowSeed(true)}
             className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold gap-2">
             <Sparkles className="w-3.5 h-3.5" />Seed Default Games
@@ -465,16 +556,14 @@ export function AdminGames(): React.ReactElement {
             <GameRow key={g.id} game={g} index={i} onEdit={() => setModal(g)} onDelete={() => setDeleteTarget(g)} />
           ))}
           {filtered.length === 0 && games.length > 0 ? (
-            <div className="text-center py-12">
-              <p className="text-white/35 text-sm">No games match your search.</p>
-            </div>
+            <div className="text-center py-12"><p className="text-white/35 text-sm">No games match your search.</p></div>
           ) : null}
         </div>
       )}
 
       <AnimatePresence>
         {modal ? <GameModal key="game-modal" game={editForm} onClose={() => setModal(null)} onSaved={load} /> : null}
-        {deleteTarget ? <DeleteConfirm key="delete-modal" game={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={load} /> : null}
+        {deleteTarget ? <DeleteConfirm key="del-modal" game={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={load} /> : null}
         {showSeed ? <SeedModal key="seed-modal" onClose={() => setShowSeed(false)} onSeeded={load} /> : null}
       </AnimatePresence>
     </div>
