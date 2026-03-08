@@ -52,7 +52,7 @@ function CreatePostModal(p: { authorId: string; onClose: () => void; onSaved: ()
       author_id: p.authorId,
       likes: 0,
       comments: 0,
-    });
+    } as never);
     if (error) {
       const msg = error.message.includes('row-level security') || error.message.includes('permission')
         ? 'Permission denied — check Supabase RLS policies for posts table.'

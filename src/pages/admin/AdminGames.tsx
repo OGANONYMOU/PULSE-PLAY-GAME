@@ -117,10 +117,10 @@ function GameModal(p: {
 
     let error: { message: string } | null = null;
     if (isEdit) {
-      const res = await supabase.from('games').update(payload).eq('id', p.game.id!);
+      const res = await supabase.from('games').update(payload as never).eq('id', p.game.id!);
       error = res.error;
     } else {
-      const res = await supabase.from('games').insert(payload);
+      const res = await supabase.from('games').insert(payload as never);
       error = res.error;
     }
 
@@ -275,7 +275,7 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
     setSeeding(true);
     const msgs: string[] = [];
     for (const game of DEFAULT_GAMES) {
-      const { error } = await supabase.from('games').insert(game);
+      const { error } = await supabase.from('games').insert(game as never);
       if (error) {
         msgs.push(`✗ ${game.name}: ${error.message.includes('row-level') ? 'RLS denied — check Supabase policies' : error.message}`);
       } else {

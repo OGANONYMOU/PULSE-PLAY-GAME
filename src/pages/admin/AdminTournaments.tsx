@@ -94,10 +94,10 @@ function TournModal(p: {
 
     let error: { message: string } | null = null;
     if (isEdit && p.tournament) {
-      const res = await supabase.from('tournaments').update(payload).eq('id', p.tournament.id);
+      const res = await supabase.from('tournaments').update(payload as never).eq('id', p.tournament.id);
       error = res.error;
     } else {
-      const res = await supabase.from('tournaments').insert(payload);
+      const res = await supabase.from('tournaments').insert(payload as never);
       error = res.error;
     }
 
@@ -304,7 +304,7 @@ export function AdminTournaments(): React.ReactElement {
   useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (t: Tournament, status: Status) => {
-    const { error } = await supabase.from('tournaments').update({ status }).eq('id', t.id);
+    const { error } = await supabase.from('tournaments').update({ status } as never).eq('id', t.id);
     if (error) toast.error(error.message);
     else { toast.success('Status updated.'); load(); }
   };

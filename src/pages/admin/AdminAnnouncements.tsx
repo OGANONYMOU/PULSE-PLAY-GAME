@@ -56,7 +56,7 @@ function AnnModal(p: {
         content: form.content.trim(),
         type: form.type,
         updated_at: new Date().toISOString(),
-      }).eq('id', p.initial.id);
+      } as never).eq('id', p.initial.id);
       error = res.error;
     } else {
       const res = await supabase.from('announcements').insert({
@@ -66,7 +66,7 @@ function AnnModal(p: {
         created_by: p.createdBy ?? null,
         pinned: false,
         is_active: true,
-      });
+      } as never);
       error = res.error;
     }
 
@@ -260,7 +260,7 @@ export function AdminAnnouncements(): React.ReactElement {
 
   const toggleField = async (ann: AnnouncementRow, field: 'pinned' | 'is_active') => {
     const { error } = await supabase.from('announcements')
-      .update({ [field]: !ann[field], updated_at: new Date().toISOString() })
+      .update({ [field]: !ann[field], updated_at: new Date().toISOString() } as never)
       .eq('id', ann.id);
     if (error) toast.error(error.message);
     else { toast.success('Updated.'); load(); }
