@@ -11,26 +11,30 @@ import { AppLoader } from '@/components/AppLoader';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-// ── Lazy pages — each becomes its own JS chunk ────────────────────────────────
-const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
-const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
-const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
-const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
-const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
-const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
-const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
-const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
-const Profile      = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
-const NotFound     = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
+// ── Lazy pages ───────────────────────────────────────────────────────────────
+const Home          = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
+const Games         = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
+const Tournaments   = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
+const Community     = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
+const About         = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
+const SignIn        = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
+const Register      = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
+const AuthCallback  = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
+const Profile       = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
+const NotFound      = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
 
-// Admin chunk — separate bundle, only downloaded when admin visits /admin
-const AdminLayout    = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
-const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const AdminUsers     = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
-const AdminGames     = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
-const AdminAnalytics = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
+// Admin chunk — separate bundle
+const AdminLayout       = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboard    = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminUsers        = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
+const AdminGames        = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
+const AdminAnalytics    = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
+const AdminTournaments  = lazy(() => import('@/pages/admin/AdminTournaments').then(m => ({ default: m.AdminTournaments })));
+const AdminPosts        = lazy(() => import('@/pages/admin/AdminPosts').then(m => ({ default: m.AdminPosts })));
+const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements').then(m => ({ default: m.AdminAnnouncements })));
+const AdminSettings     = lazy(() => import('@/pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 
-// ── Route prefetching — fire chunk download on hover, so click feels instant ──
+// ── Route prefetching on nav hover ───────────────────────────────────────────
 const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/':            () => import('@/pages/Home'),
   '/games':       () => import('@/pages/Games'),
@@ -41,13 +45,12 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/register':    () => import('@/pages/Register'),
   '/profile':     () => import('@/pages/Profile'),
 };
-
 export function prefetchRoute(path: string): void {
   const fn = PREFETCH_MAP[path];
   if (fn) fn();
 }
 
-// ── Lightweight skeleton — shown by Suspense while a lazy chunk loads ─────────
+// ── Page skeleton ────────────────────────────────────────────────────────────
 function PageSkeleton(): React.ReactElement {
   return (
     <div className="min-h-screen pt-24 px-6">
@@ -64,21 +67,18 @@ function PageSkeleton(): React.ReactElement {
   );
 }
 
-// ── FIX: Page transition wrapper ──────────────────────────────────────────────
-// Key is on the motion.div (not on Routes), so React Router's internal state
-// is preserved across navigations. The old key approach caused Routes to fully
-// unmount+remount on every navigation, re-triggering Suspense even for cached chunks.
+// ── Page transition ──────────────────────────────────────────────────────────
 function PageTransition({ children }: { children: React.ReactNode }): React.ReactElement {
   const { pathname } = useLocation();
   return (
     <AnimatePresence mode="sync" initial={false}>
       <motion.div
         key={pathname}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -6 }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
-        style={{ willChange: 'opacity, transform' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.12, ease: 'linear' }}
+        style={{ willChange: 'opacity' }}
       >
         {children}
       </motion.div>
@@ -86,21 +86,20 @@ function PageTransition({ children }: { children: React.ReactNode }): React.Reac
   );
 }
 
-// ── FIX: Prefetch critical routes after first paint (reduced delay) ───────────
+// ── Prefetch critical pages after first load ─────────────────────────────────
 function PrefetchCritical(): null {
   useEffect(() => {
-    // 150ms gives the first render priority, then we start background downloads
     const t = setTimeout(() => {
       import('@/pages/Home');
       import('@/pages/Games');
       import('@/pages/Tournaments');
-    }, 150);
+    }, 800);
     return () => clearTimeout(t);
   }, []);
   return null;
 }
 
-// ── Main app shell ─────────────────────────────────────────────────────────────
+// ── App shell ────────────────────────────────────────────────────────────────
 function AppContent(): React.ReactElement {
   const { isLoading } = useAuth();
   const location = useLocation();
@@ -112,12 +111,9 @@ function AppContent(): React.ReactElement {
       <ParticleBackground />
       <Navbar />
       <main className="relative z-10">
-        {/* FIX: Suspense wraps Routes. Routes has no key prop — removing it prevents
-            full unmount/remount on navigation. PageTransition wraps the Suspense
-            boundary so the skeleton animates in/out cleanly. */}
         <PageTransition>
           <Suspense fallback={<PageSkeleton />}>
-            <Routes location={location}>
+            <Routes location={location} key={location.pathname}>
               <Route path="/"                  element={<Home />} />
               <Route path="/games"             element={<Games />} />
               <Route path="/tournaments"       element={<Tournaments />} />
@@ -128,12 +124,19 @@ function AppContent(): React.ReactElement {
               <Route path="/auth/callback"     element={<AuthCallback />} />
               <Route path="/profile"           element={<Profile />} />
               <Route path="/profile/:username" element={<Profile />} />
-              <Route path="/admin"             element={<AdminLayout />}>
-                <Route index                  element={<AdminDashboard />} />
-                <Route path="users"           element={<AdminUsers />} />
-                <Route path="games"           element={<AdminGames />} />
-                <Route path="analytics"       element={<AdminAnalytics />} />
+
+              {/* Admin — all 8 sub-routes now wired */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index                    element={<AdminDashboard />} />
+                <Route path="analytics"         element={<AdminAnalytics />} />
+                <Route path="users"             element={<AdminUsers />} />
+                <Route path="tournaments"       element={<AdminTournaments />} />
+                <Route path="games"             element={<AdminGames />} />
+                <Route path="posts"             element={<AdminPosts />} />
+                <Route path="announcements"     element={<AdminAnnouncements />} />
+                <Route path="settings"          element={<AdminSettings />} />
               </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
