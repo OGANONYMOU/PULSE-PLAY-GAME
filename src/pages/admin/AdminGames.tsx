@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search,
-  X, Save, Loader2, Star, AlertTriangle, Sparkles, Database,
+  X, Save, Loader2, AlertTriangle, Sparkles, Database,
   Upload, Image as ImageIcon, Link as LinkIcon, Copy, CheckCheck,
   Camera, ChevronDown, ChevronUp,
 } from 'lucide-react';
