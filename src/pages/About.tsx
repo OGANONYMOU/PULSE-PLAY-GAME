@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, DollarSign, Gamepad2, Users, Check, ArrowRight, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 
@@ -72,6 +73,7 @@ const timeline = [
 
 export function About() {
   const { symbol } = useCurrency();
+  const { isAuthenticated } = useAuth();
 
   const stats = [
     { value: '10K+',      label: 'Active Gamers',       icon: Users },
@@ -80,9 +82,9 @@ export function About() {
     { value: '15+',       label: 'Partner Games',        icon: Gamepad2 },
   ];
   return (
-    <div className="min-h-screen pt-24">
+    <div className="min-h-screen pt-20 sm:pt-24">
       {/* Hero Section */}
-      <section className="relative px-6 py-20 overflow-hidden">
+      <section className="relative px-4 sm:px-6 py-14 sm:py-20 overflow-hidden">
         {/* Background Orbs */}
         <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-purple-500/10 blur-3xl" />
         <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl" />
@@ -92,38 +94,39 @@ export function About() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-16"
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-sm font-medium mb-6">
               Empowering Mobile Gamers Since 2024
             </div>
-            <h1 className="font-orbitron text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="font-orbitron text-3xl sm:text-5xl md:text-6xl font-bold mb-5 sm:mb-6">
               We Live &<br />
               <span className="gradient-text">Breathe Gaming</span>
             </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-10">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
               PulsePay is the home of competitive mobile gaming in Nigeria and beyond. 
               We build community-first experiences for players who are hungry to compete, connect, and win.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                asChild
-                size="lg"
-                className="bg-gradient-to-r from-cyan-500 to-purple-600"
-              >
-                <Link to="/register">
-                  Join PulsePay
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-purple-500/50"
-              >
-                <Link to="/tournaments">View Tournaments</Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600">
+                    <Link to="/tournaments">Browse Tournaments <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="border-purple-500/50">
+                    <Link to="/community">Community</Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600">
+                    <Link to="/register">Join PulsePay <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="border-purple-500/50">
+                    <Link to="/tournaments">View Tournaments</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -132,18 +135,18 @@ export function About() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
           >
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="gaming-card p-6 text-center"
+                className="gaming-card p-4 sm:p-6 text-center"
               >
-                <stat.icon className="w-8 h-8 mx-auto mb-3 text-cyan-400" />
-                <div className="font-orbitron text-2xl md:text-3xl font-bold gradient-text">
+                <stat.icon className="w-7 h-7 sm:w-8 sm:h-8 mx-auto mb-2 sm:mb-3 text-cyan-400" />
+                <div className="font-orbitron text-xl sm:text-2xl md:text-3xl font-bold gradient-text">
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>
@@ -151,7 +154,7 @@ export function About() {
       </section>
 
       {/* Mission Section */}
-      <section className="py-20 px-6">
+      <section className="py-14 sm:py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Text */}
@@ -325,7 +328,7 @@ export function About() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
+      <section className="py-14 sm:py-20 px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -333,27 +336,40 @@ export function About() {
           transition={{ duration: 0.6 }}
           className="max-w-3xl mx-auto text-center"
         >
-          <div className="gaming-card p-12 relative overflow-hidden">
+          <div className="gaming-card p-8 sm:p-12 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
 
             <div className="relative z-10">
-              <h2 className="font-orbitron text-3xl md:text-4xl font-bold mb-4">
-                Ready to Compete?
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8">
-                Join thousands of players already on PulsePay. Sign up free and enter your first tournament today.
-              </p>
-              <Button
-                asChild
-                size="lg"
-                className="bg-gradient-to-r from-purple-600 to-pink-500 mb-8"
-              >
-                <Link to="/register">
-                  Create Free Account
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                    Ready to <span className="gradient-text">Compete?</span>
+                  </h2>
+                  <p className="text-muted-foreground text-base sm:text-lg mb-8">
+                    Jump into a tournament and start climbing the leaderboards.
+                  </p>
+                  <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 mb-8">
+                    <Link to="/tournaments">
+                      Browse Tournaments <ArrowRight className="ml-2 w-4 h-4" />
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                    Ready to Compete?
+                  </h2>
+                  <p className="text-muted-foreground text-base sm:text-lg mb-8">
+                    Join thousands of players already on PulsePay. Sign up free and enter your first tournament today.
+                  </p>
+                  <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 mb-8">
+                    <Link to="/register">
+                      Create Free Account <ArrowRight className="ml-2 w-4 h-4" />
+                    </Link>
+                  </Button>
+                </>
+              )}
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
                 <a href="mailto:support@pulsepay.com" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">

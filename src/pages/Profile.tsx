@@ -396,7 +396,8 @@ export function Profile(): React.ReactElement {
           <BannerBg url={profile.banner_url} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <BannerUploadBtn show={isOwnProfile} uploading={isUploadingBanner} onClick={() => bannerRef.current?.click()} />
-          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'banner', 'banner_url', setIsUploadingBanner); }} />
+          {/* accept="image/*" without capture lets user choose gallery OR camera on mobile */}
+          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'banner', 'banner_url', setIsUploadingBanner); e.target.value = ''; }} />
         </div>
 
         <div className="relative -mt-16 mx-2 sm:mx-0 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl p-5 sm:p-6 mb-4">
@@ -406,7 +407,8 @@ export function Profile(): React.ReactElement {
                 {isUploadingAvatar ? <div className="w-full h-full bg-white/10 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-cyan-400" /></div> : <AvatarDisplay url={profile.avatar_url} username={profile.username} />}
               </div>
               <AvatarUploadBtn show={isOwnProfile} uploading={isUploadingAvatar} onClick={() => avatarRef.current?.click()} />
-              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'avatar', 'avatar_url', setIsUploadingAvatar); }} />
+              {/* Reset value so same file can be re-selected; no capture = shows gallery + camera option sheet */}
+              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'avatar', 'avatar_url', setIsUploadingAvatar); e.target.value = ''; }} />
             </div>
             <div className="flex-1 min-w-0 pt-1 sm:pt-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">

@@ -61,27 +61,27 @@ export function Community() {
   };
 
   return (
-    <div className="min-h-screen pt-24 px-6">
+    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6">
       {/* Hero Banner */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-7xl mx-auto mb-12"
+        className="max-w-7xl mx-auto mb-8 sm:mb-12"
       >
-        <div className="gaming-card p-8 md:p-12 text-center relative overflow-hidden">
+        <div className="gaming-card p-6 sm:p-8 md:p-12 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
           <div className="relative z-10">
-            <h1 className="font-orbitron text-3xl md:text-4xl font-bold mb-4">
+            <h1 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
               The <span className="gradient-text">PulsePay</span> Community
             </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6">
+            <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto mb-4 sm:mb-6">
               Connect with mobile gamers. Share updates, discuss tactics, celebrate victories.
             </p>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 border border-green-500/30">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-green-400 font-medium">{liveTournaments.length}</span>
-              <span className="text-muted-foreground">live tournaments running</span>
+              <span className="text-muted-foreground text-sm">live tournaments running</span>
             </div>
           </div>
         </div>

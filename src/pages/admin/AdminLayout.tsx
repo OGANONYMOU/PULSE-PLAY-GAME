@@ -275,21 +275,21 @@ export function AdminLayout(): React.ReactElement {
       <div className="flex-1 lg:ml-64 min-h-screen flex flex-col">
         {/* Mobile topbar */}
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/8 bg-card/90 backdrop-blur-xl sticky top-0 z-20">
-          <button onClick={() => setOpen(true)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all" aria-label="Open menu">
+          <button onClick={() => setOpen(o => !o)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all" aria-label="Toggle menu">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <Shield className="w-4 h-4 text-cyan-400 flex-shrink-0" />
           <span className="font-orbitron font-bold text-sm text-white">Admin Console</span>
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-[10px] text-white/30 hidden sm:block font-mono">{lvl.emoji} {lvl.name}</span>
-            <div className="w-16 h-1.5 rounded-full bg-white/8 overflow-hidden hidden sm:block">
+            <span className="text-[10px] text-white/30 font-mono">{lvl.emoji} {lvl.name}</span>
+            <div className="w-14 h-1.5 rounded-full bg-white/8 overflow-hidden">
               <div className="h-full rounded-full transition-all duration-700"
                 style={{ width: getLevelPct(xp, lvl) + '%', background: `linear-gradient(90deg, ${lvl.barFrom}, ${lvl.barTo})` }} />
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto overflow-x-hidden">
           <Outlet />
         </div>
       </div>

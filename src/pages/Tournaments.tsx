@@ -215,7 +215,7 @@ export function Tournaments(): React.ReactElement {
   ];
 
   return (
-    <div className="min-h-screen pt-24 px-4 sm:px-6 pb-16">
+    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
       {/* Hero */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto text-center mb-12">
         <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-4">

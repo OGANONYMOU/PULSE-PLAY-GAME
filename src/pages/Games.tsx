@@ -73,12 +73,12 @@ const STATUS_META = {
 };
 
 // ── Game logo component ───────────────────────────────────────────────────
-function GameLogo(p: { game: Game; size?: 'sm' | 'md' | 'lg' }): React.ReactElement {
+function GameLogo(p: { game: Game; size?: 'sm' | 'md' | 'lg'; className?: string }): React.ReactElement {
   const [err, setErr] = useState(false);
   const sz = p.size === 'lg' ? 'w-24 h-24 text-5xl' : p.size === 'md' ? 'w-20 h-20 text-4xl' : 'w-14 h-14 text-2xl';
   const hasLogo = p.game.logo_url && !err;
   return (
-    <div className={sz + ' rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5 border border-white/10'}>
+    <div className={sz + ' rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5 border border-white/10 transition-colors ' + (p.className ?? '')}>
       {hasLogo ? (
         <img
           src={p.game.logo_url!}
@@ -404,9 +404,7 @@ function GameCard(p: { game: Game; index: number; onClick: () => void }): React.
       >
         {/* Top row: logo + badge */}
         <div className="flex items-start justify-between mb-4">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-white/10 to-white/5 border border-white/10 group-hover:border-cyan-500/30 transition-colors">
-            <GameLogo game={g} size="sm" />
-          </div>
+          <GameLogo game={g} size="sm" className="group-hover:border-cyan-500/30" />
           {g.badge ? (
             <Badge className={badgeColor + ' text-white text-[10px] gap-1'}>
               <Sparkles className="w-2.5 h-2.5" />{g.badge}
@@ -506,7 +504,7 @@ export function Games(): React.ReactElement {
   });
 
   return (
-    <div className="min-h-screen pt-24 px-4 sm:px-6 pb-16">
+    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto text-center mb-10">
         <h1 className="font-orbitron text-4xl md:text-5xl font-black mb-4">

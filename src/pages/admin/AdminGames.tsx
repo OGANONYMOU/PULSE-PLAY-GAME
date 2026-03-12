@@ -104,7 +104,8 @@ function LogoUpload(p: {
 }): React.ReactElement {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [urlMode, setUrlMode] = useState(!p.gameId || !!p.logoUrl?.startsWith('/'));
+  // Always default to URL mode — shows existing logo URL for editing, or empty input for new
+  const [urlMode, setUrlMode] = useState(true);
 
   const handleFile = async (file: File) => {
     if (!p.gameId) {
@@ -163,7 +164,7 @@ function LogoUpload(p: {
       ) : (
         <div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
@@ -366,11 +367,23 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
     setSeeding(true);
     const msgs: string[] = [];
     for (const game of DEFAULT_GAMES) {
-      const { error } = await supabase.from('games').insert(game as never);
-      msgs.push(error
-        ? `✗ ${game.name}: ${error.message.includes('row-level') ? 'RLS denied — run migration SQL' : error.message}`
-        : `✓ ${game.name} added`
-      );
+      // Try insert first
+      const { error: insertErr } = await supabase.from('games').insert(game as never);
+      if (!insertErr) {
+        msgs.push(`✓ ${game.name} added`);
+      } else if (insertErr.message.includes('row-level') || insertErr.message.includes('permission')) {
+        msgs.push(`✗ ${game.name}: RLS denied — run migration SQL`);
+      } else {
+        // Game already exists — update logo_url so images show correctly
+        const { error: updateErr } = await supabase
+          .from('games')
+          .update({ logo_url: game.logo_url, badge: game.badge, featured: game.featured } as never)
+          .eq('name', game.name);
+        msgs.push(updateErr
+          ? `✗ ${game.name}: ${updateErr.message}`
+          : `↺ ${game.name} logo updated`
+        );
+      }
     }
     setResults(msgs);
     setDone(true);
@@ -388,7 +401,7 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
           </div>
           <div>
             <h3 className="font-orbitron font-bold text-sm text-white">Seed Default Games</h3>
-            <p className="text-xs text-white/40">Adds 5 games with official logos</p>
+            <p className="text-xs text-white/40">Adds games or updates logos if they already exist</p>
           </div>
         </div>
 
@@ -421,7 +434,7 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
           <>
             <div className="space-y-1.5 mb-5">
               {results.map((r, i) => (
-                <p key={i} className={'text-xs font-mono px-3 py-1.5 rounded-lg ' + (r.startsWith('✓') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400')}>{r}</p>
+                <p key={i} className={'text-xs font-mono px-3 py-1.5 rounded-lg ' + (r.startsWith('✓') ? 'bg-green-500/10 text-green-400' : r.startsWith('↺') ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400')}>{r}</p>
               ))}
             </div>
             <Button size="sm" onClick={p.onClose} className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold">Done</Button>
@@ -516,10 +529,11 @@ export function AdminGames(): React.ReactElement {
           <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="text-white/40 hover:text-white hover:bg-white/8 h-9 w-9 p-0">
             <RefreshCw className={'w-3.5 h-3.5 ' + (loading ? 'animate-spin' : '')} />
           </Button>
-          {games.length === 0 ? (
+          {games.length === 0 || games.some(g => !g.logo_url) ? (
             <Button size="sm" onClick={() => setShowSeed(true)}
-              className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold h-9 gap-2">
-              <Sparkles className="w-3.5 h-3.5" />Seed Defaults
+              className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold h-9 gap-2"
+              title={games.length > 0 ? 'Update logos on existing games' : 'Add default games'}>
+              <Sparkles className="w-3.5 h-3.5" />{games.length === 0 ? 'Seed Defaults' : 'Fix Logos'}
             </Button>
           ) : null}
           <Button size="sm" onClick={() => setModal('add')}

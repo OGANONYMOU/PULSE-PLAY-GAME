@@ -41,9 +41,9 @@ export function Home() {
   ];
 
   return (
-    <div className="min-h-screen pt-24">
+    <div className="min-h-screen pt-20 sm:pt-24">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-6">
+      <section className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6">
         {/* Floating Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
@@ -80,13 +80,13 @@ export function Home() {
             <span>Welcome to the Future of Mobile Gaming</span>
           </motion.div>
 
-          <h1 className="font-orbitron text-5xl md:text-7xl font-black mb-6 leading-tight">
+          <h1 className="font-orbitron text-3xl sm:text-5xl md:text-7xl font-black mb-4 sm:mb-6 leading-tight">
             <span className="gradient-text">Stay in the Pulse</span>
             <br />
             <span className="text-foreground">of Gaming</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
             Get the latest updates, news, and tournaments for mobile gamers.{' '}
             {isAuthenticated
               ? 'Jump back in and keep competing.'
@@ -98,14 +98,14 @@ export function Home() {
             {isAuthenticated ? (
               <>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-glow hover:shadow-glow-lg transition-all">
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl shadow-glow hover:shadow-glow-lg transition-all">
                   <Link to="/tournaments">
                     <Trophy className="mr-2 w-5 h-5" />
                     Browse Tournaments
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline"
-                  className="border-2 border-purple-500/50 hover:bg-purple-500/10 font-bold text-lg px-8 py-6 rounded-xl">
+                  className="border-2 border-purple-500/50 hover:bg-purple-500/10 font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl">
                   <Link to="/community">
                     <Users className="mr-2 w-5 h-5" />
                     Community
@@ -115,14 +115,14 @@ export function Home() {
             ) : (
               <>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-glow hover:shadow-glow-lg transition-all">
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl shadow-glow hover:shadow-glow-lg transition-all">
                   <Link to="/community">
                     Join the Community
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline"
-                  className="border-2 border-purple-500/50 hover:bg-purple-500/10 font-bold text-lg px-8 py-6 rounded-xl">
+                  className="border-2 border-purple-500/50 hover:bg-purple-500/10 font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl">
                   <Link to="/tournaments">
                     <Trophy className="mr-2 w-5 h-5" />
                     View Tournaments
@@ -147,22 +147,22 @@ export function Home() {
       </section>
 
       {/* Preview Section */}
-      <section className="py-24 px-6">
+      <section className="py-14 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-16"
           >
             <h2 className="section-title mb-4">What&apos;s Hot Right Now</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               Check out trending games and upcoming tournaments
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-8">
             {previewCards.map((card, index) => (
               <motion.div
                 key={card.title}
@@ -192,7 +192,7 @@ export function Home() {
       </section>
 
       {/* Featured Section */}
-      <section className="py-24 px-6 relative overflow-hidden">
+      <section className="py-14 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-cyan-500/5" />
         <div className="max-w-7xl mx-auto relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -289,7 +289,7 @@ export function Home() {
 
       {/* CTA Section — only shown to guests */}
       {!isAuthenticated ? (
-        <section className="py-24 px-6">
+        <section className="py-14 sm:py-24 px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -297,19 +297,19 @@ export function Home() {
             transition={{ duration: 0.6 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <div className="gaming-card p-12 relative overflow-hidden">
+            <div className="gaming-card p-7 sm:p-12 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
               <div className="relative z-10">
-                <h2 className="font-orbitron text-3xl md:text-4xl font-bold mb-4">
+                <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                   Ready to <span className="gradient-text">Level Up?</span>
                 </h2>
-                <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
+                <p className="text-muted-foreground text-base sm:text-lg mb-7 sm:mb-8 max-w-xl mx-auto">
                   Join thousands of mobile gamers competing for glory and prizes.
                   Sign up free and start your journey today.
                 </p>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-bold text-lg px-10 py-6 rounded-xl">
+                  className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-bold text-base sm:text-lg px-8 sm:px-10 py-5 sm:py-6 rounded-xl">
                   <Link to="/register">
                     Create Free Account
                     <ArrowRight className="ml-2 w-5 h-5" />
