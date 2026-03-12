@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search,
   X, Save, Loader2, Star, AlertTriangle, Sparkles, Database,
-  Upload, Image as ImageIcon, Link as LinkIcon,
+  Upload, Image as ImageIcon, Link as LinkIcon, Copy, CheckCheck,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -357,34 +357,107 @@ function DeleteConfirm(p: { game: Game; onClose: () => void; onDeleted: () => vo
   );
 }
 
+// ── Migration SQL banner ───────────────────────────────────────────────────
+const MIGRATION_SQL = `ALTER TABLE public.games ADD COLUMN IF NOT EXISTS logo_url TEXT;`;
+
+function MigrationBanner(): React.ReactElement {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(MIGRATION_SQL).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+  return (
+    <div className="mt-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+      <div className="flex items-start gap-2 mb-3">
+        <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-xs font-bold text-yellow-400 mb-1">Logo column missing — run this SQL once in Supabase</p>
+          <p className="text-[11px] text-white/50">Go to your Supabase project → SQL Editor → paste and run:</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 bg-black/40 rounded-lg px-3 py-2 border border-white/10">
+        <code className="text-[11px] text-cyan-400 flex-1 font-mono truncate">{MIGRATION_SQL}</code>
+        <button onClick={copy} className="flex-shrink-0 p-1.5 rounded-lg bg-white/8 hover:bg-cyan-500/20 text-white/40 hover:text-cyan-400 transition-all">
+          {copied ? <CheckCheck className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+      <p className="text-[10px] text-white/30 mt-2">After running the SQL, click "Fix Logos" again to apply the images.</p>
+    </div>
+  );
+}
+
 // ── Seed modal ─────────────────────────────────────────────────────────────
 function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.ReactElement {
   const [seeding, setSeeding] = useState(false);
   const [done, setDone] = useState(false);
   const [results, setResults] = useState<string[]>([]);
+  const [needsMigration, setNeedsMigration] = useState(false);
+
+  const isSchemaError = (msg: string) =>
+    msg.includes('logo_url') || msg.includes('schema cache') || msg.includes('column');
 
   const runSeed = async () => {
     setSeeding(true);
+    setNeedsMigration(false);
     const msgs: string[] = [];
+    let schemaErr = false;
+
     for (const game of DEFAULT_GAMES) {
-      // Try insert first
+      // Try full insert with logo_url first
       const { error: insertErr } = await supabase.from('games').insert(game as never);
+
       if (!insertErr) {
         msgs.push(`✓ ${game.name} added`);
-      } else if (insertErr.message.includes('row-level') || insertErr.message.includes('permission')) {
+        continue;
+      }
+
+      if (insertErr.message.includes('row-level') || insertErr.message.includes('permission')) {
         msgs.push(`✗ ${game.name}: RLS denied — run migration SQL`);
-      } else {
-        // Game already exists — update logo_url so images show correctly
+        continue;
+      }
+
+      // Schema error — logo_url column doesn't exist yet, retry without it
+      if (isSchemaError(insertErr.message)) {
+        schemaErr = true;
+        const { name, description, icon, badge, player_count, tournament_count, category, featured } = game;
+        const { error: retryErr } = await supabase.from('games').insert(
+          { name, description, icon, badge, player_count, tournament_count, category, featured } as never
+        );
+        if (!retryErr) {
+          msgs.push(`✓ ${game.name} added (logo pending migration)`);
+        } else if (retryErr.message.includes('duplicate') || retryErr.message.includes('unique')) {
+          // Already exists — try updating without logo_url
+          msgs.push(`↺ ${game.name} already exists`);
+        } else {
+          msgs.push(`✗ ${game.name}: ${retryErr.message}`);
+        }
+        continue;
+      }
+
+      // Duplicate — game already exists, try to update logo_url
+      if (insertErr.message.includes('duplicate') || insertErr.message.includes('unique') || insertErr.message.includes('already exists')) {
         const { error: updateErr } = await supabase
           .from('games')
           .update({ logo_url: game.logo_url, badge: game.badge, featured: game.featured } as never)
           .eq('name', game.name);
-        msgs.push(updateErr
-          ? `✗ ${game.name}: ${updateErr.message}`
-          : `↺ ${game.name} logo updated`
-        );
+
+        if (!updateErr) {
+          msgs.push(`↺ ${game.name} logo updated`);
+        } else if (isSchemaError(updateErr.message)) {
+          schemaErr = true;
+          msgs.push(`↺ ${game.name} exists (logo pending migration)`);
+        } else {
+          msgs.push(`✗ ${game.name}: ${updateErr.message}`);
+        }
+        continue;
       }
+
+      msgs.push(`✗ ${game.name}: ${insertErr.message}`);
     }
+
+    if (schemaErr) setNeedsMigration(true);
     setResults(msgs);
     setDone(true);
     setSeeding(false);
@@ -432,12 +505,16 @@ function SeedModal(p: { onClose: () => void; onSeeded: () => void }): React.Reac
           </>
         ) : (
           <>
-            <div className="space-y-1.5 mb-5">
+            <div className="space-y-1.5 mb-4">
               {results.map((r, i) => (
-                <p key={i} className={'text-xs font-mono px-3 py-1.5 rounded-lg ' + (r.startsWith('✓') ? 'bg-green-500/10 text-green-400' : r.startsWith('↺') ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400')}>{r}</p>
+                <p key={i} className={'text-xs font-mono px-3 py-1.5 rounded-lg ' +
+                  (r.startsWith('✓') ? 'bg-green-500/10 text-green-400' :
+                   r.startsWith('↺') ? 'bg-blue-500/10 text-blue-400' :
+                   'bg-red-500/10 text-red-400')}>{r}</p>
               ))}
             </div>
-            <Button size="sm" onClick={p.onClose} className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold">Done</Button>
+            {needsMigration ? <MigrationBanner /> : null}
+            <Button size="sm" onClick={p.onClose} className="w-full mt-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold">Done</Button>
           </>
         )}
       </motion.div>
@@ -489,16 +566,31 @@ export function AdminGames(): React.ReactElement {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
+  const [schemaError, setSchemaError] = useState(false);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<null | 'add' | Game>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
   const [showSeed, setShowSeed] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setFetchError('');
+    setLoading(true); setFetchError(''); setSchemaError(false);
     const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
-    if (error) setFetchError(error.message);
-    else setGames((data as Game[]) ?? []);
+    if (error) {
+      if (error.message.includes('logo_url') || error.message.includes('schema cache')) {
+        setSchemaError(true);
+        // Try fetching without logo_url-dependent fields
+        const { data: d2, error: e2 } = await supabase
+          .from('games')
+          .select('id,name,description,icon,badge,player_count,tournament_count,category,featured,created_at')
+          .order('created_at', { ascending: false });
+        if (!e2) setGames((d2 as Game[]).map(g => ({ ...g, logo_url: null })) ?? []);
+        else setFetchError(e2.message);
+      } else {
+        setFetchError(error.message);
+      }
+    } else {
+      setGames((data as Game[]) ?? []);
+    }
     setLoading(false);
   }, []);
 
@@ -542,6 +634,12 @@ export function AdminGames(): React.ReactElement {
           </Button>
         </div>
       </motion.div>
+
+      {schemaError ? (
+        <div className="mb-5">
+          <MigrationBanner />
+        </div>
+      ) : null}
 
       {fetchError ? (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-5 flex items-center justify-between">
