@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { detectCurrency, CURRENCY_SYMBOLS, type CurrencyCode } from '@/lib/currency';
 
-const STORAGE_KEY = 'pulsepay_currency';
+const STORAGE_KEY = 'pulseplay_currency';
 
 interface CurrencyContextType {
   currency: CurrencyCode;

@@ -50,8 +50,8 @@ const values = [
 const timeline = [
   {
     year: '2024',
-    title: 'PulsePay Founded',
-    description: 'A small team of mobile gaming enthusiasts launched PulsePay with a single goal: make competitive mobile gaming accessible to everyone.',
+    title: 'PulsePlay Founded',
+    description: 'A small team of mobile gaming enthusiasts launched PulsePlay with a single goal: make competitive mobile gaming accessible to everyone.',
   },
   {
     year: 'Early 2025',
@@ -61,12 +61,12 @@ const timeline = [
   {
     year: 'Mid 2025',
     title: 'Prize Distribution Launched',
-    description: 'Players earned real cash through PulsePay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.',
+    description: 'Players earned real cash through PulsePlay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.',
   },
   {
     year: 'Now',
     title: '10K+ Gamers & Growing',
-    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePay is just getting started.',
+    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePlay is just getting started.',
     current: true,
   },
 ];
@@ -104,7 +104,7 @@ export function About() {
               <span className="gradient-text">Breathe Gaming</span>
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
-              PulsePay is the home of competitive mobile gaming in Nigeria and beyond. 
+              PulsePlay is the home of competitive mobile gaming in Nigeria and beyond. 
               We build community-first experiences for players who are hungry to compete, connect, and win.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -120,7 +120,7 @@ export function About() {
               ) : (
                 <>
                   <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600">
-                    <Link to="/register">Join PulsePay <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                    <Link to="/register">Join PulsePlay <ArrowRight className="ml-2 w-4 h-4" /></Link>
                   </Button>
                   <Button asChild size="lg" variant="outline" className="border-purple-500/50">
                     <Link to="/tournaments">View Tournaments</Link>
@@ -171,7 +171,7 @@ export function About() {
                 Built for Players,<br />By Players
               </h2>
               <p className="text-muted-foreground text-lg mb-6 leading-relaxed">
-                PulsePay was founded by mobile gamers who were frustrated with the lack of 
+                PulsePlay was founded by mobile gamers who were frustrated with the lack of 
                 structured competition and community on mobile platforms. We set out to change that.
               </p>
               <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
@@ -242,7 +242,7 @@ export function About() {
             className="text-center mb-16"
           >
             <div className="text-cyan-400 text-sm font-bold uppercase tracking-wider mb-4">
-              Why PulsePay?
+              Why PulsePlay?
             </div>
             <h2 className="font-orbitron text-3xl md:text-4xl font-bold">
               Built on Three Pillars
@@ -361,7 +361,7 @@ export function About() {
                     Ready to Compete?
                   </h2>
                   <p className="text-muted-foreground text-base sm:text-lg mb-8">
-                    Join thousands of players already on PulsePay. Sign up free and enter your first tournament today.
+                    Join thousands of players already on PulsePlay. Sign up free and enter your first tournament today.
                   </p>
                   <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 mb-8">
                     <Link to="/register">
@@ -372,9 +372,9 @@ export function About() {
               )}
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
-                <a href="mailto:support@pulsepay.com" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
+                <a href="mailto:support@pulseplay.com" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
                   <Mail className="w-4 h-4" />
-                  support@pulsepay.com
+                  support@pulseplay.com
                 </a>
                 <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
                   <MessageCircle className="w-4 h-4" />

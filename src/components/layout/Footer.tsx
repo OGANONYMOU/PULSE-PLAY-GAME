@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Gamepad2, Twitter, Instagram, MessageCircle, Github } from 'lucide-react';
+import { Twitter, Instagram, MessageCircle, Github } from 'lucide-react';
 
 const socialLinks = [
   { href: 'https://twitter.com', icon: Twitter, label: 'Twitter' },
@@ -47,11 +47,11 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-3 group mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
-                <Gamepad2 className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-white/10 group-hover:ring-cyan-500/40 transition-all">
+                <img src="/pulseplay-logo.jpg" alt="PulsePlay" className="w-full h-full object-cover object-center" />
               </div>
               <span className="font-orbitron text-xl font-bold gradient-text">
-                PulsePay
+                PulsePlay
               </span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs mb-6">
@@ -101,7 +101,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} PulsePay. All rights reserved.
+            © {new Date().getFullYear()} PulsePlay. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

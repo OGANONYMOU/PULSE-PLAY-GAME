@@ -7,7 +7,7 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 // Surface a readable banner instead of a cryptic white screen
 if (!url || !key) {
   const msg =
-    '⚠️ PulsePay: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in your .env file. ' +
+    '⚠️ PulsePlay: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in your .env file. ' +
     'Check the README for setup instructions.';
   console.error(msg);
   // Inject visible DOM error so the screen is never blank
@@ -34,7 +34,7 @@ export const supabase = createClient<Database>(
       autoRefreshToken:  true,
       persistSession:    true,
       detectSessionInUrl: true,
-      storageKey:        'pulsepay-auth',
+      storageKey:        'pulseplay-auth',
     },
   },
 );

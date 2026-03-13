@@ -73,7 +73,7 @@ export function Community() {
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
           <div className="relative z-10">
             <h1 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
-              The <span className="gradient-text">PulsePay</span> Community
+              The <span className="gradient-text">PulsePlay</span> Community
             </h1>
             <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto mb-4 sm:mb-6">
               Connect with mobile gamers. Share updates, discuss tactics, celebrate victories.

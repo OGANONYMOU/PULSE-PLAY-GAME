@@ -65,7 +65,7 @@ export function AuthCallback(): React.ReactElement {
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
           <Gamepad2 className="w-8 h-8 text-white" />
         </div>
-        <div className="font-orbitron text-xl font-bold gradient-text mb-4">PulsePay</div>
+        <div className="font-orbitron text-xl font-bold gradient-text mb-4">PulsePlay</div>
 
         {status === 'loading' ? (
           <>

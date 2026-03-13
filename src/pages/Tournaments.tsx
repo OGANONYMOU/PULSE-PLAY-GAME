@@ -222,7 +222,7 @@ export function Tournaments(): React.ReactElement {
           Tournament <span className="gradient-text">Arena</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
-          Browse live, upcoming, and completed tournaments across the PulsePay community
+          Browse live, upcoming, and completed tournaments across the PulsePlay community
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
           <div className="gaming-card p-6">

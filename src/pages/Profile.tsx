@@ -174,7 +174,7 @@ function TabTournaments(p: { active: boolean }): React.ReactElement {
 }
 function TabAchievements(p: { active: boolean }): React.ReactElement {
   const items = [
-    { icon: Star, label: 'First Blood', desc: 'Joined PulsePay', color: 'text-yellow-400', unlocked: true },
+    { icon: Star, label: 'First Blood', desc: 'Joined PulsePlay', color: 'text-yellow-400', unlocked: true },
     { icon: Trophy, label: 'Champion', desc: 'Win a tournament', color: 'text-purple-400', unlocked: false },
     { icon: Flame, label: 'On Fire', desc: 'Post 10 times', color: 'text-orange-400', unlocked: false },
     { icon: Zap, label: 'Speed Runner', desc: 'Top 10 registrant', color: 'text-cyan-400', unlocked: false },

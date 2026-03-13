@@ -235,7 +235,7 @@ export function AdminLayout(): React.ReactElement {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 blur-lg opacity-25 group-hover:opacity-50 transition-opacity" />
                 </div>
                 <div>
-                  <div className="font-orbitron font-black text-[13px] text-white leading-tight">PulsePay</div>
+                  <div className="font-orbitron font-black text-[13px] text-white leading-tight">PulsePlay</div>
                   <div className="text-[9px] text-cyan-400 font-mono tracking-[0.2em] uppercase">Admin Console</div>
                 </div>
               </Link>
@@ -249,9 +249,9 @@ export function AdminLayout(): React.ReactElement {
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <Link to="/" className="group" title="PulsePay Admin">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Shield className="w-4 h-4 text-white" />
+              <Link to="/" className="group" title="PulsePlay Admin">
+                <div className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-cyan-500/40 group-hover:scale-105 transition-all">
+                  <img src="/pulseplay-logo.jpg" alt="PulsePlay" className="w-full h-full object-cover object-center" />
                 </div>
               </Link>
             </div>
@@ -381,7 +381,7 @@ export function AdminLayout(): React.ReactElement {
                 {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
               <div className="w-px h-5 bg-white/10" />
-              <Shield className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <div className="w-5 h-5 rounded-md overflow-hidden flex-shrink-0 ring-1 ring-white/15"><img src="/pulseplay-logo.jpg" alt="PulsePlay" className="w-full h-full object-cover" /></div>
               <span className="font-orbitron font-bold text-[11px] text-white tracking-wide">Admin</span>
               <div className="w-px h-5 bg-white/10" />
               <div className="flex items-center gap-1.5">

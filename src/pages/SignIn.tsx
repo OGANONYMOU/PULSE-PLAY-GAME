@@ -57,7 +57,7 @@ export function SignIn(): React.ReactElement {
             <Gamepad2 className="w-8 h-8 text-white" />
           </div>
           <h1 className="font-orbitron text-3xl font-bold mb-2">
-            Welcome Back to <span className="gradient-text">PulsePay</span>
+            Welcome Back to <span className="gradient-text">PulsePlay</span>
           </h1>
           <p className="text-muted-foreground">Sign in to your account</p>
         </div>

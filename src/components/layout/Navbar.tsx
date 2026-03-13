@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell, ChevronDown } from 'lucide-react';
+import { Menu, X, Sun, Moon, User, LogOut, Shield, Bell, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -23,6 +23,16 @@ const navLinks = [
   { href: '/about',       label: 'About' },
 ];
 
+// ── Brand logo component ────────────────────────────────────────────────────
+function BrandLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
+  const dim = size === 'md' ? 'w-10 h-10' : 'w-8 h-8';
+  return (
+    <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-white/10`}>
+      <img src="/pulseplay-logo.jpg" alt="PulsePlay" className="w-full h-full object-cover object-center" />
+    </div>
+  );
+}
+
 // ── Smart scroll-hide / reveal hook ────────────────────────────────────────
 function useNavScroll() {
   const [visible, setVisible] = useState(true);
@@ -41,9 +51,9 @@ function useNavScroll() {
         if (y < 60) {
           setVisible(true);
         } else if (delta > 8) {
-          setVisible(false);   // scrolling down — hide
+          setVisible(false);
         } else if (delta < -8) {
-          setVisible(true);    // scrolling up — reveal
+          setVisible(true);
         }
         lastY.current = y;
         ticking.current = false;
@@ -58,10 +68,8 @@ function useNavScroll() {
 
 // ── Mobile slide-in drawer ──────────────────────────────────────────────────
 interface DrawerProps {
-  open: boolean;
-  onClose: () => void;
-  isAuthenticated: boolean;
-  isAdmin: boolean;
+  open: boolean; onClose: () => void;
+  isAuthenticated: boolean; isAdmin: boolean;
   handleSignOut: () => void;
   avatarSrc: string;
   profile: { username?: string; email?: string } | null;
@@ -86,11 +94,9 @@ function MobileDrawer({ open, onClose, isAuthenticated, isAdmin, handleSignOut, 
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/8">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
-                  <Gamepad2 className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="font-orbitron text-sm font-black gradient-text tracking-wide">PulsePay</span>
+              <div className="flex items-center gap-3">
+                <BrandLogo />
+                <span className="font-orbitron text-sm font-black gradient-text tracking-wide">PulsePlay</span>
               </div>
               <button onClick={onClose}
                 className="w-8 h-8 rounded-xl bg-white/6 hover:bg-white/12 flex items-center justify-center text-white/40 hover:text-white transition-all">
@@ -190,17 +196,12 @@ export function Navbar(): React.ReactElement {
 
   return (
     <>
-      {/* ── Floating pill navbar ──────────────────────────────────────── */}
       <motion.header
-        animate={{
-          y: visible ? 0 : -100,
-          opacity: visible ? 1 : 0,
-        }}
+        animate={{ y: visible ? 0 : -100, opacity: visible ? 1 : 0 }}
         transition={{ type: 'spring', damping: 32, stiffness: 320, mass: 0.7 }}
         className="fixed top-0 left-0 right-0 z-50 pointer-events-none"
         style={{ willChange: 'transform, opacity' }}
       >
-        {/* Outer wrapper narrows from full-width → centered pill as user scrolls */}
         <motion.div
           animate={{ paddingLeft: atTop ? '12px' : '20px', paddingRight: atTop ? '12px' : '20px' }}
           transition={{ duration: 0.4, ease: 'easeInOut' }}
@@ -221,22 +222,19 @@ export function Navbar(): React.ReactElement {
                 : 'bg-[#0a0a14]/94 backdrop-blur-2xl border border-white/10')
             }
           >
-
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group flex-shrink-0"
+            <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0"
               onMouseEnter={() => prefetchRoute('/')}>
-              <div className="relative">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                  <Gamepad2 className="w-4 h-4 text-white" />
-                </div>
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 blur-lg opacity-25 group-hover:opacity-55 transition-opacity" />
+              <div className="relative group-hover:scale-105 transition-transform duration-200">
+                <BrandLogo />
+                <div className="absolute inset-0 rounded-xl bg-cyan-500/20 blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
               </div>
               <span className="font-orbitron text-[13px] font-black gradient-text hidden sm:block select-none">
-                PulsePay
+                PulsePlay
               </span>
             </Link>
 
-            {/* Desktop nav — centered */}
+            {/* Desktop nav */}
             <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
               {navLinks.map((link) => {
                 const active = location.pathname === link.href;
@@ -245,18 +243,13 @@ export function Navbar(): React.ReactElement {
                     onMouseEnter={() => prefetchRoute(link.href)}
                     className={
                       'relative px-3.5 py-1.5 rounded-xl text-[13px] font-semibold transition-all duration-150 select-none ' +
-                      (active
-                        ? 'text-white bg-white/8'
-                        : 'text-white/40 hover:text-white/80 hover:bg-white/5')
+                      (active ? 'text-white bg-white/8' : 'text-white/40 hover:text-white/80 hover:bg-white/5')
                     }>
                     {link.label}
-                    {/* Animated active underline dot */}
                     {active && (
-                      <motion.span
-                        layoutId="nav-pip"
+                      <motion.span layoutId="nav-pip"
                         className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-400"
-                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                      />
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
                     )}
                   </Link>
                 );
@@ -265,8 +258,6 @@ export function Navbar(): React.ReactElement {
 
             {/* Right actions */}
             <div className="flex items-center gap-1 ml-auto flex-shrink-0">
-
-              {/* Theme */}
               <button onClick={toggleTheme}
                 className="w-8 h-8 rounded-xl flex items-center justify-center text-white/35 hover:text-white hover:bg-white/8 transition-all"
                 aria-label="Toggle theme">
@@ -277,15 +268,11 @@ export function Navbar(): React.ReactElement {
 
               {isAuthenticated ? (
                 <>
-                  {/* Bell */}
-                  <button
-                    className="hidden sm:flex relative w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white hover:bg-white/8 transition-all"
-                    aria-label="Notifications">
+                  <button className="hidden sm:flex relative w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white hover:bg-white/8 transition-all" aria-label="Notifications">
                     <Bell className="w-3.5 h-3.5" />
                     <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 ring-2 ring-[#0a0a14]" />
                   </button>
 
-                  {/* Profile dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-xl hover:bg-white/8 transition-all focus:outline-none group">
@@ -300,9 +287,7 @@ export function Navbar(): React.ReactElement {
                         <ChevronDown className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors hidden sm:block" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      className="w-56 bg-[#0c0c18]/98 border-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/70 p-1.5"
-                      align="end" sideOffset={10} forceMount>
+                    <DropdownMenuContent className="w-56 bg-[#0c0c18]/98 border-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/70 p-1.5" align="end" sideOffset={10} forceMount>
                       <div className="flex items-center gap-3 px-3 py-2.5">
                         <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarImage src={avatarSrc} />
@@ -349,28 +334,19 @@ export function Navbar(): React.ReactElement {
                 </div>
               )}
 
-              {/* Hamburger */}
-              <button
-                className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center border border-white/10 hover:bg-white/8 text-white/45 hover:text-white transition-all"
-                onClick={() => setMobileOpen(v => !v)}
-                aria-label="Open menu">
+              <button className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center border border-white/10 hover:bg-white/8 text-white/45 hover:text-white transition-all"
+                onClick={() => setMobileOpen(v => !v)} aria-label="Open menu">
                 <Menu className="w-4 h-4" />
               </button>
             </div>
-
           </motion.nav>
         </motion.div>
       </motion.header>
 
-      {/* Mobile drawer */}
       <MobileDrawer
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        isAuthenticated={isAuthenticated}
-        isAdmin={isAdmin}
-        handleSignOut={handleSignOut}
-        avatarSrc={avatarSrc}
-        profile={profile}
+        open={mobileOpen} onClose={() => setMobileOpen(false)}
+        isAuthenticated={isAuthenticated} isAdmin={isAdmin}
+        handleSignOut={handleSignOut} avatarSrc={avatarSrc} profile={profile}
       />
     </>
   );
