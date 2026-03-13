@@ -54,15 +54,17 @@ const STATUS_META = {
   completed: { icon: CheckCircle, color: 'text-white/40',  bg: 'bg-white/8 border-white/10',           label: 'Done' },
 };
 
-// Mock update/news data (replace with DB queries when table exists)
-const MOCK_UPDATES = [
-  { id: '1', type: 'update' as const, title: 'Season 5 Battle Pass Live', summary: 'New weapons, skins and ranked rewards are now available.', time: new Date(Date.now() - 3600000 * 2), tag: 'Patch' },
-  { id: '2', type: 'update' as const, title: 'Ranked Matchmaking Fix', summary: 'Addressed lag spikes and desync issues in ranked lobbies.', time: new Date(Date.now() - 3600000 * 24), tag: 'Hotfix' },
-  { id: '3', type: 'update' as const, title: 'New Map: Desert Storm', summary: 'A brand-new 60-player arena drops this weekend.', time: new Date(Date.now() - 3600000 * 48), tag: 'Content' },
-  { id: '4', type: 'news' as const, title: 'World Championship 2026 Announced', summary: '$500K prize pool — registration opens next month globally.', time: new Date(Date.now() - 3600000 * 6), tag: 'Esports' },
-  { id: '5', type: 'news' as const, title: 'PulsePay Partners with Tournament Hub', summary: 'Exclusive in-game rewards for PulsePay tournament winners.', time: new Date(Date.now() - 3600000 * 30), tag: 'Partnership' },
-  { id: '6', type: 'news' as const, title: 'Mobile Gaming Awards 2026', summary: 'Nominations are open — vote for your favourite titles.', time: new Date(Date.now() - 3600000 * 72), tag: 'Community' },
-];
+// ── GameUpdate type (fetched from DB) ────────────────────────────────────
+type GameUpdate = {
+  id: string; game_id: string | null; type: 'update' | 'news';
+  title: string; content: string; tag: string;
+  is_published: boolean; created_at: string; updated_at: string;
+};
+
+const UPDATE_STYLE = {
+  update: { accent: 'text-cyan-400',   bg: 'bg-cyan-500/8',   border: 'border-cyan-500/20',   tag: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25'   },
+  news:   { accent: 'text-purple-400', bg: 'bg-purple-500/8', border: 'border-purple-500/20', tag: 'bg-purple-500/15 text-purple-400 border-purple-500/25' },
+};
 
 // ── Game logo ─────────────────────────────────────────────────────────────
 function GameLogo({ game, size = 'sm', className }: { game: Game; size?: 'sm' | 'md' | 'lg'; className?: string }): React.ReactElement {
@@ -96,22 +98,31 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
   const [tab, setTab] = useState<'overview' | 'tournaments' | 'updates' | 'news'>(initialTab);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [gameUpdates, setGameUpdates] = useState<GameUpdate[]>([]);
   const [loading, setLoading] = useState(false);
   const [notifOn, setNotifOn] = useState(false);
+  const [activeUpdate, setActiveUpdate] = useState<GameUpdate | null>(null);
 
   useEffect(() => { setTab(initialTab); }, [initialTab]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [tRes, pRes] = await Promise.all([
+      const [tRes, pRes, uRes] = await Promise.all([
         supabase.from('tournaments').select('id,name,status,date,prize_pool,max_players,current_players')
           .eq('game_id', game.id).order('date', { ascending: false }).limit(10),
         supabase.from('posts').select('id,title,content,tag,likes,comments,created_at,profiles(username)')
-          .order('created_at', { ascending: false }).limit(8),
+          .order('created_at', { ascending: false }).limit(6),
+        supabase.from('game_updates')
+          .select('id,game_id,type,title,content,tag,is_published,created_at,updated_at')
+          .or(`game_id.eq.${game.id},game_id.is.null`)
+          .eq('is_published', true)
+          .order('created_at', { ascending: false })
+          .limit(20),
       ]);
       if (!tRes.error) setTournaments((tRes.data as Tournament[]) ?? []);
       if (!pRes.error) setPosts((pRes.data as Post[]) ?? []);
+      if (!uRes.error) setGameUpdates((uRes.data as GameUpdate[]) ?? []);
       setLoading(false);
     };
     load();
@@ -126,8 +137,8 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
     { id: 'news'        as const, label: 'News',         icon: Newspaper,  short: 'News'  },
   ];
 
-  const updates = MOCK_UPDATES.filter(u => u.type === 'update');
-  const news    = MOCK_UPDATES.filter(u => u.type === 'news');
+  const updates = gameUpdates.filter(u => u.type === 'update');
+  const news    = gameUpdates.filter(u => u.type === 'news');
 
   return (
     <motion.div
@@ -306,34 +317,43 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
               {/* UPDATES */}
               {tab === 'updates' ? (
                 <motion.div key="updates" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-3">
+                  className="space-y-2">
                   <div className="flex items-center gap-2 mb-4">
                     <Activity className="w-4 h-4 text-cyan-400" />
                     <h3 className="text-sm font-bold text-white">Patch Notes & Events</h3>
-                    <span className="ml-auto text-[10px] text-white/30">{updates.length} updates</span>
+                    <span className="ml-auto text-[10px] text-white/30">{updates.length} {updates.length === 1 ? 'update' : 'updates'}</span>
                   </div>
-                  {updates.map((u, i) => (
-                    <motion.div key={u.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                      className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/15 hover:border-cyan-500/30 transition-all cursor-pointer group">
-                      <div className="flex items-start justify-between gap-3 mb-1.5">
-                        <p className="text-sm text-white font-semibold leading-snug group-hover:text-cyan-400 transition-colors">{u.title}</p>
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 font-bold flex-shrink-0">{u.tag}</span>
+                  {updates.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Activity className="w-10 h-10 mx-auto text-white/10 mb-3" />
+                      <p className="text-white/30 text-sm">No updates yet for this game.</p>
+                    </div>
+                  ) : updates.map((u, i) => (
+                    <motion.div key={u.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                      onClick={() => setActiveUpdate(u)}
+                      className="flex items-start gap-3 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/15 hover:border-cyan-500/35 hover:bg-cyan-500/8 transition-all cursor-pointer group active:scale-[0.99]">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/25 font-bold">{u.tag}</span>
+                          <span className="text-[9px] text-white/25">{formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}</span>
+                        </div>
+                        <p className="text-sm text-white font-semibold leading-snug group-hover:text-cyan-400 transition-colors mb-1">{u.title}</p>
+                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">{u.content}</p>
                       </div>
-                      <p className="text-xs text-white/45 leading-relaxed mb-2">{u.summary}</p>
-                      <p className="text-[10px] text-white/25">{formatDistanceToNow(u.time, { addSuffix: true })}</p>
+                      <ChevronRight className="w-4 h-4 text-cyan-500/30 flex-shrink-0 mt-1 group-hover:text-cyan-400 transition-colors" />
                     </motion.div>
                   ))}
                   {posts.length > 0 && (
-                    <div className="pt-2 border-t border-white/8">
-                      <p className="text-[10px] text-white/30 uppercase tracking-wider mb-3 font-bold">Community Discussions</p>
+                    <div className="pt-3 border-t border-white/8 space-y-1.5">
+                      <p className="text-[10px] text-white/25 uppercase tracking-wider font-bold mb-2">Community Discussions</p>
                       {posts.slice(0, 3).map((post, i) => (
-                        <motion.div key={post.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.04 }}
-                          className="flex items-start gap-3 p-3 rounded-xl bg-white/4 border border-white/8 hover:border-white/15 transition-all mb-2 cursor-pointer">
+                        <motion.div key={post.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 + i * 0.04 }}
+                          className="flex items-start gap-3 p-3 rounded-xl bg-white/3 border border-white/8 hover:border-white/15 hover:bg-white/5 transition-all cursor-pointer group">
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-white font-semibold truncate">{post.title}</p>
-                            <p className="text-[10px] text-white/35 mt-0.5">by {post.profiles?.username ?? 'anonymous'}</p>
+                            <p className="text-xs text-white font-semibold truncate group-hover:text-white/90">{post.title}</p>
+                            <p className="text-[10px] text-white/30 mt-0.5">by {post.profiles?.username ?? 'anonymous'}</p>
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] text-white/30 flex-shrink-0">
+                          <div className="flex items-center gap-2 text-[10px] text-white/25 flex-shrink-0">
                             <span className="flex items-center gap-1"><Zap className="w-2.5 h-2.5 text-orange-400" />{post.likes}</span>
                             <span className="flex items-center gap-1"><MessageSquare className="w-2.5 h-2.5" />{post.comments}</span>
                           </div>
@@ -347,24 +367,30 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
               {/* NEWS */}
               {tab === 'news' ? (
                 <motion.div key="news" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-3">
+                  className="space-y-2">
                   <div className="flex items-center gap-2 mb-4">
                     <Newspaper className="w-4 h-4 text-purple-400" />
                     <h3 className="text-sm font-bold text-white">Announcements & News</h3>
-                    <span className="ml-auto text-[10px] text-white/30">{news.length} stories</span>
+                    <span className="ml-auto text-[10px] text-white/30">{news.length} {news.length === 1 ? 'story' : 'stories'}</span>
                   </div>
-                  {news.map((n, i) => (
-                    <motion.div key={n.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                      className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/15 hover:border-purple-500/30 transition-all cursor-pointer group">
-                      <div className="flex items-start justify-between gap-3 mb-1.5">
-                        <p className="text-sm text-white font-semibold leading-snug group-hover:text-purple-400 transition-colors">{n.title}</p>
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/20 font-bold flex-shrink-0">{n.tag}</span>
+                  {news.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Newspaper className="w-10 h-10 mx-auto text-white/10 mb-3" />
+                      <p className="text-white/30 text-sm">No news yet for this game.</p>
+                    </div>
+                  ) : news.map((n, i) => (
+                    <motion.div key={n.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                      onClick={() => setActiveUpdate(n)}
+                      className="flex items-start gap-3 p-4 rounded-xl bg-purple-500/5 border border-purple-500/15 hover:border-purple-500/35 hover:bg-purple-500/8 transition-all cursor-pointer group active:scale-[0.99]">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/25 font-bold">{n.tag}</span>
+                          <span className="text-[9px] text-white/25">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
+                        </div>
+                        <p className="text-sm text-white font-semibold leading-snug group-hover:text-purple-400 transition-colors mb-1">{n.title}</p>
+                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">{n.content}</p>
                       </div>
-                      <p className="text-xs text-white/45 leading-relaxed mb-2">{n.summary}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] text-white/25">{formatDistanceToNow(n.time, { addSuffix: true })}</p>
-                        <span className="text-[10px] text-purple-400/60 flex items-center gap-1"><Eye className="w-2.5 h-2.5" />Read more</span>
-                      </div>
+                      <ChevronRight className="w-4 h-4 text-purple-500/30 flex-shrink-0 mt-1 group-hover:text-purple-400 transition-colors" />
                     </motion.div>
                   ))}
                 </motion.div>
@@ -373,6 +399,50 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
             </AnimatePresence>
           )}
         </div>
+
+        {/* ── Update / News full detail sub-drawer ──────────────────────── */}
+        <AnimatePresence>
+          {activeUpdate && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
+              onClick={e => { if (e.target === e.currentTarget) setActiveUpdate(null); }}>
+              <motion.div
+                initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+                className="w-full bg-[#0d0d1e] border-t sm:border border-white/12 rounded-t-2xl sm:rounded-2xl sm:max-w-lg sm:mb-4 max-h-[85%] flex flex-col shadow-2xl overflow-hidden">
+                {/* sub-drawer drag handle */}
+                <div className="sm:hidden flex justify-center pt-2.5 flex-shrink-0">
+                  <div className="w-8 h-1 rounded-full bg-white/20" />
+                </div>
+                {/* sub-drawer header */}
+                <div className={'flex items-start gap-3 p-4 border-b border-white/8 flex-shrink-0 ' + UPDATE_STYLE[activeUpdate.type].bg}>
+                  <div className={'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ' + UPDATE_STYLE[activeUpdate.type].bg + ' border ' + UPDATE_STYLE[activeUpdate.type].border}>
+                    {activeUpdate.type === 'update'
+                      ? <Activity className={'w-4 h-4 ' + UPDATE_STYLE.update.accent} />
+                      : <Newspaper className={'w-4 h-4 ' + UPDATE_STYLE.news.accent} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className={'text-[9px] px-2 py-0.5 rounded-full font-bold border ' + UPDATE_STYLE[activeUpdate.type].tag}>{activeUpdate.tag}</span>
+                      <span className="text-[9px] text-white/25">{formatDistanceToNow(new Date(activeUpdate.created_at), { addSuffix: true })}</span>
+                    </div>
+                    <h3 className="font-orbitron font-black text-sm text-white leading-snug">{activeUpdate.title}</h3>
+                  </div>
+                  <button onClick={() => setActiveUpdate(null)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all flex-shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {/* sub-drawer body */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <p className="text-sm text-white/65 leading-relaxed whitespace-pre-wrap">{activeUpdate.content}</p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </motion.div>
     </motion.div>
   );

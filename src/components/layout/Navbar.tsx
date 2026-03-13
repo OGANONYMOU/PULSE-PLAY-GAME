@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell } from 'lucide-react';
+import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -16,226 +16,362 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { prefetchRoute } from '@/App';
 
 const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/games', label: 'Games' },
-  { href: '/community', label: 'Community' },
+  { href: '/',            label: 'Home' },
+  { href: '/games',       label: 'Games' },
+  { href: '/community',   label: 'Community' },
   { href: '/tournaments', label: 'Tournaments' },
-  { href: '/about', label: 'About' },
+  { href: '/about',       label: 'About' },
 ];
 
+// ── Smart scroll-hide / reveal hook ────────────────────────────────────────
+function useNavScroll() {
+  const [visible, setVisible] = useState(true);
+  const [atTop, setAtTop] = useState(true);
+  const lastY = useRef(0);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const handle = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const delta = y - lastY.current;
+        setAtTop(y < 20);
+        if (y < 60) {
+          setVisible(true);
+        } else if (delta > 8) {
+          setVisible(false);   // scrolling down — hide
+        } else if (delta < -8) {
+          setVisible(true);    // scrolling up — reveal
+        }
+        lastY.current = y;
+        ticking.current = false;
+      });
+    };
+    window.addEventListener('scroll', handle, { passive: true });
+    return () => window.removeEventListener('scroll', handle);
+  }, []);
+
+  return { visible, atTop };
+}
+
+// ── Mobile slide-in drawer ──────────────────────────────────────────────────
+interface DrawerProps {
+  open: boolean;
+  onClose: () => void;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  handleSignOut: () => void;
+  avatarSrc: string;
+  profile: { username?: string; email?: string } | null;
+}
+function MobileDrawer({ open, onClose, isAuthenticated, isAdmin, handleSignOut, avatarSrc, profile }: DrawerProps) {
+  const location = useLocation();
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm lg:hidden"
+            onClick={onClose} />
+
+          <motion.aside key="drawer"
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-[#08080f]/98 border-l border-white/8 backdrop-blur-2xl flex flex-col lg:hidden shadow-2xl"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/8">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                  <Gamepad2 className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-orbitron text-sm font-black gradient-text tracking-wide">PulsePay</span>
+              </div>
+              <button onClick={onClose}
+                className="w-8 h-8 rounded-xl bg-white/6 hover:bg-white/12 flex items-center justify-center text-white/40 hover:text-white transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Nav */}
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+              {navLinks.map((link, i) => {
+                const active = location.pathname === link.href;
+                return (
+                  <motion.div key={link.href}
+                    initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04, duration: 0.18 }}>
+                    <Link to={link.href} onClick={onClose}
+                      className={'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ' +
+                        (active
+                          ? 'bg-gradient-to-r from-cyan-500/15 to-purple-500/8 text-cyan-400 border border-cyan-500/20'
+                          : 'text-white/45 hover:bg-white/5 hover:text-white border border-transparent')}>
+                      {active && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />}
+                      {link.label}
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </nav>
+
+            {/* Auth footer */}
+            <div className="flex-shrink-0 border-t border-white/8 px-3 py-4 space-y-1">
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-3 px-4 py-2.5 mb-1">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarImage src={avatarSrc} />
+                      <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-[10px] font-bold">
+                        {profile?.username?.[0]?.toUpperCase() ?? 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{profile?.username}</p>
+                      <p className="text-[10px] text-white/35 truncate">{profile?.email}</p>
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <Link to="/admin" onClick={onClose}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-cyan-400 hover:bg-cyan-500/10 transition-all">
+                      <Shield className="w-4 h-4" />Admin Panel
+                    </Link>
+                  )}
+                  <Link to="/profile" onClick={onClose}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-white/50 hover:bg-white/5 hover:text-white transition-all">
+                    <User className="w-4 h-4" />Profile
+                  </Link>
+                  <button onClick={handleSignOut}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all w-full text-left">
+                    <LogOut className="w-4 h-4" />Sign Out
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Button asChild variant="outline" size="sm"
+                    className="border-white/15 text-white hover:bg-white/8 text-xs font-bold uppercase tracking-wider h-11 rounded-xl">
+                    <Link to="/signin" onClick={onClose}>Sign In</Link>
+                  </Button>
+                  <Button asChild size="sm"
+                    className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold uppercase tracking-wider h-11 rounded-xl">
+                    <Link to="/register" onClick={onClose}>Join Free</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ── Navbar ──────────────────────────────────────────────────────────────────
 export function Navbar(): React.ReactElement {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { visible, atTop } = useNavScroll();
   const { profile, isAuthenticated, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
-  // Add shadow + blur intensification on scroll
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const handleSignOut = async () => {
-    setIsMobileMenuOpen(false);
+  const handleSignOut = useCallback(async () => {
+    setMobileOpen(false);
     await signOut();
-  };
+  }, [signOut]);
 
   const avatarSrc = profile?.avatar_url
     ?? `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.username ?? 'U'}&backgroundColor=0f172a`;
 
   return (
-    <header className={'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ' + (scrolled ? 'py-0' : 'py-0')}>
-      <nav className="mx-3 mt-3">
-        <div className={'glass rounded-2xl px-5 py-3.5 transition-all duration-300 ' + (scrolled ? 'shadow-lg shadow-black/30' : '')}>
-          <div className="flex items-center justify-between gap-4">
+    <>
+      {/* ── Floating pill navbar ──────────────────────────────────────── */}
+      <motion.header
+        animate={{
+          y: visible ? 0 : -100,
+          opacity: visible ? 1 : 0,
+        }}
+        transition={{ type: 'spring', damping: 32, stiffness: 320, mass: 0.7 }}
+        className="fixed top-0 left-0 right-0 z-50 pointer-events-none"
+        style={{ willChange: 'transform, opacity' }}
+      >
+        {/* Outer wrapper narrows from full-width → centered pill as user scrolls */}
+        <motion.div
+          animate={{ paddingLeft: atTop ? '12px' : '20px', paddingRight: atTop ? '12px' : '20px' }}
+          transition={{ duration: 0.4, ease: 'easeInOut' }}
+          className="pt-3"
+        >
+          <motion.nav
+            animate={{
+              borderRadius: atTop ? '16px' : '24px',
+              boxShadow: atTop
+                ? '0 0 0 0 rgba(0,0,0,0)'
+                : '0 8px 40px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)',
+            }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className={
+              'pointer-events-auto flex items-center gap-2 px-3 py-2 transition-colors duration-300 ' +
+              (atTop
+                ? 'bg-[#0a0a14]/70 backdrop-blur-xl border border-white/8'
+                : 'bg-[#0a0a14]/94 backdrop-blur-2xl border border-white/10')
+            }
+          >
 
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+            <Link to="/" className="flex items-center gap-2 group flex-shrink-0"
+              onMouseEnter={() => prefetchRoute('/')}>
               <div className="relative">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                  <Gamepad2 className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                  <Gamepad2 className="w-4 h-4 text-white" />
                 </div>
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 blur-lg opacity-40 group-hover:opacity-70 transition-opacity" />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 blur-lg opacity-25 group-hover:opacity-55 transition-opacity" />
               </div>
-              <span className="font-orbitron text-lg font-bold gradient-text hidden sm:block select-none">PulsePay</span>
+              <span className="font-orbitron text-[13px] font-black gradient-text hidden sm:block select-none">
+                PulsePay
+              </span>
             </Link>
 
-            {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-7">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  onMouseEnter={() => prefetchRoute(link.href)}
-                  className={'nav-link ' + (location.pathname === link.href ? 'active' : '')}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            {/* Desktop nav — centered */}
+            <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+              {navLinks.map((link) => {
+                const active = location.pathname === link.href;
+                return (
+                  <Link key={link.href} to={link.href}
+                    onMouseEnter={() => prefetchRoute(link.href)}
+                    className={
+                      'relative px-3.5 py-1.5 rounded-xl text-[13px] font-semibold transition-all duration-150 select-none ' +
+                      (active
+                        ? 'text-white bg-white/8'
+                        : 'text-white/40 hover:text-white/80 hover:bg-white/5')
+                    }>
+                    {link.label}
+                    {/* Animated active underline dot */}
+                    {active && (
+                      <motion.span
+                        layoutId="nav-pip"
+                        className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-400"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Right actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 ml-auto flex-shrink-0">
 
-              {/* Theme toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="rounded-full w-9 h-9 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
-                aria-label="Toggle theme"
-              >
+              {/* Theme */}
+              <button onClick={toggleTheme}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-white/35 hover:text-white hover:bg-white/8 transition-all"
+                aria-label="Toggle theme">
                 {theme === 'dark'
-                  ? <Sun className="w-4 h-4 text-yellow-400" />
-                  : <Moon className="w-4 h-4 text-purple-400" />
-                }
-              </Button>
+                  ? <Sun className="w-3.5 h-3.5 text-yellow-400" />
+                  : <Moon className="w-3.5 h-3.5 text-purple-400" />}
+              </button>
 
-              {/* Auth */}
               {isAuthenticated ? (
                 <>
-                  {/* Notification bell — placeholder */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hidden sm:flex rounded-full w-9 h-9 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all relative"
-                    aria-label="Notifications"
-                  >
-                    <Bell className="w-4 h-4 text-white/60" />
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                  </Button>
+                  {/* Bell */}
+                  <button
+                    className="hidden sm:flex relative w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white hover:bg-white/8 transition-all"
+                    aria-label="Notifications">
+                    <Bell className="w-3.5 h-3.5" />
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 ring-2 ring-[#0a0a14]" />
+                  </button>
 
+                  {/* Profile dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="relative h-9 w-9 rounded-full border-2 border-cyan-500/50 overflow-hidden hover:border-cyan-400 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500">
-                        <Avatar className="h-full w-full">
-                          <AvatarImage src={avatarSrc} alt={profile?.username} />
-                          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-xs font-bold">
-                            {profile?.username?.[0]?.toUpperCase() ?? 'U'}
-                          </AvatarFallback>
-                        </Avatar>
+                      <button className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-xl hover:bg-white/8 transition-all focus:outline-none group">
+                        <div className="h-7 w-7 rounded-lg overflow-hidden border border-cyan-500/35 group-hover:border-cyan-400/60 transition-all">
+                          <Avatar className="h-full w-full">
+                            <AvatarImage src={avatarSrc} alt={profile?.username} />
+                            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-[10px] font-bold">
+                              {profile?.username?.[0]?.toUpperCase() ?? 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <ChevronDown className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors hidden sm:block" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 glass border-white/10" align="end" forceMount>
-                      <div className="flex items-center gap-3 p-3">
-                        <Avatar className="h-9 w-9 flex-shrink-0">
+                    <DropdownMenuContent
+                      className="w-56 bg-[#0c0c18]/98 border-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/70 p-1.5"
+                      align="end" sideOffset={10} forceMount>
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarImage src={avatarSrc} />
-                          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-xs">
+                          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-[10px]">
                             {profile?.username?.[0]?.toUpperCase() ?? 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col min-w-0">
-                          <p className="text-sm font-bold text-white truncate">{profile?.username}</p>
-                          <p className="text-xs text-white/40 truncate">{profile?.email}</p>
+                          <p className="text-xs font-bold text-white truncate">{profile?.username}</p>
+                          <p className="text-[10px] text-white/35 truncate">{profile?.email}</p>
                         </div>
                       </div>
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      {isAdmin ? (
+                      <DropdownMenuSeparator className="bg-white/8 mx-0.5 my-1" />
+                      {isAdmin && (
                         <DropdownMenuItem asChild>
-                          <Link to="/admin" className="cursor-pointer text-cyan-400 focus:text-cyan-300 focus:bg-cyan-500/10">
-                            <Shield className="mr-2 h-4 w-4" />Admin Panel
+                          <Link to="/admin" className="cursor-pointer text-cyan-400 focus:text-cyan-300 focus:bg-cyan-500/10 rounded-xl text-xs font-semibold gap-2">
+                            <Shield className="h-3.5 w-3.5" />Admin Panel
                           </Link>
                         </DropdownMenuItem>
-                      ) : null}
+                      )}
                       <DropdownMenuItem asChild>
-                        <Link to="/profile" className="cursor-pointer focus:bg-white/10">
-                          <User className="mr-2 h-4 w-4" />Profile
+                        <Link to="/profile" className="cursor-pointer focus:bg-white/8 rounded-xl text-xs font-semibold gap-2 text-white/65">
+                          <User className="h-3.5 w-3.5" />Profile
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      <DropdownMenuItem
-                        onClick={handleSignOut}
-                        className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />Sign Out
+                      <DropdownMenuSeparator className="bg-white/8 mx-0.5 my-1" />
+                      <DropdownMenuItem onClick={handleSignOut}
+                        className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 rounded-xl text-xs font-semibold gap-2">
+                        <LogOut className="h-3.5 w-3.5" />Sign Out
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </>
               ) : (
-                <div className="hidden sm:flex items-center gap-2">
-                  <Button asChild variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10 text-xs font-bold uppercase tracking-wider">
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <Button asChild variant="ghost" size="sm"
+                    className="text-white/50 hover:text-white hover:bg-white/8 text-[11px] font-bold uppercase tracking-wider h-8 px-3 rounded-xl">
                     <Link to="/signin">Sign In</Link>
                   </Button>
-                  <Button asChild size="sm" className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold uppercase tracking-wider text-xs px-4">
+                  <Button asChild size="sm"
+                    className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold uppercase tracking-wider text-[11px] h-8 px-3.5 rounded-xl shadow-md shadow-cyan-500/25">
                     <Link to="/register">Join Free</Link>
                   </Button>
                 </div>
               )}
 
-              {/* Mobile hamburger */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden w-9 h-9 border border-white/10 hover:bg-white/10 rounded-xl"
-                onClick={() => setIsMobileMenuOpen(v => !v)}
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
+              {/* Hamburger */}
+              <button
+                className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center border border-white/10 hover:bg-white/8 text-white/45 hover:text-white transition-all"
+                onClick={() => setMobileOpen(v => !v)}
+                aria-label="Open menu">
+                <Menu className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-        </div>
 
-        {/* Mobile menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen ? (
-            <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.98 }}
-              transition={{ duration: 0.15 }}
-              className="lg:hidden mt-2"
-            >
-              <div className="glass rounded-2xl p-4 space-y-1 border border-white/10">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className={'flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all ' +
-                      (location.pathname === link.href
-                        ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                        : 'text-white/60 hover:bg-white/5 hover:text-white')}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                {!isAuthenticated ? (
-                  <div className="flex gap-2 pt-2 border-t border-white/10 mt-2">
-                    <Button asChild variant="outline" size="sm" className="flex-1 border-white/20 text-white hover:bg-white/10 text-xs font-bold uppercase">
-                      <Link to="/signin">Sign In</Link>
-                    </Button>
-                    <Button asChild size="sm" className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold uppercase">
-                      <Link to="/register">Join Free</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="pt-2 border-t border-white/10 mt-2 space-y-1">
-                    {isAdmin ? (
-                      <Link to="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-cyan-400 hover:bg-cyan-500/10 transition-all">
-                        <Shield className="w-4 h-4" />Admin Panel
-                      </Link>
-                    ) : null}
-                    <Link to="/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-white/60 hover:bg-white/5 hover:text-white transition-all">
-                      <User className="w-4 h-4" />Profile
-                    </Link>
-                    <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all w-full text-left">
-                      <LogOut className="w-4 h-4" />Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </nav>
-    </header>
+          </motion.nav>
+        </motion.div>
+      </motion.header>
+
+      {/* Mobile drawer */}
+      <MobileDrawer
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        isAuthenticated={isAuthenticated}
+        isAdmin={isAdmin}
+        handleSignOut={handleSignOut}
+        avatarSrc={avatarSrc}
+        profile={profile}
+      />
+    </>
   );
 }

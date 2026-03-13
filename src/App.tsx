@@ -33,6 +33,7 @@ const AdminAnalytics    = lazy(() => import('@/pages/admin/AdminAnalytics').then
 const AdminTournaments  = lazy(() => import('@/pages/admin/AdminTournaments').then(m => ({ default: m.AdminTournaments })));
 const AdminPosts        = lazy(() => import('@/pages/admin/AdminPosts').then(m => ({ default: m.AdminPosts })));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements').then(m => ({ default: m.AdminAnnouncements })));
+const AdminUpdates      = lazy(() => import('@/pages/admin/AdminUpdates').then(m => ({ default: m.AdminUpdates })));
 const AdminSettings     = lazy(() => import('@/pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 
 // ── Route prefetching on nav hover ───────────────────────────────────────────
@@ -110,7 +111,7 @@ function AppContent(): React.ReactElement {
   return (
     <div className="relative min-h-screen">
       <ParticleBackground />
-      <Navbar />
+      {!location.pathname.startsWith("/admin") && <Navbar />}
       <main className="relative z-10">
         <PageTransition>
           <Suspense fallback={<PageSkeleton />}>
@@ -135,6 +136,7 @@ function AppContent(): React.ReactElement {
                 <Route path="games"             element={<AdminGames />} />
                 <Route path="posts"             element={<AdminPosts />} />
                 <Route path="announcements"     element={<AdminAnnouncements />} />
+                <Route path="updates"           element={<AdminUpdates />} />
                 <Route path="settings"          element={<AdminSettings />} />
               </Route>
 
@@ -143,7 +145,7 @@ function AppContent(): React.ReactElement {
           </Suspense>
         </PageTransition>
       </main>
-      <Footer />
+      {!location.pathname.startsWith("/admin") && <Footer />}
     </div>
   );
 }

@@ -3,8 +3,8 @@ import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-d
 import {
   Shield, LayoutDashboard, Users, Gamepad2, LogOut,
   ChevronRight, Menu, X, Loader2, BarChart2, Settings,
-  Trophy, Megaphone, FileText, Zap,
-  TrendingUp, ChevronLeft,
+  Trophy, Megaphone, FileText, Zap, TrendingUp, ChevronLeft,
+  Activity,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -18,6 +18,7 @@ const NAV_CONTENT = [
   { href: '/admin/users',         label: 'Users',         Icon: Users },
   { href: '/admin/tournaments',   label: 'Tournaments',   Icon: Trophy },
   { href: '/admin/games',         label: 'Games',         Icon: Gamepad2 },
+  { href: '/admin/updates',       label: 'Updates & News', Icon: Activity },
   { href: '/admin/posts',         label: 'Posts',         Icon: FileText },
   { href: '/admin/announcements', label: 'Announcements', Icon: Megaphone },
 ];
@@ -133,7 +134,7 @@ function NavLink({ item, pathname, onClick, collapsed }: {
       title={collapsed ? item.label : undefined}
       className={
         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group border relative ' +
-        (collapsed ? 'justify-center px-0' : '') + ' ' +
+        (collapsed ? 'justify-center !px-0' : '') + ' ' +
         (isActive
           ? 'bg-gradient-to-r from-cyan-500/15 to-purple-500/8 border-cyan-500/25 text-cyan-400'
           : 'text-white/40 hover:bg-white/5 hover:text-white/80 border-transparent')
@@ -142,8 +143,6 @@ function NavLink({ item, pathname, onClick, collapsed }: {
       <item.Icon className={'w-[18px] h-[18px] flex-shrink-0 transition-transform ' + (!isActive ? 'group-hover:scale-110' : '')} />
       {!collapsed && <span className="text-[13px] font-medium flex-1 leading-none whitespace-nowrap">{item.label}</span>}
       {!collapsed && isActive && <ChevronRight className="w-3 h-3 opacity-50" />}
-
-      {/* Tooltip when collapsed */}
       {collapsed && (
         <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#0d0d1a] border border-white/15 rounded-lg text-xs text-white whitespace-nowrap
           opacity-0 group-hover:opacity-100 pointer-events-none z-50 shadow-xl transition-all duration-150 translate-x-1 group-hover:translate-x-0">
@@ -154,7 +153,6 @@ function NavLink({ item, pathname, onClick, collapsed }: {
   );
 }
 
-// ── Section label ──────────────────────────────────────────────────────────
 function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
   if (collapsed) return <div className="h-px bg-white/8 mx-2 my-1" />;
   return <p className="text-[9px] text-white/20 font-mono uppercase tracking-[0.18em] px-3 pb-1.5">{label}</p>;
@@ -166,16 +164,18 @@ export function AdminLayout(): React.ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(true); // Desktop collapsed by default
+  const [collapsed, setCollapsed] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [topbarScrolled, setTopbarScrolled] = useState(false);
+  const [topbarVisible, setTopbarVisible] = useState(true);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastScrollY = useRef(0);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
   useEffect(() => { closeMobile(); }, [location.pathname, closeMobile]);
   useEffect(() => { loadMetrics().then(setMetrics).catch(() => {}); }, []);
 
-  // Desktop: expand on hover with slight delay, collapse on leave
   const handleMouseEnter = () => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = setTimeout(() => setHovered(true), 80);
@@ -184,6 +184,22 @@ export function AdminLayout(): React.ReactElement {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = setTimeout(() => setHovered(false), 200);
   };
+
+  // Hide mobile topbar on scroll down, reveal on scroll up
+  useEffect(() => {
+    const el = document.getElementById('admin-scroll-area');
+    if (!el) return;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      setTopbarScrolled(y > 10);
+      if (y < 40) { setTopbarVisible(true); }
+      else if (y > lastScrollY.current + 8) { setTopbarVisible(false); }
+      else if (y < lastScrollY.current - 8) { setTopbarVisible(true); }
+      lastScrollY.current = y;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
@@ -199,10 +215,7 @@ export function AdminLayout(): React.ReactElement {
   const initial = profile?.username?.[0]?.toUpperCase() ?? 'A';
   const xp = metrics?.xp ?? 0;
   const lvl = getLevel(xp);
-
-  // On desktop: sidebar is expanded when either manually pinned (not collapsed) or currently hovered
   const desktopExpanded = !collapsed || hovered;
-  // Sidebar width
   const sidebarW = desktopExpanded ? 'w-60' : 'w-[60px]';
   const contentMl = desktopExpanded ? 'lg:ml-60' : 'lg:ml-[60px]';
 
@@ -226,17 +239,16 @@ export function AdminLayout(): React.ReactElement {
                   <div className="text-[9px] text-cyan-400 font-mono tracking-[0.2em] uppercase">Admin Console</div>
                 </div>
               </Link>
-              {/* Pin/unpin button — desktop only */}
               {!isMobile && (
                 <button onClick={() => setCollapsed(c => !c)}
                   className="p-1.5 rounded-lg hover:bg-white/10 text-white/25 hover:text-white/60 transition-all flex-shrink-0"
-                  title={collapsed ? 'Pin sidebar open' : 'Set to auto-collapse'}>
+                  title={collapsed ? 'Pin sidebar open' : 'Auto-collapse'}>
                   <ChevronLeft className={'w-3.5 h-3.5 transition-transform duration-200 ' + (collapsed ? 'rotate-180' : '')} />
                 </button>
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center">
               <Link to="/" className="group" title="PulsePay Admin">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Shield className="w-4 h-4 text-white" />
@@ -260,7 +272,7 @@ export function AdminLayout(): React.ReactElement {
             <SectionLabel label="System" collapsed={!isExpanded} />
             {NAV_SYSTEM.map(item => <NavLink key={item.href} item={item} pathname={location.pathname} onClick={closeMobile} collapsed={!isExpanded} />)}
             <Link to="/" title={!isExpanded ? 'Back to App' : undefined}
-              className={'flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/35 hover:bg-white/5 hover:text-white/70 transition-all border border-transparent group relative ' + (!isExpanded ? 'justify-center px-0' : '')}>
+              className={'flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/35 hover:bg-white/5 hover:text-white/70 transition-all border border-transparent group relative ' + (!isExpanded ? 'justify-center !px-0' : '')}>
               <TrendingUp className="w-[18px] h-[18px] flex-shrink-0 group-hover:scale-110 transition-transform" />
               {isExpanded && <span className="text-[13px] font-medium whitespace-nowrap">Back to App</span>}
               {!isExpanded && (
@@ -313,12 +325,11 @@ export function AdminLayout(): React.ReactElement {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden" onClick={closeMobile} />
       )}
 
-      {/* Mobile sidebar (always full width) */}
+      {/* Mobile drawer sidebar */}
       <aside className={
         'fixed top-0 left-0 h-full w-64 z-40 flex flex-col ' +
         'border-r border-white/8 bg-[#0a0a14]/98 backdrop-blur-2xl ' +
@@ -328,7 +339,7 @@ export function AdminLayout(): React.ReactElement {
         <SidebarContent isMobile />
       </aside>
 
-      {/* Desktop sidebar — collapses to icon rail, expands on hover */}
+      {/* Desktop icon-rail sidebar — expands on hover */}
       <aside
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -342,26 +353,51 @@ export function AdminLayout(): React.ReactElement {
         <SidebarContent />
       </aside>
 
-      {/* Page content */}
+      {/* Main content area */}
       <div className={'flex-1 min-h-screen flex flex-col transition-all duration-300 ' + contentMl}>
-        {/* Mobile topbar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/8 bg-card/90 backdrop-blur-xl sticky top-0 z-20">
-          <button onClick={() => setMobileOpen(o => !o)}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all" aria-label="Toggle menu">
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-          <Shield className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-          <span className="font-orbitron font-bold text-sm text-white">Admin Console</span>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-[10px] text-white/30 font-mono">{lvl.emoji} {lvl.name}</span>
-            <div className="w-14 h-1.5 rounded-full bg-white/8 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: getLevelPct(xp, lvl) + '%', background: `linear-gradient(90deg, ${lvl.barFrom}, ${lvl.barTo})` }} />
+
+        {/* ── Mobile floating topbar pill ─────────────────────────────── */}
+        {/* Sits in a NON-FIXED wrapper at the top — takes up real space */}
+        <div className="lg:hidden relative z-20 flex-shrink-0">
+          {/* This div takes up space so content is never hidden under the topbar */}
+          <div className="h-14" />
+          {/* The pill itself floats above but is positioned relative to this wrapper */}
+          <div className={
+            'absolute top-2 left-0 right-0 flex justify-center transition-all duration-300 ' +
+            (topbarVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-12 pointer-events-none')
+          }>
+            <div className={
+              'flex items-center gap-2 px-3 py-2 rounded-2xl border backdrop-blur-2xl shadow-2xl transition-all duration-300 ' +
+              (topbarScrolled
+                ? 'bg-[#0a0a14]/95 border-white/15 shadow-black/60'
+                : 'bg-[#0a0a14]/80 border-white/10 shadow-black/40')
+            }>
+              <button
+                onClick={() => setMobileOpen(o => !o)}
+                className={'w-8 h-8 rounded-xl flex items-center justify-center transition-all ' +
+                  (mobileOpen ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/6 hover:bg-white/12 text-white/60 hover:text-white')}
+                aria-label="Toggle menu"
+              >
+                {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+              <div className="w-px h-5 bg-white/10" />
+              <Shield className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <span className="font-orbitron font-bold text-[11px] text-white tracking-wide">Admin</span>
+              <div className="w-px h-5 bg-white/10" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs leading-none">{lvl.emoji}</span>
+                <div className="w-14 h-1.5 rounded-full bg-white/8 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700"
+                    style={{ width: getLevelPct(xp, lvl) + '%', background: `linear-gradient(90deg, ${lvl.barFrom}, ${lvl.barTo})` }} />
+                </div>
+                <span className={'text-[9px] font-bold font-mono ' + lvl.color}>{getLevelPct(xp, lvl)}%</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto overflow-x-hidden">
+        {/* Content — starts AFTER the topbar spacer on mobile, immediately on desktop */}
+        <div id="admin-scroll-area" className="flex-1 overflow-auto overflow-x-hidden">
           <Outlet />
         </div>
       </div>
