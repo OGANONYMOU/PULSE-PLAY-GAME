@@ -4,7 +4,7 @@ import {
   Search, Gamepad2, Users, Trophy, Star, Sparkles, RefreshCw,
   X, ArrowRight, Clock, Play, CheckCircle, Zap, Bell, ChevronRight,
   MessageSquare, Activity, Newspaper,
-  BarChart2, Eye,
+  BarChart2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
