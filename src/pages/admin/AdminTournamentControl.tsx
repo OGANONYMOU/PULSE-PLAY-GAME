@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Trophy, Users, Play, CheckCircle, AlertTriangle, RefreshCw,
-  Loader2, X, Shield, ChevronRight, UserX, UserCheck, Layers,
-  Flag, ArrowRight, Zap, Crown, Eye, Settings, Calendar,
+  Trophy, Users, Play, CheckCircle, RefreshCw,
+  Loader2, UserX, UserCheck,
+  Flag, Crown, Eye,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';

@@ -454,6 +454,25 @@ export function Profile(): React.ReactElement {
               <BioText show={!isEditing} bio={profile.bio} isOwn={isOwnProfile} />
               <SocialRow show={!isEditing} twitter={profile.twitter_username} discord={profile.discord_username} />
             </div>
+            {!isOwnProfile && (
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  if (isFollowing) {
+                    await (supabase as any).from('follows').delete().eq('follower_id', user.id).eq('following_id', profile.id);
+                    setIsFollowing(false); setFollowers(f => Math.max(0, f - 1));
+                  } else {
+                    await (supabase as any).from('follows').insert({ follower_id: user.id, following_id: profile.id });
+                    setIsFollowing(true); setFollowers(f => f + 1);
+                  }
+                }}
+                className={'px-4 py-2 rounded-xl text-sm font-bold transition-all border ' +
+                  (isFollowing
+                    ? 'bg-white/8 border-white/15 text-white/60 hover:border-red-500/30 hover:text-red-400'
+                    : 'bg-gradient-to-r from-cyan-500 to-purple-600 border-transparent text-white hover:opacity-90')}>
+                {isFollowing ? '✓ Following' : '+ Follow'}
+              </button>
+            )}
             <EditBtn show={isOwnProfile && !isEditing} onClick={() => setIsEditing(true)} />
           </div>
           <EditPanel show={isEditing} form={editForm} saving={isSaving} onChange={setEditForm} onSave={handleSave} onCancel={() => setIsEditing(false)} />

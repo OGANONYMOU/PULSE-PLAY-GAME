@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Users, Trophy, Gamepad2, MessageSquare, Megaphone,
   RefreshCw, ExternalLink, Database, Globe, CheckCircle,
-  ToggleLeft, ToggleRight, Layers, AlertTriangle, Activity, ShieldCheck, Video, TrendingUp,
+  ToggleRight, Layers, AlertTriangle, Activity, ShieldCheck, Video, TrendingUp, Zap,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useCurrency } from '@/contexts/CurrencyContext';

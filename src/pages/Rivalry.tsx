@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sword, Trophy, TrendingUp, MessageSquare, Share2, Users, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Sword, Share2, ArrowLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ShareModal } from '@/components/community/ShareModal';
@@ -29,9 +29,9 @@ export function RivalryPage() {
       if (rb.data) setProfB(rb.data as RivalProfile);
 
       if (ra.data && rb.data) {
-        const { data: riv } = await supabase.from('rivalries')
+        const { data: riv } = await (supabase as any).from('rivalries')
           .select('*, games(name, icon)')
-          .or(`and(player_a.eq.${ra.data!.id},player_b.eq.${rb.data!.id}),and(player_a.eq.${rb.data!.id},player_b.eq.${ra.data!.id})`)
+          .or(`and(player_a.eq.${(ra.data as RivalProfile).id},player_b.eq.${(rb.data as RivalProfile).id}),and(player_a.eq.${(rb.data as RivalProfile).id},player_b.eq.${(ra.data as RivalProfile).id})`)
           .maybeSingle();
         if (riv) {
           // normalise so profA is always player_a

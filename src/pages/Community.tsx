@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame, MessageSquare, TrendingUp, Trophy, Users, Video, Upload,
-  Plus, Globe, Zap, ChevronRight, Search, Hash, Gamepad2,
-  Loader2, Bell, Calendar, Star, BookOpen, X, Send,
+  Globe, Zap, ChevronRight, Gamepad2,
+  Loader2, Calendar, X, Send,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';

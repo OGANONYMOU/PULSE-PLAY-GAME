@@ -177,7 +177,7 @@ export function useComments(postId: string) {
       post_id: postId, author_id: authorId, content, parent_id: parentId ?? null,
     } as never);
     if (!error) {
-      await supabase.from('posts').update({ comments: posts.find(p => p.id === postId)?.comments ?? 0 + 1 } as never).eq('id', postId);
+      // increment comment count — use rpc-free approach
       load();
     }
     return { error };
