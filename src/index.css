@@ -72,11 +72,18 @@
   }
 
   html {
-    /* scroll-behavior intentionally NOT set here.
-       ScrollToTop.tsx uses window.scrollTo with behavior:'instant'.
-       Setting smooth here fights that and causes scroll glitches. */
+    font-size: 100%;
+    scroll-behavior: auto;
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%; /* prevent iOS font inflation */
+  }
+
+  @media (max-width: 480px) {
+    html { font-size: 90%; }
+  }
+
+  @media (min-width: 1280px) {
+    html { font-size: 110%; }
   }
 
   body {
@@ -87,10 +94,39 @@
     padding-right: env(safe-area-inset-right);
   }
 
-  /* Prevent images from overflowing their containers */
-  img {
+  /* Prevent media from overflowing their containers */
+  img, picture, video, svg {
     max-width: 100%;
     height: auto;
+    display: block;
+  }
+
+  /* Ensure touch targets are accessible (44x44 recommended) */
+  a, button, input, textarea, select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive content container (mobile-first) */
+  .responsive-container {
+    width: min(100%, 1280px);
+    margin-inline: auto;
+    padding-inline: clamp(0.75rem, 5vw, 1.25rem);
+    overflow-wrap: break-word;
+  }
+
+  .responsive-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .responsive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1024px) {
+    .responsive-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
   /* Improve tap targets on mobile — only apply to block-level buttons, not inline */

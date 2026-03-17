@@ -158,9 +158,9 @@ export function Home() {
         {/* Animated background orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[
-            { size: 'w-72 h-72', pos: 'top-20 -left-20', color: 'from-cyan-500/15', delay: 0 },
-            { size: 'w-64 h-64', pos: 'top-32 right-0',  color: 'from-purple-500/12', delay: 1 },
-            { size: 'w-80 h-80', pos: '-bottom-20 left-1/3', color: 'from-pink-500/10', delay: 2 },
+            { size: 'w-44 h-44 sm:w-72 sm:h-72', pos: 'top-12 -left-12 sm:top-20 sm:-left-20', color: 'from-cyan-500/15', delay: 0 },
+            { size: 'w-36 h-36 sm:w-64 sm:h-64', pos: 'top-16 right-0 sm:top-32',      color: 'from-purple-500/12', delay: 1 },
+            { size: 'w-48 h-48 sm:w-80 sm:h-80', pos: '-bottom-16 left-1/4 sm:-bottom-20 sm:left-1/3', color: 'from-pink-500/10', delay: 2 },
           ].map((orb, i) => (
             <motion.div key={i}
               className={`absolute ${orb.size} ${orb.pos} rounded-full bg-gradient-to-br ${orb.color} to-transparent blur-3xl`}

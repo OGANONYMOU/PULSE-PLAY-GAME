@@ -122,10 +122,10 @@ function AppContent(): React.ReactElement {
   if (isLoading) return <AppLoader />;
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen overflow-x-hidden">
       <ParticleBackground />
       {!location.pathname.startsWith("/admin") && <Navbar />}
-      <main className="relative z-10">
+      <main className="relative z-10 responsive-container">
         <PageTransition>
           <Suspense fallback={<PageSkeleton />}>
             <Routes location={location} key={location.pathname}>
