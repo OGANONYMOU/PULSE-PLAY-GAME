@@ -154,7 +154,7 @@ export function Home() {
     <div className="min-h-screen pt-20 sm:pt-24 overflow-hidden">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6">
+      <section className="relative min-h-[70vh] sm:min-h-[75vh] md:min-h-[80vh] flex flex-col items-center justify-center w-full px-4 sm:px-6">
         {/* Animated background orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[
