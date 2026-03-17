@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Trophy, Users, Play, CheckCircle, RefreshCw,
-  Loader2, UserX, UserCheck,
+  Loader2, UserX, UserCheck, Layers,
   Flag, Crown, Eye,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';

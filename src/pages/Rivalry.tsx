@@ -22,20 +22,20 @@ export function RivalryPage() {
     const load = async () => {
       setLoading(true);
       const [ra, rb] = await Promise.all([
-        supabase.from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_scores(score)').eq('username', playerA).maybeSingle(),
-        supabase.from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_scores(score)').eq('username', playerB).maybeSingle(),
+        (supabase as any).from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_scores(score)').eq('username', playerA as string).maybeSingle(),
+        (supabase as any).from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_scores(score)').eq('username', playerB as string).maybeSingle(),
       ]);
-      if (ra.data) setProfA(ra.data as RivalProfile);
-      if (rb.data) setProfB(rb.data as RivalProfile);
+      if (ra.data) setProfA(ra.data as unknown as RivalProfile);
+      if (rb.data) setProfB(rb.data as unknown as RivalProfile);
 
       if (ra.data && rb.data) {
         const { data: riv } = await (supabase as any).from('rivalries')
           .select('*, games(name, icon)')
-          .or(`and(player_a.eq.${(ra.data as RivalProfile).id},player_b.eq.${(rb.data as RivalProfile).id}),and(player_a.eq.${(rb.data as RivalProfile).id},player_b.eq.${(ra.data as RivalProfile).id})`)
+          .or(`and(player_a.eq.${(ra.data as any).id},player_b.eq.${(rb.data as any).id}),and(player_a.eq.${(rb.data as any).id},player_b.eq.${(ra.data as any).id})`)
           .maybeSingle();
         if (riv) {
           // normalise so profA is always player_a
-          const normalised = (riv as any).player_a === ra.data!.id ? riv as Rivalry : { ...(riv as any), player_a: (riv as any).player_b, player_b: (riv as any).player_a, wins_a: (riv as any).wins_b, wins_b: (riv as any).wins_a } as Rivalry;
+          const normalised = (riv as any).player_a === (ra.data as any).id ? riv as Rivalry : { ...(riv as any), player_a: (riv as any).player_b, player_b: (riv as any).player_a, wins_a: (riv as any).wins_b, wins_b: (riv as any).wins_a } as Rivalry;
           setRivalry(normalised as Rivalry);
         }
       }

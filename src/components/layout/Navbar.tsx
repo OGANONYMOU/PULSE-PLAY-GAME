@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { NotificationBell } from '@/components/layout/NotificationDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
 import { prefetchRoute } from '@/App';
 
