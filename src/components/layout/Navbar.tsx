@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Sun, Moon, User, LogOut, Shield, ChevronDown, Bell } from 'lucide-react';
+import { Menu, X, Sun, Moon, User, LogOut, Shield, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -206,7 +206,7 @@ export function Navbar(): React.ReactElement {
         <motion.div
           animate={{ paddingLeft: atTop ? '12px' : '20px', paddingRight: atTop ? '12px' : '20px' }}
           transition={{ duration: 0.4, ease: 'easeInOut' }}
-          className="pt-3"
+          className="pt-3 w-full"
         >
           <motion.nav
             animate={{
@@ -217,7 +217,7 @@ export function Navbar(): React.ReactElement {
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className={
-              'pointer-events-auto flex items-center gap-2 px-3 py-2 transition-colors duration-300 ' +
+              'pointer-events-auto flex items-center gap-2 px-3 py-2 transition-colors duration-300 w-full ' +
               (atTop
                 ? 'bg-[#0a0a14]/70 backdrop-blur-xl border border-white/8'
                 : 'bg-[#0a0a14]/94 backdrop-blur-2xl border border-white/10')
@@ -269,10 +269,7 @@ export function Navbar(): React.ReactElement {
 
               {isAuthenticated ? (
                 <>
-                  <button className="hidden sm:flex relative w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white hover:bg-white/8 transition-all" aria-label="Notifications">
-                    <Bell className="w-3.5 h-3.5" />
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 ring-2 ring-[#0a0a14]" />
-                  </button>
+                  <NotificationBell />
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

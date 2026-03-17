@@ -199,7 +199,7 @@ export function Home() {
             </motion.div>
           )}
 
-          <h1 className="font-orbitron text-4xl sm:text-6xl md:text-7xl font-black leading-[0.95] mb-6">
+          <h1 className="font-orbitron text-3xl sm:text-5xl md:text-7xl font-black leading-[1.05] mb-6">
             <span className="gradient-text">Compete.</span>{' '}
             <span className="text-white">Clip.</span>{' '}
             <span className="text-white/70">Conquer.</span>
@@ -241,7 +241,7 @@ export function Home() {
         {/* Stat bar */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }} className="relative z-10 mt-16 w-full max-w-3xl mx-auto">
-          <div className="grid grid-cols-4 gap-2 sm:gap-4 px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 px-4">
             {platformStats.map((s, i) => (
               <div key={s.label} className="text-center p-3 sm:p-4 rounded-2xl bg-white/4 border border-white/8">
                 <p className={`font-orbitron font-black text-xl sm:text-2xl ${s.color}`}>

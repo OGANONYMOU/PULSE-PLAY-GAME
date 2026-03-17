@@ -402,7 +402,7 @@ export function AdminLayout(): React.ReactElement {
         </div>
 
         {/* Content — starts AFTER the topbar spacer on mobile, immediately on desktop */}
-        <div id="admin-scroll-area" className="flex-1 overflow-auto overflow-x-hidden">
+        <div id="admin-scroll-area" className="flex-1 overflow-auto overflow-x-hidden pb-safe">
           <Outlet />
         </div>
       </div>

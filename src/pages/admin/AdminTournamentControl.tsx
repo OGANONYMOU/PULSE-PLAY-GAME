@@ -163,7 +163,7 @@ export function AdminTournamentControl() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         {[
           { label: 'Checked In', val: `${checkedIn}/${participants.length}`, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/15' },
           { label: 'Active Matches', val: pendingMatches, color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/15' },

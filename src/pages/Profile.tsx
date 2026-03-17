@@ -478,7 +478,7 @@ export function Profile(): React.ReactElement {
           <EditPanel show={isEditing} form={editForm} saving={isSaving} onChange={setEditForm} onSave={handleSave} onCancel={() => setIsEditing(false)} />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           {[
             { icon: MessageSquare, label: 'Posts', value: posts.length, color: 'text-cyan-400' },
             { icon: Flame, label: 'Likes', value: totalLikes, color: 'text-orange-400' },
@@ -499,7 +499,7 @@ export function Profile(): React.ReactElement {
         ) : null}
 
         {/* Follower stats */}
-        <div className="flex items-center gap-4 mb-3 px-1">
+        <div className="flex items-center gap-2 sm:gap-4 mb-3 px-1 overflow-x-auto">
           <div className="text-center">
             <p className="font-orbitron font-black text-lg text-white">{followers}</p>
             <p className="text-[10px] text-white/35">Followers</p>

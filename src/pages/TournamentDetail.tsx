@@ -88,7 +88,7 @@ function MatchCard({ match, myId, onOpenMatch }: {
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       onClick={() => !match.is_bye && match.status !== 'settled' ? onOpenMatch(match) : undefined}
-      className={`relative p-3 rounded-xl border ${statusColor} ${!match.is_bye && match.status !== 'settled' && isMyMatch ? 'cursor-pointer hover:border-cyan-500/60 hover:bg-cyan-500/5' : ''} transition-all min-w-[180px]`}
+      className={`relative p-3 rounded-xl border ${statusColor} ${!match.is_bye && match.status !== 'settled' && isMyMatch ? 'cursor-pointer hover:border-cyan-500/60 hover:bg-cyan-500/5' : ''} transition-all min-w-[160px] max-w-[200px]`}
     >
       {match.match_number && (
         <span className="absolute top-1 left-2 text-[9px] font-mono text-white/20">#{match.match_number}</span>
@@ -167,7 +167,7 @@ function BracketView({ rounds, matches, myId, onOpenMatch }: {
   const matchesByRound = rounds.map(r => matches.filter(m => m.round === r.round_number));
 
   return (
-    <div className="overflow-x-auto pb-4">
+    <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
       <div className="flex items-start gap-8 min-w-fit p-2">
         {rounds.map((round, ri) => (
           <div key={round.id} className="flex flex-col gap-2">
@@ -292,7 +292,7 @@ function MatchActionDrawer({ match, tournament, myId, onClose, onRefresh }: {
   return (
     <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-      className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-96 bg-[#0a0a16]/99 border-l border-white/10 backdrop-blur-2xl flex flex-col shadow-2xl">
+      className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-96 max-w-full bg-[#0a0a16]/99 border-l border-white/10 backdrop-blur-2xl flex flex-col shadow-2xl">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -758,7 +758,7 @@ export function TournamentDetail() {
           )}
 
           {/* Tab bar */}
-          <div className="flex border-b border-white/8 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto">
+          <div className="flex border-b border-white/8 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto scrollbar-none">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`flex items-center gap-1.5 px-4 py-3 text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-px ${

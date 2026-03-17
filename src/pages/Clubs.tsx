@@ -173,7 +173,7 @@ function ClubCard({ club, index, onJoin, joining }: {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-1.5 mb-4">
         {[
           { icon: Users, val: club.member_count, label: 'Members', color: 'text-cyan-400' },
           { icon: Trophy, val: club.wins, label: 'Wins', color: 'text-green-400' },
@@ -334,7 +334,7 @@ export function Clubs(): React.ReactElement {
         {/* Controls */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/8">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/8 overflow-x-auto">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={'flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ' +

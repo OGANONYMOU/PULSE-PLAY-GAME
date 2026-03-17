@@ -93,8 +93,8 @@
     height: auto;
   }
 
-  /* Improve tap targets on mobile — all interactive elements min 44px tall */
-  button, a, [role="button"], input, select, textarea {
+  /* Improve tap targets on mobile — only apply to block-level buttons, not inline */
+  input, select, textarea {
     min-height: 36px;
   }
 
@@ -117,12 +117,41 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
   }
+
+  /* ── Mobile layout fixes ─────────────────────────────────────────────── */
+
+  /* Prevent any element from ever causing horizontal scroll */
+  * {
+    min-width: 0;
+  }
+
+  /* Ensure root fills the full viewport on all devices */
+  #root {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Fix iOS momentum scrolling */
+  .overflow-y-auto, .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent iOS double-tap zoom on buttons */
+  button {
+    touch-action: manipulation;
+  }
+
+  /* Fix iOS Safari vh issue — use dvh where supported */
+  .min-h-screen {
+    min-height: 100dvh;
+  }
 }
 
 @layer components {
   /* Gaming Card Style */
   .gaming-card {
-    @apply relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden;
+    @apply relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden w-full;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     contain: layout style;
   }
@@ -204,6 +233,26 @@
   /* Input Focus */
   .input-gaming {
     @apply bg-muted/50 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20;
+  }
+  @media (max-width: 768px) {
+    /* Prevent horizontal overflow from any stray element */
+    body, #root {
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+    }
+
+    /* Ensure modals and overlays fit mobile screen */
+    [class*="fixed"][class*="inset-0"] {
+      max-width: 100vw;
+      max-height: 100dvh;
+    }
+
+    /* Bracket horizontal scroll on mobile */
+    .bracket-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+    }
   }
 }
 

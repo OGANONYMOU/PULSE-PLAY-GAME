@@ -103,7 +103,7 @@ function PulsePointsBoard({ data, loading }: { data: PulseRow[]; loading: boolea
           <div className="w-8 flex items-center justify-center flex-shrink-0"><RankBadge rank={i + 1} /></div>
           <PlayerAvatar username={p.profiles?.username ?? '?'} url={p.profiles?.avatar_url ?? null} />
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-white truncate">{p.profiles?.username ?? '—'}</p>
+            <p className="font-semibold text-sm text-white truncate max-w-[100px] sm:max-w-none">{p.profiles?.username ?? '—'}</p>
           </div>
           <div className="text-right flex-shrink-0">
             <p className="font-orbitron font-black text-base text-purple-400">{p.balance.toLocaleString()}</p>

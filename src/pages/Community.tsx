@@ -448,10 +448,10 @@ export function Community() {
           {/* Left: main content */}
           <div className="flex-1 min-w-0">
             {/* Tab bar */}
-            <div className="flex items-center gap-0.5 p-1 rounded-2xl bg-white/5 border border-white/8 mb-5">
+            <div className="flex items-center gap-0.5 p-1 rounded-2xl bg-white/5 border border-white/8 mb-5 overflow-x-auto">
               {TABS_CONFIG.map(t => (
                 <button key={t.id} onClick={() => setActiveTab(t.id)}
-                  className={'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all ' +
+                  className={'flex-shrink-0 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ' +
                     (activeTab === t.id ? 'bg-white/12 text-white' : 'text-white/40 hover:text-white/70')}>
                   <t.icon className="w-3.5 h-3.5" />{t.label}
                 </button>

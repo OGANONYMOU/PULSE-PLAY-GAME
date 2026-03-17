@@ -43,7 +43,7 @@ export function ShareModal({ title, url, authorUsername, type = 'post', onClose 
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="w-full max-w-sm bg-[#0d0d1e] border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+        className="w-full max-w-sm mx-auto bg-[#0d0d1e] border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
           <h2 className="font-orbitron font-bold text-sm text-white">Share</h2>
           <button onClick={onClose} className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white"><X className="w-4 h-4" /></button>

@@ -324,7 +324,7 @@ export function PostCard({ post, onReact, onSave, onRefresh, showComments = fals
                   initial={{ opacity: 0, scale: 0.8, y: 4 }} animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onMouseEnter={() => setShowReactions(true)} onMouseLeave={() => setShowReactions(false)}
-                  className="absolute bottom-full left-0 mb-2 z-20 flex gap-1 p-2 bg-[#0d0d1e] border border-white/12 rounded-2xl shadow-2xl">
+                  className="absolute bottom-full left-0 mb-2 z-20 flex gap-1 p-2 bg-[#0d0d1e] border border-white/12 rounded-2xl shadow-2xl" style={{ transform: "translateX(min(0px, calc(100vw - 100% - 16px)))" }}>
                   {REACTIONS.map(r => (
                     <button key={r.type} onClick={() => handleReact(r.type)} title={r.label}
                       className={'text-xl p-1.5 rounded-xl transition-all hover:scale-125 ' + (myReaction === r.type ? 'bg-white/15' : 'hover:bg-white/8')}>

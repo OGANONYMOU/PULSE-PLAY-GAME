@@ -283,7 +283,7 @@ export function TournamentCreate() {
 
               <div>
                 <FieldLabel label="Max Players" hint="Must be a power of 2. BYEs auto-handled for other counts." />
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-1.5">
                   {PLAYER_OPTIONS.map(n => (
                     <button key={n} onClick={() => set('max_players', n)}
                       disabled={form.easy_mode}

@@ -105,7 +105,7 @@ export function RivalryPage() {
               {/* Score */}
               <div className="text-center">
                 <div className="text-[10px] text-white/30 uppercase tracking-widest font-mono mb-2">Rivalry Record</div>
-                <div className="font-orbitron font-black text-4xl sm:text-5xl text-white">
+                <div className="font-orbitron font-black text-3xl sm:text-5xl text-white">
                   <span className="text-cyan-400">{winsA}</span>
                   <span className="text-white/20 mx-2">–</span>
                   <span className="text-pink-400">{winsB}</span>
