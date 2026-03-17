@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Sun, Moon, User, LogOut, Shield, Bell, ChevronDown } from 'lucide-react';
+import { Menu, X, Sun, Moon, User, LogOut, Shield, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -12,15 +12,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBell } from '@/components/layout/NotificationDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
 import { prefetchRoute } from '@/App';
 
 const navLinks = [
-  { href: '/',            label: 'Home' },
-  { href: '/games',       label: 'Games' },
-  { href: '/community',   label: 'Community' },
-  { href: '/tournaments', label: 'Tournaments' },
-  { href: '/about',       label: 'About' },
+  { href: '/',             label: 'Home'         },
+  { href: '/games',        label: 'Games'        },
+  { href: '/tournaments',  label: 'Tournaments'  },
+  { href: '/community',    label: 'Community'    },
+  { href: '/clubs',        label: 'Clubs'        },
+  { href: '/leaderboards', label: 'Rankings'     },
 ];
 
 // ── Brand logo component ────────────────────────────────────────────────────

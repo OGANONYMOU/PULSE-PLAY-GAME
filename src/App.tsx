@@ -22,7 +22,9 @@ const SignIn        = lazy(() => import('@/pages/SignIn').then(m => ({ default: 
 const Register      = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
 const AuthCallback  = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
 const Profile       = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
-const NotFound      = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
+const NotFound       = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
+const Clubs          = lazy(() => import('@/pages/Clubs').then(m => ({ default: m.Clubs })));
+const Leaderboards   = lazy(() => import('@/pages/Leaderboards').then(m => ({ default: m.Leaderboards })));
 
 // Admin chunk — separate bundle
 const AdminLayout       = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
@@ -35,6 +37,15 @@ const AdminPosts        = lazy(() => import('@/pages/admin/AdminPosts').then(m =
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements').then(m => ({ default: m.AdminAnnouncements })));
 const AdminUpdates      = lazy(() => import('@/pages/admin/AdminUpdates').then(m => ({ default: m.AdminUpdates })));
 const AdminSettings     = lazy(() => import('@/pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
+const AdminMatches      = lazy(() => import('@/pages/admin/AdminMatches').then(m => ({ default: m.AdminMatches })));
+const AdminDisputes     = lazy(() => import('@/pages/admin/AdminDisputes').then(m => ({ default: m.AdminDisputes })));
+const AdminAuditLog     = lazy(() => import('@/pages/admin/AdminAuditLog').then(m => ({ default: m.AdminAuditLog })));
+const AdminClubs        = lazy(() => import('@/pages/admin/AdminClubs').then(m => ({ default: m.AdminClubs })));
+const AdminModeration   = lazy(() => import('@/pages/admin/AdminModeration').then(m => ({ default: m.AdminModeration })));
+const RivalryPage            = lazy(() => import('@/pages/Rivalry').then(m => ({ default: m.RivalryPage })));
+const TournamentDetail       = lazy(() => import('@/pages/TournamentDetail').then(m => ({ default: m.TournamentDetail })));
+const TournamentCreate       = lazy(() => import('@/pages/TournamentCreate').then(m => ({ default: m.TournamentCreate })));
+const AdminTournamentControl = lazy(() => import('@/pages/admin/AdminTournamentControl').then(m => ({ default: m.AdminTournamentControl })));
 
 // ── Route prefetching on nav hover ───────────────────────────────────────────
 const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
@@ -43,6 +54,8 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/tournaments': () => import('@/pages/Tournaments'),
   '/community':   () => import('@/pages/Community'),
   '/about':       () => import('@/pages/About'),
+  '/clubs':        () => import('@/pages/Clubs'),
+  '/leaderboards': () => import('@/pages/Leaderboards'),
   '/signin':      () => import('@/pages/SignIn'),
   '/register':    () => import('@/pages/Register'),
   '/profile':     () => import('@/pages/Profile'),
@@ -126,6 +139,11 @@ function AppContent(): React.ReactElement {
               <Route path="/auth/callback"     element={<AuthCallback />} />
               <Route path="/profile"           element={<Profile />} />
               <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/clubs"             element={<Clubs />} />
+              <Route path="/leaderboards"      element={<Leaderboards />} />
+              <Route path="/rivalry/:playerA/:playerB"  element={<RivalryPage />} />
+              <Route path="/tournaments/create"            element={<TournamentCreate />} />
+              <Route path="/tournaments/:id"               element={<TournamentDetail />} />
 
               {/* Admin — all 8 sub-routes now wired */}
               <Route path="/admin" element={<AdminLayout />}>

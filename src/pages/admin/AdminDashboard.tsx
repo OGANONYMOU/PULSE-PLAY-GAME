@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users, Shield, UserCheck, Ban, TrendingUp, Activity, RefreshCw,
+  Users, Shield, UserCheck, Ban, TrendingUp, Activity, RefreshCw, Layers, AlertTriangle, Flag,
   ArrowUpRight, Gamepad2, Trophy, Clock, Zap, Star,
   CheckCircle, Target, FileText, Megaphone,
   ChevronRight, Flame,
@@ -21,7 +21,7 @@ interface ProfileRow { role: string; is_banned: boolean; created_at: string; use
 interface Stats { total: number; admins: number; moderators: number; banned: number; newThisWeek: number }
 interface ChartPoint { date: string; users: number }
 interface ActivityItem { id: string; username: string; action: string; created_at: string }
-interface PlatformCounts { games: number; tournaments: number; posts: number; announcements: number }
+interface PlatformCounts { games: number; tournaments: number; posts: number; announcements: number; matches: number; disputes_open: number; reports_pending: number }
 
 // ── Level system ──────────────────────────────────────────────────────────────
 interface AdminLevel { name: string; emoji: string; min: number; max: number; color: string; barFrom: string; barTo: string }
@@ -349,13 +349,16 @@ export function AdminDashboard(): React.ReactElement {
       })));
 
       // Platform counts
-      const [g, t, p, a] = await Promise.all([
+      const [g, t, p, a, m, d, n] = await Promise.all([
         supabase.from('games').select('*', { count: 'exact', head: true }),
         supabase.from('tournaments').select('*', { count: 'exact', head: true }),
         supabase.from('posts').select('*', { count: 'exact', head: true }),
         supabase.from('announcements').select('*', { count: 'exact', head: true }),
+        supabase.from('matches').select('*', { count: 'exact', head: true }),
+        supabase.from('disputes').select('*', { count: 'exact', head: true }).eq('state', 'open'),
+        supabase.from('content_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
-      setCounts({ games: g.count ?? 0, tournaments: t.count ?? 0, posts: p.count ?? 0, announcements: a.count ?? 0 });
+      setCounts({ games: g.count ?? 0, tournaments: t.count ?? 0, posts: p.count ?? 0, announcements: a.count ?? 0, matches: m.count ?? 0, disputes_open: d.count ?? 0, reports_pending: n.count ?? 0 });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally { setLoading(false); }
@@ -371,7 +374,10 @@ export function AdminDashboard(): React.ReactElement {
     { Icon: Gamepad2,  label: 'Games',          value: counts?.games ?? 0, delta: undefined,       color: 'text-purple-400', glow: 'bg-purple-500', border: 'border-purple-500/15', href: '/admin/games' },
     { Icon: Trophy,    label: 'Tournaments',    value: counts?.tournaments ?? 0, delta: undefined, color: 'text-amber-400',  glow: 'bg-amber-500',  border: 'border-amber-500/15',  href: '/admin/tournaments' },
     { Icon: FileText,  label: 'Posts',          value: counts?.posts ?? 0, delta: undefined,       color: 'text-pink-400',   glow: 'bg-pink-500',   border: 'border-pink-500/15',   href: '/admin/posts' },
-    { Icon: Megaphone, label: 'Announcements',  value: counts?.announcements ?? 0, delta: undefined, color: 'text-emerald-400', glow: 'bg-emerald-500', border: 'border-emerald-500/15', href: '/admin/announcements' },
+    { Icon: Megaphone,      label: 'Announcements',  value: counts?.announcements ?? 0, delta: undefined, color: 'text-emerald-400', glow: 'bg-emerald-500',  border: 'border-emerald-500/15',  href: '/admin/announcements' },
+    { Icon: Layers,          label: 'Matches',         value: counts?.matches ?? 0,         delta: undefined, color: 'text-violet-400',  glow: 'bg-violet-500',  border: 'border-violet-500/15',   href: '/admin/matches' },
+    { Icon: AlertTriangle,   label: 'Open Disputes',   value: counts?.disputes_open ?? 0,   delta: undefined, color: 'text-orange-400',  glow: 'bg-orange-500',  border: 'border-orange-500/15',   href: '/admin/disputes' },
+    { Icon: Flag,            label: 'Pending Reports', value: counts?.reports_pending ?? 0, delta: undefined, color: 'text-red-400',     glow: 'bg-red-500',     border: 'border-red-500/15',      href: '/admin/moderation' },
   ];
 
   const goals = [

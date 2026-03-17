@@ -1,325 +1,398 @@
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Gamepad2, Trophy, Users, ArrowRight, Sparkles, Target } from 'lucide-react';
+import {
+  Trophy, Users, ArrowRight, Sparkles, Flame, Video, Zap, Sword,
+  TrendingUp, Shield, Star, Globe, ChevronRight, Play, Crown,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StatCard } from '@/components/ui-custom/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { supabase } from '@/lib/supabase';
 
-const previewCards = [
-  {
-    icon: Gamepad2,
-    title: 'Trending Games',
-    description: 'Discover the hottest mobile games dominating the scene',
-    link: '/games',
-    color: 'from-cyan-500 to-blue-500',
-  },
-  {
-    icon: Trophy,
-    title: 'Live Tournaments',
-    description: 'Compete in exciting battles and win massive prizes',
-    link: '/tournaments',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
-    icon: Users,
-    title: 'Join Community',
-    description: 'Connect with gamers and share your gaming journey',
-    link: '/community',
-    color: 'from-pink-500 to-red-500',
-  },
-];
+// ── Live stat counter ──────────────────────────────────────────────────────
+function AnimatedNumber({ target, delay = 0, suffix = '' }: { target: number; delay?: number; suffix?: string }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const steps = 40; let step = 0;
+      const interval = setInterval(() => {
+        step++;
+        setVal(Math.round((target * step) / steps));
+        if (step >= steps) clearInterval(interval);
+      }, 30);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [target, delay]);
+  return <span>{val.toLocaleString()}{suffix}</span>;
+}
 
+// ── Live tournament hype card ──────────────────────────────────────────────
+type LiveTournament = { id: string; name: string; current_players: number; max_players: number; games: { name: string; icon: string } | null };
+
+function LiveHypeCard({ t }: { t: LiveTournament }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      className="relative p-4 rounded-2xl border border-red-500/20 bg-red-500/6 hover:border-red-500/40 hover:bg-red-500/10 transition-all overflow-hidden group">
+      <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent pointer-events-none" />
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-2xl flex-shrink-0">
+          {t.games?.icon ?? '🎮'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex items-center gap-1 text-[10px] text-red-400 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />LIVE NOW
+            </span>
+          </div>
+          <p className="font-orbitron font-bold text-sm text-white truncate">{t.name}</p>
+          <p className="text-[11px] text-white/45 mt-0.5">{t.games?.name} · {t.current_players}/{t.max_players} players</p>
+        </div>
+        <Link to="/tournaments"
+          className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-red-500/25 text-red-400 text-xs font-bold hover:bg-red-500/40 transition-all group-hover:scale-105">
+          Watch
+        </Link>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Feature card ───────────────────────────────────────────────────────────
+function FeatureCard({ icon: Icon, title, desc, color, to, delay }: {
+  icon: React.ElementType; title: string; desc: string;
+  color: string; to: string; delay: number;
+}) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }} transition={{ duration: 0.5, delay }}>
+      <Link to={to} className="block group h-full">
+        <div className="h-full p-6 rounded-2xl bg-white/3 border border-white/8 hover:border-white/18 hover:bg-white/5 transition-all duration-300">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110 ${color}`}>
+            <Icon className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="font-orbitron font-bold text-base text-white mb-2 group-hover:text-cyan-400 transition-colors">{title}</h3>
+          <p className="text-sm text-white/45 leading-relaxed">{desc}</p>
+          <div className="flex items-center gap-1 mt-4 text-xs text-white/25 group-hover:text-cyan-400 transition-colors">
+            Explore <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ── Top player row ─────────────────────────────────────────────────────────
+type TopPlayer = { user_id: string; score: number; profiles: { username: string; avatar_url: string | null } | null };
+
+function TopPlayerRow({ p, rank }: { p: TopPlayer; rank: number }) {
+  const medals = ['🥇', '🥈', '🥉'];
+  return (
+    <Link to={`/profile/${p.profiles?.username}`}
+      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all group">
+      <span className="w-7 text-center text-lg flex-shrink-0">{medals[rank] ?? `${rank + 1}`}</span>
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white text-xs font-orbitron font-black flex-shrink-0">
+        {p.profiles?.username?.[0]?.toUpperCase() ?? 'U'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white truncate group-hover:text-cyan-400 transition-colors">{p.profiles?.username ?? '—'}</p>
+      </div>
+      <span className="font-orbitron font-black text-sm text-cyan-400 flex-shrink-0">{p.score.toLocaleString()}</span>
+    </Link>
+  );
+}
+
+// ── Main ───────────────────────────────────────────────────────────────────
 export function Home() {
   const { isAuthenticated } = useAuth();
   const { symbol } = useCurrency();
+  const [liveTournaments, setLiveTournaments] = useState<LiveTournament[]>([]);
+  const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);
+  const [realStats, setRealStats] = useState({ players: 0, tournaments: 0, clubs: 0, clips: 0 });
 
-  const stats = [
-    { value: '10K+', label: 'Active Players' },
-    { value: '50+',  label: 'Tournaments' },
-    { value: symbol + '0', label: 'Prize Pool' },
+  useEffect(() => {
+    // Load live tournaments
+    supabase.from('tournaments').select('id, name, current_players, max_players, games(name, icon)')
+      .eq('status', 'ongoing').limit(3)
+      .then(({ data }) => setLiveTournaments((data as LiveTournament[]) ?? []));
+
+    // Load top GamerCred players
+    supabase.from('gamercred_scores').select('user_id, score, profiles(username, avatar_url)')
+      .order('score', { ascending: false }).limit(5)
+      .then(({ data }) => setTopPlayers((data as TopPlayer[]) ?? []));
+
+    // Load real platform stats
+    Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'USER'),
+      supabase.from('tournaments').select('*', { count: 'exact', head: true }),
+      supabase.from('clubs').select('*', { count: 'exact', head: true }),
+      supabase.from('clips').select('*', { count: 'exact', head: true }).eq('is_published', true),
+    ]).then(([players, tourn, clubs, clips]) => {
+      setRealStats({
+        players: players.count ?? 0,
+        tournaments: tourn.count ?? 0,
+        clubs: clubs.count ?? 0,
+        clips: clips.count ?? 0,
+      });
+    });
+  }, []);
+
+  const platformStats = [
+    { icon: Users,   value: realStats.players,     suffix: '+', label: 'Players',      color: 'text-cyan-400'   },
+    { icon: Trophy,  value: realStats.tournaments,  suffix: '',  label: 'Tournaments',  color: 'text-yellow-400' },
+    { icon: Users,   value: realStats.clubs,        suffix: '',  label: 'Clubs',        color: 'text-purple-400' },
+    { icon: Video,   value: realStats.clips,        suffix: '',  label: 'Clips Shared', color: 'text-pink-400'   },
+  ];
+
+  const features = [
+    { icon: Trophy,    title: 'Tournaments',   desc: 'Join live competitions and compete for real prizes across eFootball, CODM, Free Fire and more.',   color: 'bg-gradient-to-br from-yellow-500 to-orange-600', to: '/tournaments', delay: 0    },
+    { icon: Video,     title: 'Clips',         desc: 'Upload your best goals and clutch plays. Like, comment, repost, and share to TikTok and WhatsApp.', color: 'bg-gradient-to-br from-pink-500 to-purple-600',   to: '/community',  delay: 0.05 },
+    { icon: Users,     title: 'Clubs',         desc: 'Form a crew with your friends. Compete in club wars, share scrims, and climb the leaderboards.',    color: 'bg-gradient-to-br from-cyan-500 to-blue-600',    to: '/clubs',       delay: 0.1  },
+    { icon: TrendingUp,title: 'Leaderboards',  desc: 'Earn GamerCred through wins and sportsmanship. Climb regional and global rankings.',                 color: 'bg-gradient-to-br from-emerald-500 to-cyan-600', to: '/leaderboards',delay: 0.15 },
+    { icon: Globe,     title: 'Community',     desc: 'Discuss tactics, make friends, follow rivals, and be part of the biggest mobile gaming community.',  color: 'bg-gradient-to-br from-violet-500 to-purple-600',to: '/community',  delay: 0.2  },
+    { icon: Sword,     title: 'Rivalries',     desc: 'Play the same opponent repeatedly and an automatic rivalry page generates your head-to-head record.', color: 'bg-gradient-to-br from-red-500 to-orange-600',   to: '/community',  delay: 0.25 },
   ];
 
   return (
-    <div className="min-h-screen pt-20 sm:pt-24">
-      {/* Hero Section */}
-      <section className="relative min-h-[85vh] sm:min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6">
-        {/* Floating Elements */}
+    <div className="min-h-screen pt-20 sm:pt-24 overflow-hidden">
+
+      {/* ── HERO ─────────────────────────────────────────────────────── */}
+      <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 sm:px-6">
+        {/* Animated background orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            animate={{ y: [0, -30, 0], rotate: [0, 5, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute top-20 left-10 w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-transparent border border-cyan-500/30"
-          />
-          <motion.div
-            animate={{ y: [0, 20, 0], rotate: [0, -5, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            className="absolute top-40 right-20 w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500/20 to-transparent border border-purple-500/30"
-          />
-          <motion.div
-            animate={{ y: [0, -25, 0], rotate: [0, 10, 0] }}
-            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-            className="absolute bottom-40 left-1/4 w-24 h-24 rounded-3xl bg-gradient-to-br from-pink-500/10 to-transparent border border-pink-500/20"
-          />
+          {[
+            { size: 'w-72 h-72', pos: 'top-20 -left-20', color: 'from-cyan-500/15', delay: 0 },
+            { size: 'w-64 h-64', pos: 'top-32 right-0',  color: 'from-purple-500/12', delay: 1 },
+            { size: 'w-80 h-80', pos: '-bottom-20 left-1/3', color: 'from-pink-500/10', delay: 2 },
+          ].map((orb, i) => (
+            <motion.div key={i}
+              className={`absolute ${orb.size} ${orb.pos} rounded-full bg-gradient-to-br ${orb.color} to-transparent blur-3xl`}
+              animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 5 + i, repeat: Infinity, delay: orb.delay }} />
+          ))}
+          {/* Floating game icons */}
+          {['⚽', '🎮', '🏆', '🔥', '⚡'].map((emoji, i) => (
+            <motion.span key={i} className="absolute text-3xl sm:text-4xl select-none pointer-events-none opacity-20"
+              style={{ left: `${10 + i * 18}%`, top: `${20 + (i % 3) * 25}%` }}
+              animate={{ y: [0, -20, 0], rotate: [0, i % 2 === 0 ? 10 : -10, 0] }}
+              transition={{ duration: 4 + i, repeat: Infinity, delay: i * 0.6 }}>
+              {emoji}
+            </motion.span>
+          ))}
         </div>
 
-        {/* Hero Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center max-w-4xl mx-auto relative z-10"
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-sm font-medium mb-6"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Welcome to the Future of Mobile Gaming</span>
-          </motion.div>
+        {/* Hero content */}
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }} className="text-center max-w-4xl mx-auto relative z-10">
 
-          <h1 className="font-orbitron text-3xl sm:text-5xl md:text-7xl font-black mb-4 sm:mb-6 leading-tight">
-            <span className="gradient-text">Stay in the Pulse</span>
-            <br />
-            <span className="text-foreground">of Gaming</span>
+          {/* Live badge */}
+          {liveTournaments.length > 0 && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold mb-6">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              {liveTournaments.length} tournament{liveTournaments.length > 1 ? 's' : ''} live right now
+            </motion.div>
+          )}
+          {liveTournaments.length === 0 && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/12 border border-cyan-500/25 text-cyan-300 text-xs font-bold mb-6">
+              <Sparkles className="w-3.5 h-3.5" />Africa's Premier Mobile Esports Platform
+            </motion.div>
+          )}
+
+          <h1 className="font-orbitron text-4xl sm:text-6xl md:text-7xl font-black leading-[0.95] mb-6">
+            <span className="gradient-text">Compete.</span>{' '}
+            <span className="text-white">Clip.</span>{' '}
+            <span className="text-white/70">Conquer.</span>
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
-            Get the latest updates, news, and tournaments for mobile gamers.{' '}
+          <p className="text-base sm:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
             {isAuthenticated
-              ? 'Jump back in and keep competing.'
-              : 'Join thousands of players competing for real prizes.'}
+              ? "Welcome back. Your next tournament, your next rival, your next clip — it’s waiting."
+              : 'Tournaments · Clubs · Clips · GamerCred. The full mobile esports experience, built for Africa.'}
           </p>
 
-          {/* CTA buttons — differ for authenticated vs guest */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isAuthenticated ? (
               <>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl shadow-glow hover:shadow-glow-lg transition-all">
-                  <Link to="/tournaments">
-                    <Trophy className="mr-2 w-5 h-5" />
-                    Browse Tournaments
-                  </Link>
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold px-8 h-12 rounded-2xl shadow-lg shadow-cyan-500/25">
+                  <Link to="/tournaments"><Trophy className="mr-2 w-5 h-5" />Browse Tournaments</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline"
-                  className="border-2 border-purple-500/50 hover:bg-purple-500/10 font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl">
-                  <Link to="/community">
-                    <Users className="mr-2 w-5 h-5" />
-                    Community
-                  </Link>
+                  className="border-white/15 text-white hover:bg-white/8 h-12 rounded-2xl">
+                  <Link to="/community"><Video className="mr-2 w-5 h-5" />Community Feed</Link>
                 </Button>
               </>
             ) : (
               <>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl shadow-glow hover:shadow-glow-lg transition-all">
-                  <Link to="/community">
-                    Join the Community
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Link>
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold px-10 h-12 rounded-2xl shadow-lg shadow-cyan-500/25">
+                  <Link to="/register"><Zap className="mr-2 w-5 h-5" />Join Free</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline"
-                  className="border-2 border-purple-500/50 hover:bg-purple-500/10 font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 rounded-xl">
-                  <Link to="/tournaments">
-                    <Trophy className="mr-2 w-5 h-5" />
-                    View Tournaments
-                  </Link>
+                  className="border-white/15 text-white hover:bg-white/8 h-12 rounded-2xl">
+                  <Link to="/tournaments">View Tournaments <ArrowRight className="ml-2 w-5 h-5" /></Link>
                 </Button>
               </>
             )}
           </div>
         </motion.div>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-16 max-w-3xl w-full px-4"
-        >
-          {stats.map((stat, index) => (
-            <StatCard key={stat.label} value={stat.value} label={stat.label} delay={0.5 + index * 0.1} />
-          ))}
+        {/* Stat bar */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }} className="relative z-10 mt-16 w-full max-w-3xl mx-auto">
+          <div className="grid grid-cols-4 gap-2 sm:gap-4 px-4">
+            {platformStats.map((s, i) => (
+              <div key={s.label} className="text-center p-3 sm:p-4 rounded-2xl bg-white/4 border border-white/8">
+                <p className={`font-orbitron font-black text-xl sm:text-2xl ${s.color}`}>
+                  {realStats.players > 0
+                    ? <AnimatedNumber target={s.value} delay={600 + i * 100} suffix={s.suffix} />
+                    : '—'}
+                </p>
+                <p className="text-[10px] sm:text-xs text-white/35 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </section>
 
-      {/* Preview Section */}
-      <section className="py-14 sm:py-24 px-4 sm:px-6">
+      {/* ── LIVE HYPE ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {liveTournaments.length > 0 && (
+          <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="py-12 px-4 sm:px-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-red-400 animate-pulse" />
+                  <h2 className="font-orbitron font-black text-lg text-white">Live Right Now</h2>
+                </div>
+                <Link to="/tournaments" className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
+                  All tournaments <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {liveTournaments.map(t => <LiveHypeCard key={t.id} t={t} />)}
+              </div>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* ── PLATFORM FEATURES ─────────────────────────────────────────── */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10 sm:mb-16"
-          >
-            <h2 className="section-title mb-4">What&apos;s Hot Right Now</h2>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              Check out trending games and upcoming tournaments
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} className="text-center mb-12">
+            <h2 className="font-orbitron text-3xl sm:text-4xl font-black text-white mb-4">
+              Everything You Need to <span className="gradient-text">Dominate</span>
+            </h2>
+            <p className="text-white/45 max-w-xl mx-auto text-sm sm:text-base">
+              PulsePlay combines competition, community, and content into one platform built for African mobile gamers.
             </p>
           </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map(f => <FeatureCard key={f.title} {...f} />)}
+          </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-8">
-            {previewCards.map((card, index) => (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+      {/* ── TOP PLAYERS ────────────────────────────────────────────────── */}
+      {topPlayers.length > 0 && (
+        <section className="py-16 px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Leaderboard preview */}
+              <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Link to={card.link} className="block group">
-                  <div className="gaming-card p-8 h-full">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                      <card.icon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="font-orbitron text-xl font-bold text-cyan-400 mb-3">{card.title}</h3>
-                    <p className="text-muted-foreground mb-6">{card.description}</p>
-                    <div className="flex items-center text-purple-400 font-bold group-hover:text-cyan-400 transition-colors">
-                      <span>Explore</span>
-                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-2 transition-transform" />
-                    </div>
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                className="p-6 rounded-3xl bg-white/3 border border-white/8">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-yellow-400" />
+                    <h3 className="font-orbitron font-bold text-sm text-white">Top Players</h3>
                   </div>
+                  <Link to="/leaderboards" className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
+                    Full rankings <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="space-y-1">
+                  {topPlayers.map((p, i) => <TopPlayerRow key={p.user_id} p={p} rank={i} />)}
+                </div>
+              </motion.div>
+
+              {/* GamerCred info */}
+              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="p-6 rounded-3xl bg-gradient-to-br from-cyan-500/8 to-purple-500/8 border border-white/10">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-orbitron font-bold text-sm text-white">GamerCred System</h3>
+                    <p className="text-[11px] text-white/40">Your reputation on PulsePlay</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { emoji: '🏆', text: 'Win tournaments to earn GamerCred', color: 'text-yellow-400' },
+                    { emoji: '🤝', text: 'Good sportsmanship boosts your score', color: 'text-green-400' },
+                    { emoji: '✓', text: 'Reach 800+ for Verified badge', color: 'text-cyan-400' },
+                    { emoji: '👑', text: 'Priority matchmaking for high-cred players', color: 'text-purple-400' },
+                  ].map((item, i) => (
+                    <motion.div key={i} initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }} transition={{ delay: i * 0.06 }}
+                      className="flex items-center gap-3">
+                      <span className="text-xl flex-shrink-0">{item.emoji}</span>
+                      <span className={`text-sm ${item.color}`}>{item.text}</span>
+                    </motion.div>
+                  ))}
+                </div>
+                <Link to="/leaderboards"
+                  className="flex items-center gap-2 mt-6 px-4 py-2.5 rounded-xl bg-white/8 hover:bg-white/12 transition-all text-sm text-white/70 hover:text-white font-semibold">
+                  <TrendingUp className="w-4 h-4" />View Leaderboards <ChevronRight className="w-4 h-4 ml-auto" />
                 </Link>
               </motion.div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Featured Section */}
-      <section className="py-14 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-cyan-500/5" />
-        <div className="max-w-7xl mx-auto relative">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-sm font-medium mb-6">
-                <Target className="w-4 h-4 text-purple-400" />
-                <span className="text-purple-400">New Feature</span>
+      {/* ── CTA ──────────────────────────────────────────────────────── */}
+      {!isAuthenticated && (
+        <section className="py-16 sm:py-24 px-4 sm:px-6">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} className="max-w-4xl mx-auto text-center">
+            <div className="relative overflow-hidden rounded-3xl p-10 sm:p-16 border border-white/10"
+              style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(139,92,246,0.10) 50%, rgba(236,72,153,0.07) 100%)' }}>
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-cyan-500/15 blur-3xl rounded-full" />
               </div>
-              <h2 className="font-orbitron text-3xl md:text-4xl font-bold mb-6">
-                Real-Time Tournament
-                <span className="gradient-text"> Tracking</span>
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Stay updated with live scores, brackets, and player rankings across all tournaments.
-                Never miss a moment of the action with our real-time tracking system.
-              </p>
-              <Button asChild variant="outline"
-                className="border-2 border-cyan-500/50 hover:bg-cyan-500/10 font-bold px-6 py-5 rounded-xl">
-                <Link to="/tournaments">
-                  Learn More <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="relative h-[400px] perspective-1000">
-                <motion.div
-                  animate={{ y: [0, -15, 0], rotateY: [0, 5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute top-0 left-0 w-64 h-40 rounded-2xl glass border border-cyan-500/30 p-4"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-cyan-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold">Live Tournament</div>
-                      <div className="text-xs text-muted-foreground">CODM Championship</div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full w-3/4 bg-gradient-to-r from-cyan-500 to-purple-500" />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Round 3 of 5</span><span>75%</span>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  animate={{ y: [0, 10, 0], rotateY: [0, -3, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                  className="absolute top-24 right-0 w-56 h-36 rounded-2xl glass border border-purple-500/30 p-4"
-                >
-                  <div className="text-sm font-bold mb-3">Leaderboard</div>
-                  <div className="space-y-2">
-                    {['ProGamer_X', 'EliteSniper', 'GhostRider'].map((name, i) => (
-                      <div key={name} className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-                        <span className="text-xs">{name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  animate={{ y: [0, -20, 0], rotateY: [0, 8, 0] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                  className="absolute bottom-0 left-12 w-60 h-32 rounded-2xl glass border border-pink-500/30 p-4"
-                >
-                  <div className="text-sm font-bold mb-2">Prize Pool</div>
-                  {/* Prize pool defaults to zero */}
-                  <div className="font-orbitron text-2xl font-bold gradient-text">{symbol}0</div>
-                  <div className="text-xs text-muted-foreground mt-1">Prizes coming soon</div>
-                </motion.div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section — only shown to guests */}
-      {!isAuthenticated ? (
-        <section className="py-14 sm:py-24 px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto text-center"
-          >
-            <div className="gaming-card p-7 sm:p-12 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
               <div className="relative z-10">
-                <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                <p className="font-orbitron text-xs text-cyan-400 uppercase tracking-widest mb-4 font-bold">Join the Movement</p>
+                <h2 className="font-orbitron text-3xl sm:text-5xl font-black text-white mb-5 leading-tight">
                   Ready to <span className="gradient-text">Level Up?</span>
                 </h2>
-                <p className="text-muted-foreground text-base sm:text-lg mb-7 sm:mb-8 max-w-xl mx-auto">
-                  Join thousands of mobile gamers competing for glory and prizes.
-                  Sign up free and start your journey today.
+                <p className="text-white/45 text-base sm:text-lg mb-8 max-w-xl mx-auto">
+                  Create your free account. Build your Esports Passport. Compete for real prizes.
                 </p>
-                <Button asChild size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-bold text-base sm:text-lg px-8 sm:px-10 py-5 sm:py-6 rounded-xl">
-                  <Link to="/register">
-                    Create Free Account
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Link>
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button asChild size="lg"
+                    className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold text-base px-10 h-13 rounded-2xl shadow-xl shadow-cyan-500/20">
+                    <Link to="/register"><Zap className="mr-2 w-5 h-5" />Create Free Account</Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline"
+                    className="border-white/15 text-white hover:bg-white/8 h-13 rounded-2xl text-base">
+                    <Link to="/about">Learn more <ArrowRight className="ml-2 w-5 h-5" /></Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>
         </section>
-      ) : null}
+      )}
     </div>
   );
 }

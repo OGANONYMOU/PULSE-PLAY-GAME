@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trophy, Calendar, Users, DollarSign, Clock, ArrowRight,
+  Trophy, Calendar, Users, DollarSign, Clock, ArrowRight, Plus,
   Filter, Flame, CheckCircle, RefreshCw, Loader2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { getFlag, FLAG_KEYS } from '@/lib/featureFlags';
+import { writeAuditLog, writeOutboxEvent } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { toast } from 'sonner';
@@ -138,6 +141,7 @@ function EmptyTournaments(p: { filter: string; onClear: () => void }): React.Rea
 // ── main ─────────────────────────────────────────────────────────────────────
 
 export function Tournaments(): React.ReactElement {
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { symbol } = useCurrency();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -148,6 +152,7 @@ export function Tournaments(): React.ReactElement {
   const [liveUpdates, setLiveUpdates] = useState<LiveUpdate[]>([]);
   const [loadingUpdates, setLoadingUpdates] = useState(false);
   const [registeringId, setRegisteringId] = useState<RegisteringId>(null);
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,6 +172,17 @@ export function Tournaments(): React.ReactElement {
 
   useEffect(() => { load(); }, [load]);
 
+  // Load participant joins for the current user
+  useEffect(() => {
+    if (!user) { setJoinedIds(new Set()); return; }
+    supabase.from('tournament_participants')
+      .select('tournament_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        setJoinedIds(new Set((data ?? []).map((r: { tournament_id: string }) => r.tournament_id)));
+      });
+  }, [user]);
+
   const openLive = async (id: string) => {
     setSelectedId(id);
     setLoadingUpdates(true);
@@ -183,16 +199,38 @@ export function Tournaments(): React.ReactElement {
   const handleRegister = async (t: Tournament) => {
     if (!isAuthenticated || !user) { toast.error('Please sign in to register.'); return; }
     if (t.current_players >= t.max_players) { toast.error('Tournament is full.'); return; }
+    if (joinedIds.has(t.id)) { toast.info('You are already registered.'); return; }
     setRegisteringId(t.id);
-    const { error } = await supabase
-      .from('tournaments')
-      .update({ current_players: t.current_players + 1 } as never)
-      .eq('id', t.id);
-    if (error) {
-      toast.error('Registration failed: ' + error.message);
+
+    if (getFlag(FLAG_KEYS.USE_PARTICIPANT_MODEL)) {
+      // New: participant row model (unique constraint prevents double-join)
+      const { error } = await supabase.from('tournament_participants').insert({
+        tournament_id : t.id,
+        user_id       : user.id,
+        status        : 'joined',
+      } as never);
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('You are already registered for this tournament.');
+          setJoinedIds(prev => new Set([...prev, t.id]));
+        } else {
+          toast.error('Registration failed: ' + error.message);
+        }
+      } else {
+        toast.success('Registered for ' + t.name + '! 🎮');
+        setJoinedIds(prev => new Set([...prev, t.id]));
+        await writeAuditLog({ actor_id: user.id, action: 'tournament.join', entity_type: 'tournament', entity_id: t.id, data: { name: t.name } });
+        await writeOutboxEvent('tournament.join', t.id, { user_id: user.id, tournament_id: t.id });
+        load();
+      }
     } else {
-      toast.success('Registered for ' + t.name + '!');
-      load();
+      // Legacy: counter increment
+      const { error } = await supabase
+        .from('tournaments')
+        .update({ current_players: t.current_players + 1 } as never)
+        .eq('id', t.id);
+      if (error) { toast.error('Registration failed: ' + error.message); }
+      else { toast.success('Registered for ' + t.name + '!'); load(); }
     }
     setRegisteringId(null);
   };
@@ -312,7 +350,8 @@ export function Tournaments(): React.ReactElement {
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.25, delay: i * 0.05 }}
                       >
-                        <div className="gaming-card overflow-hidden h-full flex flex-col">
+                        <div className="gaming-card overflow-hidden h-full flex flex-col cursor-pointer hover:border-cyan-500/40 transition-all"
+                        onClick={() => navigate(`/tournaments/${t.id}`)}>
                           <div className={'relative h-32 bg-gradient-to-br ' + gameColor(gameName)}>
                             <div className="absolute inset-0 opacity-20 bg-black" />
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -352,14 +391,20 @@ export function Tournaments(): React.ReactElement {
                                 </Button>
                               ) : null}
                               {t.status === 'upcoming' ? (
-                                <Button
-                                  className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white"
-                                  onClick={() => handleRegister(t)}
-                                  disabled={isRegistering || isFull}
-                                >
-                                  {isRegistering ? <Loader2 className="mr-2 w-4 h-4 animate-spin" /> : <ArrowRight className="mr-2 w-4 h-4" />}
-                                  {isRegistering ? 'Registering...' : isFull ? 'Full' : 'Register Now'}
-                                </Button>
+                                joinedIds.has(t.id) ? (
+                                  <Button className="flex-1 bg-green-500/20 border border-green-500/40 text-green-400 cursor-default" disabled>
+                                    <CheckCircle className="mr-2 w-4 h-4" />Registered
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white"
+                                    onClick={() => handleRegister(t)}
+                                    disabled={isRegistering || isFull}
+                                  >
+                                    {isRegistering ? <Loader2 className="mr-2 w-4 h-4 animate-spin" /> : <ArrowRight className="mr-2 w-4 h-4" />}
+                                    {isRegistering ? 'Registering...' : isFull ? 'Full' : 'Register Now'}
+                                  </Button>
+                                )
                               ) : null}
                               {t.status === 'completed' ? (
                                 <Button className="flex-1 bg-muted hover:bg-muted/80" disabled>

@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { writeAuditLog } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Status = 'upcoming' | 'ongoing' | 'completed';
 
@@ -281,6 +283,7 @@ function TournRow(p: { t: Tournament; index: number; symbol: string; onEdit: () 
 // ── Main ───────────────────────────────────────────────────────────────────
 export function AdminTournaments(): React.ReactElement {
   const { symbol } = useCurrency();
+  const { user } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -306,7 +309,11 @@ export function AdminTournaments(): React.ReactElement {
   const updateStatus = async (t: Tournament, status: Status) => {
     const { error } = await supabase.from('tournaments').update({ status } as never).eq('id', t.id);
     if (error) toast.error(error.message);
-    else { toast.success('Status updated.'); load(); }
+    else {
+      toast.success('Status updated.');
+      await writeAuditLog({ actor_id: user?.id, action: 'tournament.status_change', entity_type: 'tournament', entity_id: t.id, data: { name: t.name, status } });
+      load();
+    }
   };
 
   const filtered = tournaments.filter(t =>

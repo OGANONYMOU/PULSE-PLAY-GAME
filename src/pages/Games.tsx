@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Gamepad2, Users, Trophy, Star, Sparkles, RefreshCw,
+  Search, Gamepad2, Users, Trophy, Star, Sparkles, RefreshCw, Video, BookOpen,
   X, ArrowRight, Clock, Play, CheckCircle, Zap, Bell, ChevronRight,
   MessageSquare, Activity, Newspaper,
   BarChart2,
@@ -93,15 +93,17 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 // ── Game Detail Panel ─────────────────────────────────────────────────────
 function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
   game: Game; onClose: () => void; symbol: string;
-  initialTab?: 'overview' | 'tournaments' | 'updates' | 'news';
+  initialTab?: 'overview' | 'tournaments' | 'updates' | 'news' | 'clips' | 'guides';
 }): React.ReactElement {
-  const [tab, setTab] = useState<'overview' | 'tournaments' | 'updates' | 'news'>(initialTab);
+  const [tab, setTab] = useState<'overview' | 'tournaments' | 'updates' | 'news' | 'clips' | 'guides'>(initialTab);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [gameUpdates, setGameUpdates] = useState<GameUpdate[]>([]);
   const [loading, setLoading] = useState(false);
   const [notifOn, setNotifOn] = useState(false);
   const [activeUpdate, setActiveUpdate] = useState<GameUpdate | null>(null);
+  const [clips, setClips] = useState<Array<{ id: string; title: string; likes_count: number; views_count: number; created_at: string; profiles: { username: string } | null }>>([]);
+  const [guides, setGuides] = useState<Array<{ id: string; title: string; category: string; likes_count: number; created_at: string; profiles: { username: string } | null }>>([]);
 
   useEffect(() => { setTab(initialTab); }, [initialTab]);
 
@@ -123,6 +125,15 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
       if (!tRes.error) setTournaments((tRes.data as Tournament[]) ?? []);
       if (!pRes.error) setPosts((pRes.data as Post[]) ?? []);
       if (!uRes.error) setGameUpdates((uRes.data as GameUpdate[]) ?? []);
+      // Load clips + guides for this game
+      const [clRes, guRes] = await Promise.all([
+        supabase.from('clips').select('id,title,likes_count,views_count,created_at,profiles(username)')
+          .eq('game_id', game.id).eq('is_published', true).order('created_at', { ascending: false }).limit(8),
+        supabase.from('guides').select('id,title,category,likes_count,created_at,profiles(username)')
+          .eq('game_id', game.id).eq('is_published', true).order('likes_count', { ascending: false }).limit(8),
+      ]);
+      if (!clRes.error) setClips((clRes.data as typeof clips) ?? []);
+      if (!guRes.error) setGuides((guRes.data as typeof guides) ?? []);
       setLoading(false);
     };
     load();
@@ -131,10 +142,12 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
   const players = game.player_count >= 1000 ? (game.player_count / 1000).toFixed(1) + 'K' : String(game.player_count);
 
   const TABS = [
-    { id: 'overview'    as const, label: 'Overview',    icon: Gamepad2,   short: 'Info'  },
-    { id: 'tournaments' as const, label: 'Tournaments',  icon: Trophy,     short: 'Events' },
-    { id: 'updates'     as const, label: 'Updates',      icon: Activity,   short: 'Patch' },
-    { id: 'news'        as const, label: 'News',         icon: Newspaper,  short: 'News'  },
+    { id: 'overview'    as const, label: 'Overview',    icon: Gamepad2,   short: 'Info'   },
+    { id: 'tournaments' as const, label: 'Tournaments', icon: Trophy,     short: 'Events' },
+    { id: 'updates'     as const, label: 'Updates',     icon: Activity,   short: 'Patch'  },
+    { id: 'news'        as const, label: 'News',        icon: Newspaper,  short: 'News'   },
+    { id: 'clips'       as const, label: 'Clips',       icon: Video,      short: 'Clips'  },
+    { id: 'guides'      as const, label: 'Guides',      icon: BookOpen,   short: 'Guides' },
   ];
 
   const updates = gameUpdates.filter(u => u.type === 'update');
@@ -392,6 +405,62 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
                       </div>
                       <ChevronRight className="w-4 h-4 text-purple-500/30 flex-shrink-0 mt-1 group-hover:text-purple-400 transition-colors" />
                     </motion.div>
+                  ))}
+                </motion.div>
+              ) : null}
+
+
+              {/* CLIPS */}
+              {tab === 'clips' ? (
+                <motion.div key="clips" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                  className="space-y-2">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Video className="w-4 h-4 text-pink-400" />
+                    <h3 className="text-sm font-bold text-white">Community Clips</h3>
+                    <span className="ml-auto text-[10px] text-white/30">{clips.length} clips</span>
+                  </div>
+                  {clips.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Video className="w-10 h-10 mx-auto text-white/10 mb-3" />
+                      <p className="text-white/30 text-sm">No clips yet. Be the first to share!</p>
+                    </div>
+                  ) : clips.map((c, i) => (
+                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-pink-500/5 border border-pink-500/12 hover:border-pink-500/30 transition-all">
+                      <div className="w-12 h-9 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0">
+                        <Play className="w-4 h-4 text-pink-400 fill-pink-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{c.title}</p>
+                        <p className="text-[10px] text-white/30">@{c.profiles?.username ?? '—'} · {c.likes_count} ❤️ {c.views_count} 👁</p>
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              ) : null}
+
+              {/* GUIDES */}
+              {tab === 'guides' ? (
+                <motion.div key="guides" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                  className="space-y-2">
+                  <div className="flex items-center gap-2 mb-4">
+                    <BookOpen className="w-4 h-4 text-green-400" />
+                    <h3 className="text-sm font-bold text-white">Guides & Tactics</h3>
+                    <span className="ml-auto text-[10px] text-white/30">{guides.length} guides</span>
+                  </div>
+                  {guides.length === 0 ? (
+                    <div className="text-center py-12">
+                      <BookOpen className="w-10 h-10 mx-auto text-white/10 mb-3" />
+                      <p className="text-white/30 text-sm">No guides yet for this game.</p>
+                    </div>
+                  ) : guides.map((g, i) => (
+                    <div key={g.id} className="p-3.5 rounded-xl bg-green-500/5 border border-green-500/12 hover:border-green-500/30 transition-all cursor-pointer">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/25 font-bold capitalize">{g.category}</span>
+                        <span className="text-[9px] text-white/25 ml-auto">❤️ {g.likes_count}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-white leading-snug">{g.title}</p>
+                      <p className="text-[10px] text-white/35 mt-1">by @{g.profiles?.username ?? '—'}</p>
+                    </div>
                   ))}
                 </motion.div>
               ) : null}

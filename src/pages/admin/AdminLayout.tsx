@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Shield, LayoutDashboard, Users, Gamepad2, LogOut,
+  Shield, LayoutDashboard, Users, Gamepad2, LogOut, Layers, AlertTriangle,
   ChevronRight, Menu, X, Loader2, BarChart2, Settings,
   Trophy, Megaphone, FileText, Zap, TrendingUp, ChevronLeft,
   Activity,
@@ -19,11 +19,16 @@ const NAV_CONTENT = [
   { href: '/admin/tournaments',   label: 'Tournaments',   Icon: Trophy },
   { href: '/admin/games',         label: 'Games',         Icon: Gamepad2 },
   { href: '/admin/updates',       label: 'Updates & News', Icon: Activity },
+  { href: '/admin/matches',       label: 'Matches',        Icon: Layers },
+  { href: '/admin/clubs',         label: 'Clubs',          Icon: Users },
+  { href: '/admin/disputes',      label: 'Disputes',       Icon: AlertTriangle },
   { href: '/admin/posts',         label: 'Posts',         Icon: FileText },
   { href: '/admin/announcements', label: 'Announcements', Icon: Megaphone },
 ];
 const NAV_SYSTEM = [
-  { href: '/admin/settings', label: 'Settings', Icon: Settings },
+  { href: '/admin/moderation', label: 'Moderation',  Icon: Shield },
+  { href: '/admin/audit',      label: 'Audit Log',    Icon: Activity },
+  { href: '/admin/settings', label: 'Settings',  Icon: Settings },
 ];
 
 interface AdminLevel {

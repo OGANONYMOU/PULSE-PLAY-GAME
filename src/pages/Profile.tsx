@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 
-type TabId = 'posts' | 'tournaments' | 'achievements';
+type TabId = 'posts' | 'tournaments' | 'achievements' | 'clips' | 'rivals';
 type PostItem = { id: string; title: string; content: string; tag: string; likes: number; comments: number; created_at: string };
 type EditForm = { first_name: string; last_name: string; bio: string; discord_username: string; twitter_username: string };
 
@@ -254,6 +254,12 @@ export function Profile(): React.ReactElement {
   const { user, profile: ownProfile, updateProfile, isLoading: authLoading } = useAuth();
   const [profile, setProfile] = useState<ProfileType | null>(null);
   const [posts, setPosts] = useState<PostItem[]>([]);
+  const [profileClips, setProfileClips] = useState<Array<{ id: string; title: string; likes_count: number; views_count: number; created_at: string }>>([]);
+  const [followers, setFollowers] = useState<number>(0);
+  const [following, setFollowing] = useState<number>(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [gamerCred, setGamerCred] = useState<{ score: number; wins: number; losses: number; verified_badge: boolean } | null>(null);
+  const [pulsePoints, setPulsePoints] = useState<number>(0);
   const [pageLoading, setPageLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [notFound, setNotFound] = useState(false);
@@ -292,6 +298,28 @@ export function Profile(): React.ReactElement {
         setEditForm({ first_name: found.first_name ?? '', last_name: found.last_name ?? '', bio: found.bio ?? '', discord_username: found.discord_username ?? '', twitter_username: found.twitter_username ?? '' });
         const { data: postsData } = await supabase.from('posts').select('*').eq('author_id', found.id).order('created_at', { ascending: false }).limit(20);
         setPosts((postsData as PostItem[]) ?? []);
+        // Load GamerCred + PulsePoints (graceful – tables may not exist yet)
+        const [credRes, ppRes] = await Promise.all([
+          supabase.from('gamercred_scores').select('score,wins,losses,verified_badge').eq('user_id', found.id).maybeSingle(),
+          supabase.from('pulsepoints_balances').select('balance').eq('user_id', found.id).maybeSingle(),
+        ]);
+        if (!credRes.error && credRes.data) setGamerCred(credRes.data as typeof gamerCred);
+        if (!ppRes.error && ppRes.data) setPulsePoints((ppRes.data as { balance: number }).balance);
+        // Load clips
+        const clipsRes = await supabase.from('clips').select('id, title, likes_count, views_count, created_at').eq('user_id', found.id).eq('is_published', true).order('created_at', { ascending: false }).limit(6);
+        if (!clipsRes.error) setProfileClips((clipsRes.data as typeof profileClips) ?? []);
+        // Load follower counts
+        const [fwrs, fwng] = await Promise.all([
+          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', found.id),
+          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', found.id),
+        ]);
+        setFollowers(fwrs.count ?? 0);
+        setFollowing(fwng.count ?? 0);
+        // Check if current user follows this profile
+        if (user && found.id !== user.id) {
+          const { data: fCheck } = await supabase.from('follows').select('id').eq('follower_id', user.id).eq('following_id', found.id).maybeSingle();
+          setIsFollowing(!!fCheck);
+        }
       } else { setNotFound(true); }
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : 'Failed to load profile');
@@ -451,6 +479,49 @@ export function Profile(): React.ReactElement {
           <ProfileLoyaltyBar posts={posts.length} likes={totalLikes} role={profile.role} />
         ) : null}
 
+        {/* Follower stats */}
+        <div className="flex items-center gap-4 mb-3 px-1">
+          <div className="text-center">
+            <p className="font-orbitron font-black text-lg text-white">{followers}</p>
+            <p className="text-[10px] text-white/35">Followers</p>
+          </div>
+          <div className="w-px h-8 bg-white/10" />
+          <div className="text-center">
+            <p className="font-orbitron font-black text-lg text-white">{following}</p>
+            <p className="text-[10px] text-white/35">Following</p>
+          </div>
+          <div className="w-px h-8 bg-white/10" />
+          <div className="text-center">
+            <p className="font-orbitron font-black text-lg text-white">{profile.matches_won ?? 0}</p>
+            <p className="text-[10px] text-white/35">Wins</p>
+          </div>
+          <div className="w-px h-8 bg-white/10" />
+          <div className="text-center">
+            <p className="font-orbitron font-black text-lg text-white">{profile.matches_played > 0 ? Math.round((profile.matches_won ?? 0) / profile.matches_played * 100) + '%' : '—'}</p>
+            <p className="text-[10px] text-white/35">Win Rate</p>
+          </div>
+        </div>
+        {/* GamerCred + PulsePoints stat cards */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="p-3.5 rounded-2xl bg-cyan-500/8 border border-cyan-500/18">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">GamerCred</span>
+              {gamerCred?.verified_badge && <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">✓ Verified</span>}
+            </div>
+            <p className="font-orbitron font-black text-2xl text-cyan-400">{gamerCred?.score?.toLocaleString() ?? '1,000'}</p>
+            {gamerCred && <p className="text-[10px] text-white/30 mt-0.5">{gamerCred.wins}W / {gamerCred.losses}L</p>}
+          </div>
+          <div className="p-3.5 rounded-2xl bg-purple-500/8 border border-purple-500/18">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">PulsePoints</span>
+            </div>
+            <p className="font-orbitron font-black text-2xl text-purple-400">{pulsePoints.toLocaleString()}</p>
+            <p className="text-[10px] text-white/30 mt-0.5">Earn by playing & posting</p>
+          </div>
+        </div>
+
         <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
           <div className="flex border-b border-white/10">
             {tabs.map((tab) => (
@@ -469,6 +540,31 @@ export function Profile(): React.ReactElement {
             <TabPosts active={activeTab === 'posts'} posts={posts} isOwn={isOwnProfile} />
             <TabTournaments active={activeTab === 'tournaments'} />
             <TabAchievements active={activeTab === 'achievements'} />
+            {/* Clips tab */}
+            {activeTab === 'clips' && (
+              profileClips.length === 0 ? (
+                <div className="text-center py-14"><Zap className="w-12 h-12 mx-auto text-white/20 mb-3" /><p className="text-white/40 text-sm">No clips yet.</p></div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {profileClips.map(c => (
+                    <div key={c.id} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-pink-500/30 transition-all">
+                      <p className="text-xs font-semibold text-white truncate mb-1">{c.title}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-white/35">
+                        <span>❤️ {c.likes_count}</span><span>👁 {c.views_count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+            {/* Rivals tab */}
+            {activeTab === 'rivals' && (
+              <div className="text-center py-14">
+                <Swords className="w-12 h-12 mx-auto text-white/20 mb-3" />
+                <p className="text-white/40 text-sm">No recorded rivalries yet.</p>
+                <p className="text-white/25 text-xs mt-1">Play against the same opponent repeatedly to create a rivalry.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
