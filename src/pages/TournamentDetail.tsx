@@ -1,20 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trophy, Users, Calendar, Clock, Zap, Shield, ChevronRight,
-  Play, CheckCircle, AlertTriangle, Loader2, X, Upload, Send,
-  ArrowLeft, Sword, Crown, Flag, Bell, RefreshCw, Info,
-  UserCheck, UserPlus, Lock, Hash, Star,
+  Trophy, Users, Calendar, Clock, Zap,
+  Play, CheckCircle, Loader2, X, Upload, Send,
+  ArrowLeft, Sword, Crown, Flag, Bell, Info,
+  UserCheck, UserPlus, Lock,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AnimatePresence as AP } from 'framer-motion';
-import { ReportModal } from '@/components/community/ReportModal';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type TournamentFull = {
@@ -218,7 +215,7 @@ function MatchActionDrawer({ match, tournament, myId, onClose, onRefresh }: {
   const fileRef = useRef<HTMLInputElement>(null);
   const isPlayer1 = match.player1_id === myId;
   const isPlayer2 = match.player2_id === myId;
-  const opponent = isPlayer1 ? match.player2 : match.player1;
+  void (isPlayer1 ? match.player2 : match.player1); // opponent ref for future use
 
   useEffect(() => {
     // Load existing report for this match
@@ -273,7 +270,7 @@ function MatchActionDrawer({ match, tournament, myId, onClose, onRefresh }: {
     if (decision === 'dispute' && !disputeReason.trim()) { toast.error('Please explain the dispute'); return; }
     setUploading(true);
     try {
-      const { data, error } = await supabase.rpc('confirm_match_result', {
+      const { error } = await (supabase as any).rpc('confirm_match_result', {
         p_match_id: match.id,
         p_report_id: existingReport.id,
         p_decision: decision,
@@ -529,7 +526,7 @@ function LiveFeed({ posts }: { posts: TournPost[] }) {
 // ── Main component ─────────────────────────────────────────────────────────
 export function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [tournament, setTournament] = useState<TournamentFull | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -609,7 +606,7 @@ export function TournamentDetail() {
     setJoining(true);
     try {
       if (tournament.entry_fee > 0) {
-        const { error: feeErr } = await supabase.rpc('deduct_entry_fee', {
+        const { error: feeErr } = await (supabase as any).rpc('deduct_entry_fee', {
           p_tournament_id: tournament.id, p_user_id: user.id,
         });
         if (feeErr) throw new Error(feeErr.message);
@@ -633,7 +630,7 @@ export function TournamentDetail() {
   const handleCheckIn = async () => {
     if (!user || !tournament) return;
     setCheckingIn(true);
-    const { error } = await supabase.rpc('tournament_check_in', { p_tournament_id: tournament.id });
+    const { error } = await (supabase as any).rpc('tournament_check_in', { p_tournament_id: tournament.id });
     if (error) toast.error(error.message);
     else { toast.success('Checked in! ✅'); load(); }
     setCheckingIn(false);

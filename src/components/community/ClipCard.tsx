@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, MessageSquare, Repeat2, Share2, Play, Pause, Volume2, VolumeX,
-  Trophy, MoreHorizontal, Flag, Eye, Loader2, Send, X,
+  MoreHorizontal, Flag, Eye, Loader2, Send, X,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
@@ -150,10 +150,9 @@ interface ClipCardProps {
   clip: Clip;
   index?: number;
   onRefresh?: () => void;
-  compact?: boolean;
 }
 
-export function ClipCard({ clip, index = 0, onRefresh, compact = false }: ClipCardProps) {
+export function ClipCard({ clip, index = 0, onRefresh }: ClipCardProps) {
   const { user, isAuthenticated, isAdmin } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(clip.likes_count);

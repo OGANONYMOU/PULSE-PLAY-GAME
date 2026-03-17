@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sword, Trophy, TrendingUp, MessageSquare, Share2, Users, ArrowLeft, ChevronRight } from 'lucide-react';
@@ -31,11 +31,11 @@ export function RivalryPage() {
       if (ra.data && rb.data) {
         const { data: riv } = await supabase.from('rivalries')
           .select('*, games(name, icon)')
-          .or(`and(player_a.eq.${ra.data.id},player_b.eq.${rb.data.id}),and(player_a.eq.${rb.data.id},player_b.eq.${ra.data.id})`)
+          .or(`and(player_a.eq.${ra.data!.id},player_b.eq.${rb.data!.id}),and(player_a.eq.${rb.data!.id},player_b.eq.${ra.data!.id})`)
           .maybeSingle();
         if (riv) {
           // normalise so profA is always player_a
-          const normalised = riv.player_a === ra.data.id ? riv : { ...riv, player_a: riv.player_b, player_b: riv.player_a, wins_a: riv.wins_b, wins_b: riv.wins_a };
+          const normalised = (riv as any).player_a === ra.data!.id ? riv as Rivalry : { ...(riv as any), player_a: (riv as any).player_b, player_b: (riv as any).player_a, wins_a: (riv as any).wins_b, wins_b: (riv as any).wins_a } as Rivalry;
           setRivalry(normalised as Rivalry);
         }
       }

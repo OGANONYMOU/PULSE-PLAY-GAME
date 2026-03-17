@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trophy, Users, Calendar, Zap, Shield, ChevronRight, ArrowLeft,
-  Loader2, Plus, X, Lock, Globe, Info, Sparkles, CheckCircle,
+  Trophy, Shield, ChevronRight, ArrowLeft,
+  Loader2, Lock, Globe, Info, Sparkles, CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -408,7 +408,7 @@ export function TournamentCreate() {
                     ['Format', form.format.replace(/_/g, ' ')],
                     ['Players', `up to ${form.max_players}`],
                     ['Entry', form.entry_fee > 0 ? `${form.entry_fee} PP` : 'Free'],
-                    ['Prize', form.prize_amount > 0 ? `${form.prize_amount} PP` : form.prize_pool || 'None'],
+                    ['Prize', form.prize_amount > 0 ? `${form.prize_amount} PP` : 'None'],
                     ['Start', form.date ? new Date(form.date).toLocaleString() : 'TBD'],
                     ['Mode', form.easy_mode ? '⚡ Easy Mode' : 'Standard'],
                   ].map(([k, v]) => (

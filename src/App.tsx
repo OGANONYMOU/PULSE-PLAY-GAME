@@ -156,6 +156,12 @@ function AppContent(): React.ReactElement {
                 <Route path="announcements"     element={<AdminAnnouncements />} />
                 <Route path="updates"           element={<AdminUpdates />} />
                 <Route path="settings"          element={<AdminSettings />} />
+                <Route path="matches"           element={<AdminMatches />} />
+                <Route path="disputes"          element={<AdminDisputes />} />
+                <Route path="audit"             element={<AdminAuditLog />} />
+                <Route path="clubs"             element={<AdminClubs />} />
+                <Route path="moderation"        element={<AdminModeration />} />
+                <Route path="tournaments/:id/control" element={<AdminTournamentControl />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

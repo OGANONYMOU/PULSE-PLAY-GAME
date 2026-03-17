@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame, MessageSquare, TrendingUp, Trophy, Users, Video, Upload,
@@ -10,11 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
-import { usePosts, type PostTag, type ReactionType } from '@/hooks/usePosts';
+import { usePosts, type PostTag } from '@/hooks/usePosts';
 import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
 import { writeAuditLog } from '@/lib/auditLog';
 import { PostCard } from '@/components/community/PostCard';
 import { ClipCard, type Clip } from '@/components/community/ClipCard';
@@ -465,7 +464,7 @@ export function Community() {
                 <ComposeBox onCreate={handlePost} />
                 {/* Category filter */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-                  {POST_CATEGORIES.map((c, idx) => (
+                  {POST_CATEGORIES.map((c) => (
                     <button key={c.value} onClick={() => setCategoryFilter(c.value)}
                       className={'flex-shrink-0 px-3 py-1.5 rounded-full border text-[11px] font-semibold transition-all ' +
                         (categoryFilter === c.value
@@ -487,7 +486,7 @@ export function Community() {
                 ) : (
                   <div className="space-y-3">
                     {posts.map(post => (
-                      <PostCard key={post.id} post={post} onReact={reactToPost} onSave={savePost} onRefresh={refetch} />
+                      <PostCard key={post.id} post={post} onReact={reactToPost} onSave={async (postId: string, userId: string) => { await savePost(postId, userId); }} onRefresh={refetch} />
                     ))}
                   </div>
                 )}

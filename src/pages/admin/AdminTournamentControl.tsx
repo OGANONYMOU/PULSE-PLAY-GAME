@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Trophy, Users, Play, CheckCircle, AlertTriangle, RefreshCw,
   Loader2, X, Shield, ChevronRight, UserX, UserCheck, Layers,
   Flag, ArrowRight, Zap, Crown, Eye, Settings, Calendar,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,7 +60,7 @@ export function AdminTournamentControl() {
         .eq('tournament_id', id).order('match_number'),
       supabase.from('disputes')
         .select('*, opened_by_profile:profiles!opened_by(username)')
-        .in('match_id', (await supabase.from('matches').select('id').eq('tournament_id', id)).data?.map(m => m.id) ?? [])
+        .in('match_id', (await supabase.from('matches').select('id').eq('tournament_id', id)).data?.map((m: any) => m.id) ?? [])
         .order('created_at', { ascending: false }),
     ]);
     if (!tRes.error) setTournament(tRes.data as Tournament);
@@ -76,7 +75,7 @@ export function AdminTournamentControl() {
   const generateBracket = async () => {
     if (!id || !user) return;
     setGeneratingBracket(true);
-    const { error } = await supabase.rpc('generate_bracket', { p_tournament_id: id });
+    const { error } = await (supabase as any).rpc('generate_bracket', { p_tournament_id: id });
     if (error) toast.error(error.message);
     else { toast.success('Bracket generated! 🏆'); load(); }
     setGeneratingBracket(false);
@@ -84,7 +83,7 @@ export function AdminTournamentControl() {
 
   const forceAdvance = async (matchId: string, winnerId: string) => {
     setAdvancingMatch(matchId);
-    const { error } = await supabase.rpc('advance_match_winner', {
+    const { error } = await (supabase as any).rpc('advance_match_winner', {
       p_match_id: matchId, p_winner_id: winnerId,
     });
     if (error) toast.error(error.message);
@@ -116,7 +115,7 @@ export function AdminTournamentControl() {
       state: 'resolved', resolved_by: user?.id, resolved_at: new Date().toISOString(),
       resolution: 'Admin forced result',
     } as never).eq('id', disputeId);
-    await supabase.rpc('advance_match_winner', { p_match_id: matchId, p_winner_id: winnerId });
+    await (supabase as any).rpc('advance_match_winner', { p_match_id: matchId, p_winner_id: winnerId });
     await writeAuditLog({ actor_id: user?.id, action: 'dispute.resolve', entity_type: 'dispute', entity_id: disputeId, data: { forced_winner: winnerId, match_id: matchId } });
     toast.success('Dispute resolved. Winner advanced.');
     load();

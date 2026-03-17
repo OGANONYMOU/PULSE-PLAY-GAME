@@ -77,12 +77,12 @@ export function usePosts(tagFilter?: string) {
   /** Toggle reaction — if same reaction exists, remove it (unlike) */
   const reactToPost = async (postId: string, userId: string, reaction: ReactionType) => {
     // Check existing
-    const { data: existing } = await supabase
+    const { data: existing } = await (supabase as any)
       .from('post_reactions')
       .select('id, reaction_type')
       .eq('post_id', postId)
       .eq('user_id', userId)
-      .maybeSingle();
+      .maybeSingle() as { data: { id: string; reaction_type: string } | null };
 
     if (existing) {
       if (existing.reaction_type === reaction) {
@@ -177,7 +177,7 @@ export function useComments(postId: string) {
       post_id: postId, author_id: authorId, content, parent_id: parentId ?? null,
     } as never);
     if (!error) {
-      await supabase.from('posts').rpc('increment_comments' as never, { post_id: postId });
+      await supabase.from('posts').update({ comments: posts.find(p => p.id === postId)?.comments ?? 0 + 1 } as never).eq('id', postId);
       load();
     }
     return { error };

@@ -424,7 +424,7 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
                       <Video className="w-10 h-10 mx-auto text-white/10 mb-3" />
                       <p className="text-white/30 text-sm">No clips yet. Be the first to share!</p>
                     </div>
-                  ) : clips.map((c, i) => (
+                  ) : clips.map((c) => (
                     <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-pink-500/5 border border-pink-500/12 hover:border-pink-500/30 transition-all">
                       <div className="w-12 h-9 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0">
                         <Play className="w-4 h-4 text-pink-400 fill-pink-400" />
@@ -452,7 +452,7 @@ function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
                       <BookOpen className="w-10 h-10 mx-auto text-white/10 mb-3" />
                       <p className="text-white/30 text-sm">No guides yet for this game.</p>
                     </div>
-                  ) : guides.map((g, i) => (
+                  ) : guides.map((g) => (
                     <div key={g.id} className="p-3.5 rounded-xl bg-green-500/5 border border-green-500/12 hover:border-green-500/30 transition-all cursor-pointer">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/25 font-bold capitalize">{g.category}</span>

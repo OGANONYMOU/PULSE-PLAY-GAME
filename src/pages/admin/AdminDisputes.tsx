@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw, Search,
-  ChevronRight, X, MessageSquare, Shield, Loader2, Info, Filter,
-  Eye, FileText,
+  AlertTriangle, CheckCircle, XCircle, RefreshCw, Search,
+  ChevronRight, X, MessageSquare, Shield, Loader2, Info, FileText,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';

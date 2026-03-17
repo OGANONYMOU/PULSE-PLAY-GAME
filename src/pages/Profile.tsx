@@ -492,12 +492,12 @@ export function Profile(): React.ReactElement {
           </div>
           <div className="w-px h-8 bg-white/10" />
           <div className="text-center">
-            <p className="font-orbitron font-black text-lg text-white">{profile.matches_won ?? 0}</p>
+            <p className="font-orbitron font-black text-lg text-white">{(profile as any).matches_won ?? 0}</p>
             <p className="text-[10px] text-white/35">Wins</p>
           </div>
           <div className="w-px h-8 bg-white/10" />
           <div className="text-center">
-            <p className="font-orbitron font-black text-lg text-white">{profile.matches_played > 0 ? Math.round((profile.matches_won ?? 0) / profile.matches_played * 100) + '%' : '—'}</p>
+            <p className="font-orbitron font-black text-lg text-white">{(profile as any).matches_played > 0 ? Math.round(((profile as any).matches_won ?? 0) / (profile as any).matches_played * 100) + '%' : '—'}</p>
             <p className="text-[10px] text-white/35">Win Rate</p>
           </div>
         </div>

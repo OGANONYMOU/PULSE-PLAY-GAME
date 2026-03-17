@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Flame, Trophy, ThumbsUp, Zap, MessageSquare, Repeat2,
-  Bookmark, Share2, MoreHorizontal, Flag, EyeOff, Reply,
-  ChevronDown, ChevronUp, Send, Loader2,
+  MessageSquare, Repeat2, Bookmark, Share2, MoreHorizontal, Flag, EyeOff,
+  ChevronDown, Send, Loader2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';

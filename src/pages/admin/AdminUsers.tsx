@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Crown, Shield, ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { writeAuditLog } from '@/lib/auditLog';
 import { useAuth, type Profile } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

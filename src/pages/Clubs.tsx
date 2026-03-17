@@ -2,10 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Search, Trophy, Sword, Star, Crown,
-  Lock, Globe, ChevronRight, X, Loader2, Copy, CheckCircle,
-  Shield, Gamepad2, TrendingUp, Hash,
+  Lock, Globe, X, Loader2, Copy, CheckCircle, TrendingUp,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';

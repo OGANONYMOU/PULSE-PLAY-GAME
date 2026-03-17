@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Clock, CheckCircle, AlertTriangle, X, Plus, RefreshCw,
-  Search, ChevronRight, Trophy, Loader2, ArrowRight, Shield,
+  Search, ChevronRight, Loader2, ArrowRight, Shield,
   XCircle, Layers, Calendar, FileText,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -271,7 +271,7 @@ function MatchDrawer(p: { match: Match; onClose: () => void; onUpdated: () => vo
           <EvidenceUploadModal
             matchId={p.match.id}
             onClose={() => setShowEvidence(false)}
-            onUpdated={() => { setShowEvidence(false); p.onUpdated(); }}
+            onUploaded={() => { setShowEvidence(false); p.onUpdated(); }}
           />
         )}
       </AnimatePresence>

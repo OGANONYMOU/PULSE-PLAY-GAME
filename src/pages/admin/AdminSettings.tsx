@@ -10,7 +10,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { CURRENCY_OPTIONS, type CurrencyCode } from '@/lib/currency';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { FLAG_KEYS, getAllFlags, setFlag, type FlagKey } from '@/lib/featureFlags';
+import { getAllFlags, setFlag, type FlagKey } from '@/lib/featureFlags';
 
 const FLAG_META: Record<FlagKey, { label: string; desc: string; icon: React.ElementType; color: string }> = {
   ff_use_participant_model : { label: 'Participant Model',  desc: 'Participant rows instead of counter increments',    icon: Users,          color: 'text-cyan-400'    },

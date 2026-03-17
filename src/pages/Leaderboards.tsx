@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Trophy, TrendingUp, Users, Crown, Star, Globe, Gamepad2,
-  RefreshCw, Medal, Zap, Target, Shield,
+  Trophy, Users, RefreshCw, Zap, Shield,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type PlayerRow = {

@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Trophy, Users, ArrowRight, Sparkles, Flame, Video, Zap, Sword,
-  TrendingUp, Shield, Star, Globe, ChevronRight, Play, Crown,
+  TrendingUp, Shield, Globe, ChevronRight, Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCurrency } from '@/contexts/CurrencyContext';
 import { supabase } from '@/lib/supabase';
 
 // ── Live stat counter ──────────────────────────────────────────────────────
@@ -104,7 +103,6 @@ function TopPlayerRow({ p, rank }: { p: TopPlayer; rank: number }) {
 // ── Main ───────────────────────────────────────────────────────────────────
 export function Home() {
   const { isAuthenticated } = useAuth();
-  const { symbol } = useCurrency();
   const [liveTournaments, setLiveTournaments] = useState<LiveTournament[]>([]);
   const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);
   const [realStats, setRealStats] = useState({ players: 0, tournaments: 0, clubs: 0, clips: 0 });

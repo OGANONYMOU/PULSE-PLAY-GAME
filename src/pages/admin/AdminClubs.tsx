@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Users, Search, RefreshCw, Shield, Crown, Globe, Lock,
-  Trash2, Loader2, AlertCircle, Trophy, Star, X,
+  Users, Search, RefreshCw, Globe, Lock,
+  Trash2, Loader2, AlertCircle, Trophy, Star,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
