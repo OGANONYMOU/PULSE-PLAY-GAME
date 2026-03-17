@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { NotificationBell } from '@/components/layout/NotificationDropdown';
 import { prefetchRoute } from '@/App';
 
 const navLinks = [
