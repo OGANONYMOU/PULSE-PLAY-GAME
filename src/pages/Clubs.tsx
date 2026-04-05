@@ -71,7 +71,7 @@ function CreateClubModal(p: { games: Game[]; onClose: () => void; onCreated: (id
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18 }}
-        className="w-full max-w-lg bg-card border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        className="dialog-mobile w-full max-w-lg bg-card border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
@@ -82,8 +82,8 @@ function CreateClubModal(p: { games: Game[]; onClose: () => void; onCreated: (id
           <button onClick={p.onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2 flex flex-col gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
               <label className="text-xs text-white/50 uppercase tracking-wider">Club Name *</label>
               <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. PulsePlay FC" className={inputCls} />
             </div>
@@ -173,7 +173,7 @@ function ClubCard({ club, index, onJoin, joining }: {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-1.5 mb-4">
+      <div className="grid grid-cols-2 gap-1.5 mb-4 sm:grid-cols-4">
         {[
           { icon: Users, val: club.member_count, label: 'Members', color: 'text-cyan-400' },
           { icon: Trophy, val: club.wins, label: 'Wins', color: 'text-green-400' },
@@ -314,8 +314,8 @@ export function Clubs(): React.ReactElement {
   ] as const;
 
   return (
-    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-16">
+      <div className="page-shell max-w-6xl">
 
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
@@ -332,12 +332,12 @@ export function Clubs(): React.ReactElement {
         </motion.div>
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col items-start justify-between gap-4 mb-6 sm:flex-row sm:items-center">
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/8 overflow-x-auto">
+          <div className="pill-scroll w-full rounded-xl bg-white/5 border border-white/8 p-1 sm:w-auto">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={'flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ' +
+                className={'flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ' +
                   (tab === t.id ? 'bg-white/12 text-white' : 'text-white/40 hover:text-white/70')}>
                 <t.icon className="w-3.5 h-3.5" />{t.label}
                 {t.id === 'mine' && clubs.filter(c => c.my_membership).length > 0 && (
@@ -349,7 +349,7 @@ export function Clubs(): React.ReactElement {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             {tab !== 'leaderboard' && (
               <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
@@ -359,7 +359,7 @@ export function Clubs(): React.ReactElement {
             )}
             {isAuthenticated && (
               <Button size="sm" onClick={() => setShowCreate(true)}
-                className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold h-9 gap-1.5 flex-shrink-0">
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold h-9 gap-1.5 flex-shrink-0 sm:w-auto">
                 <Plus className="w-3.5 h-3.5" />New Club
               </Button>
             )}

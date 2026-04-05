@@ -80,15 +80,16 @@ export function SignIn(): React.ReactElement {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-12">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen pt-24 pb-12">
+      <div className="page-shell flex justify-center">
+        <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 mb-4">
             <Gamepad2 className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-orbitron text-2xl font-bold mb-1">
-            Welcome back to <span className="gradient-text">PulsePay</span>
+            Welcome back to <span className="gradient-text">PulsePlay</span>
           </h1>
           <p className="text-muted-foreground text-sm">Sign in to your account</p>
         </div>
@@ -162,6 +163,7 @@ export function SignIn(): React.ReactElement {
             Don't have an account?{' '}
             <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-medium">Sign up free</Link>
           </p>
+        </div>
         </div>
       </div>
     </div>

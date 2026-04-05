@@ -16,6 +16,8 @@ const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.H
 const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
 const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
 const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
+const Clubs        = lazy(() => import('@/pages/Clubs').then(m => ({ default: m.Clubs })));
+const Leaderboards = lazy(() => import('@/pages/Leaderboards').then(m => ({ default: m.Leaderboards })));
 const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
 const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
 const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
@@ -42,6 +44,8 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/games':       () => import('@/pages/Games'),
   '/tournaments': () => import('@/pages/Tournaments'),
   '/community':   () => import('@/pages/Community'),
+  '/clubs':       () => import('@/pages/Clubs'),
+  '/leaderboards': () => import('@/pages/Leaderboards'),
   '/about':       () => import('@/pages/About'),
   '/signin':      () => import('@/pages/SignIn'),
   '/register':    () => import('@/pages/Register'),
@@ -98,6 +102,8 @@ function PrefetchCritical(): null {
       import('@/pages/Games');
       import('@/pages/Tournaments');
       import('@/pages/Community');
+      import('@/pages/Clubs');
+      import('@/pages/Leaderboards');
     }, 200);
     return () => clearTimeout(t);
   }, []);
@@ -124,6 +130,8 @@ function AppContent(): React.ReactElement {
               <Route path="/games"             element={<Games />} />
               <Route path="/tournaments"       element={<Tournaments />} />
               <Route path="/community"         element={<Community />} />
+              <Route path="/clubs"             element={<Clubs />} />
+              <Route path="/leaderboards"      element={<Leaderboards />} />
               <Route path="/about"             element={<About />} />
               <Route path="/signin"            element={<SignIn />} />
               <Route path="/register"          element={<Register />} />

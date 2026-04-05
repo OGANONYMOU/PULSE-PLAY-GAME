@@ -215,22 +215,22 @@ export function Home() {
             {isAuthenticated ? (
               <>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold px-8 h-12 rounded-2xl shadow-lg shadow-cyan-500/25">
+                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold px-8 h-12 rounded-2xl shadow-lg shadow-cyan-500/25">
                   <Link to="/tournaments"><Trophy className="mr-2 w-5 h-5" />Browse Tournaments</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline"
-                  className="border-white/15 text-white hover:bg-white/8 h-12 rounded-2xl">
+                  className="w-full sm:w-auto border-white/15 text-white hover:bg-white/8 h-12 rounded-2xl">
                   <Link to="/community"><Video className="mr-2 w-5 h-5" />Community Feed</Link>
                 </Button>
               </>
             ) : (
               <>
                 <Button asChild size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold px-10 h-12 rounded-2xl shadow-lg shadow-cyan-500/25">
+                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold px-10 h-12 rounded-2xl shadow-lg shadow-cyan-500/25">
                   <Link to="/register"><Zap className="mr-2 w-5 h-5" />Join Free</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline"
-                  className="border-white/15 text-white hover:bg-white/8 h-12 rounded-2xl">
+                  className="w-full sm:w-auto border-white/15 text-white hover:bg-white/8 h-12 rounded-2xl">
                   <Link to="/tournaments">View Tournaments <ArrowRight className="ml-2 w-5 h-5" /></Link>
                 </Button>
               </>
@@ -378,11 +378,11 @@ export function Home() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button asChild size="lg"
-                    className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold text-base px-10 h-13 rounded-2xl shadow-xl shadow-cyan-500/20">
+                    className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold text-base px-10 h-14 rounded-2xl shadow-xl shadow-cyan-500/20">
                     <Link to="/register"><Zap className="mr-2 w-5 h-5" />Create Free Account</Link>
                   </Button>
                   <Button asChild size="lg" variant="outline"
-                    className="border-white/15 text-white hover:bg-white/8 h-13 rounded-2xl text-base">
+                    className="w-full sm:w-auto border-white/15 text-white hover:bg-white/8 h-14 rounded-2xl text-base">
                     <Link to="/about">Learn more <ArrowRight className="ml-2 w-5 h-5" /></Link>
                   </Button>
                 </div>

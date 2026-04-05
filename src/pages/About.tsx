@@ -230,7 +230,7 @@ export function About() {
       </section>
 
       {/* Values Section */}
-      <section className="py-20 px-6 relative">
+      <section className="py-20 px-4 sm:px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-cyan-500/5" />
         
         <div className="max-w-7xl mx-auto relative">
@@ -257,7 +257,7 @@ export function About() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 * idx }}
-                className={`gaming-card p-8 text-center ${value.featured ? 'border-cyan-500/50' : ''}`}
+                className={`relative gaming-card p-8 text-center ${value.featured ? 'border-cyan-500/50' : ''}`}
               >
                 <div className="text-5xl mb-6">{value.icon}</div>
                 <h3 className="font-orbitron text-xl font-bold mb-4">{value.title}</h3>
@@ -272,7 +272,7 @@ export function About() {
       </section>
 
       {/* Timeline Section */}
-      <section className="py-20 px-6">
+      <section className="py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -315,7 +315,7 @@ export function About() {
                 <div className={`ml-12 md:ml-0 md:w-1/2 ${
                   idx % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'
                 }`}>
-                  <div className="gaming-card p-6 inline-block">
+                  <div className="gaming-card p-6 w-full">
                     <div className="text-cyan-400 font-bold text-sm mb-2">{item.year}</div>
                     <h3 className="font-orbitron text-lg font-bold mb-2">{item.title}</h3>
                     <p className="text-muted-foreground text-sm">{item.description}</p>

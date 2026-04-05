@@ -121,7 +121,7 @@ export function PostCard({
       </p>
 
       {/* Actions */}
-      <div className="flex items-center gap-4 border-t border-border/20 pt-3">
+      <div className="flex flex-wrap items-center gap-3 border-t border-border/20 pt-3">
         <button
           onClick={handleLike}
           className={`flex items-center gap-1.5 text-xs transition-all hover:scale-110 ${
@@ -188,7 +188,7 @@ export function PostCard({
           ))}
 
           {currentUserId && (
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
@@ -200,7 +200,7 @@ export function PostCard({
               <button
                 onClick={handleSubmitComment}
                 disabled={!commentText.trim() || submitting}
-                className="px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-3 py-2 text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed sm:self-auto"
               >
                 {submitting ? '…' : 'Post'}
               </button>

@@ -65,7 +65,7 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
   const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      className="max-w-7xl mx-auto mb-12">
+      className="page-shell mb-12">
       <div className="gaming-card p-8 md:p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-cyan-500/10" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -75,7 +75,7 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
             </Badge>
             <h2 className="font-orbitron text-3xl md:text-4xl font-bold mb-4">{g.name}</h2>
             <p className="text-muted-foreground text-lg mb-6">{g.description}</p>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
               <div className="text-center p-4 rounded-xl bg-muted/50">
                 <div className="font-orbitron text-2xl font-bold gradient-text">{players}</div>
                 <div className="text-xs text-muted-foreground">Active Players</div>
@@ -89,7 +89,7 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
                 <div className="text-xs text-muted-foreground">Tournaments</div>
               </div>
             </div>
-            <Button asChild className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
+            <Button asChild className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
               <Link to="/tournaments">View Tournaments <ArrowRight className="ml-2 w-4 h-4" /></Link>
             </Button>
           </div>
@@ -196,8 +196,8 @@ export function Games(): React.ReactElement {
   });
 
   return (
-    <div className="min-h-screen pt-24 px-4 sm:px-6 pb-16">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto text-center mb-10">
+    <div className="min-h-screen pt-24 pb-16">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="page-shell text-center mb-10">
         <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-4">
           Trending <span className="gradient-text">Mobile Games</span>
         </h1>
@@ -206,7 +206,7 @@ export function Games(): React.ReactElement {
         </p>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="max-w-4xl mx-auto mb-10">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="page-shell max-w-4xl mb-10">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
@@ -217,14 +217,14 @@ export function Games(): React.ReactElement {
               className="pl-11 h-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <div className="pill-scroll sm:pb-0">
             {CATEGORIES.map((c) => (
               <Button
                 key={c.value}
                 size="sm"
                 onClick={() => setCategory(c.value)}
                 className={
-                  'rounded-full flex-shrink-0 text-xs h-9 ' +
+                  'rounded-full flex-shrink-0 whitespace-nowrap text-xs h-9 ' +
                   (category === c.value
                     ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0'
                     : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white')
@@ -248,17 +248,17 @@ export function Games(): React.ReactElement {
         </div>
       ) : loading ? (
         <>
-          <div className="max-w-7xl mx-auto mb-12">
+          <div className="page-shell mb-12">
             <div className="gaming-card p-8 h-64 animate-pulse bg-white/5" />
           </div>
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="page-shell grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => <GameSkeleton key={i} />)}
           </div>
         </>
       ) : (
         <>
           {featured && !isFiltered ? <FeaturedBanner game={featured} /> : null}
-          <div className="max-w-7xl mx-auto">
+          <div className="page-shell">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.length > 0
                 ? filtered.map((g, i) => <GameCard key={g.id} game={g} index={i} />)

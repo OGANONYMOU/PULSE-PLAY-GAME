@@ -92,7 +92,7 @@ function MobileDrawer({ open, onClose, isAuthenticated, isAdmin, handleSignOut, 
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-[#08080f]/98 border-l border-white/8 backdrop-blur-2xl flex flex-col lg:hidden shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 z-50 w-[min(22rem,calc(100vw-1rem))] bg-[#08080f]/98 border-l border-white/8 backdrop-blur-2xl flex flex-col lg:hidden shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/8">
@@ -204,11 +204,7 @@ export function Navbar(): React.ReactElement {
         className="fixed top-0 left-0 right-0 z-50 pointer-events-none"
         style={{ willChange: 'transform, opacity' }}
       >
-        <motion.div
-          animate={{ paddingLeft: atTop ? '12px' : '20px', paddingRight: atTop ? '12px' : '20px' }}
-          transition={{ duration: 0.4, ease: 'easeInOut' }}
-          className="pt-3 w-full"
-        >
+        <div className="page-shell pt-3">
           <motion.nav
             animate={{
               borderRadius: atTop ? '16px' : '24px',
@@ -339,7 +335,7 @@ export function Navbar(): React.ReactElement {
               </button>
             </div>
           </motion.nav>
-        </motion.div>
+        </div>
       </motion.header>
 
       <MobileDrawer

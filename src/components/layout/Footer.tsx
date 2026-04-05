@@ -16,22 +16,23 @@ const footerLinks = [
       { label: 'Games', href: '/games' },
       { label: 'Tournaments', href: '/tournaments' },
       { label: 'Community', href: '/community' },
+      { label: 'Clubs', href: '/clubs' },
     ],
   },
   {
-    title: 'Company',
+    title: 'Explore',
     links: [
       { label: 'About Us', href: '/about' },
-      { label: 'Careers', href: '#' },
-      { label: 'Contact', href: '#' },
+      { label: 'Rankings', href: '/leaderboards' },
+      { label: 'Sign In', href: '/signin' },
     ],
   },
   {
-    title: 'Legal',
+    title: 'Support',
     links: [
-      { label: 'Terms of Service', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Cookie Policy', href: '#' },
+      { label: 'Create Account', href: '/register' },
+      { label: 'Email Support', href: 'mailto:support@pulseplay.com', external: true },
+      { label: 'Discord', href: 'https://discord.com', external: true },
     ],
   },
 ];
@@ -39,13 +40,11 @@ const footerLinks = [
 export function Footer() {
   return (
     <footer className="relative mt-20 border-t border-border/50">
-      {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-purple-500/5 to-transparent pointer-events-none" />
 
-      <div className="container mx-auto px-6 py-12 relative">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-          {/* Brand */}
-          <div className="lg:col-span-2">
+      <div className="page-shell relative py-12">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="xl:col-span-2">
             <Link to="/" className="flex items-center gap-3 group mb-4">
               <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-white/10 group-hover:ring-cyan-500/40 transition-all">
                 <img src="/pulseplay-logo.jpg" alt="PulsePlay" className="w-full h-full object-cover object-center" />
@@ -58,7 +57,6 @@ export function Footer() {
               The ultimate mobile gaming community. Compete in tournaments, connect with players, and win real prizes.
             </p>
 
-            {/* Social Links */}
             <div className="flex gap-3">
               {socialLinks.map((social) => (
                 <motion.a
@@ -76,7 +74,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Links */}
           {footerLinks.map((section) => (
             <div key={section.title}>
               <h3 className="font-orbitron font-bold text-sm uppercase tracking-wider mb-4">
@@ -85,12 +82,23 @@ export function Footer() {
               <ul className="space-y-3">
                 {section.links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      to={link.href}
-                      className="text-muted-foreground text-sm hover:text-cyan-400 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
+                    {'external' in link && link.external ? (
+                      <a
+                        href={link.href}
+                        target={link.href.startsWith('http') ? '_blank' : undefined}
+                        rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                        className="text-muted-foreground text-sm hover:text-cyan-400 transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className="text-muted-foreground text-sm hover:text-cyan-400 transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -98,10 +106,9 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} PulsePlay. All rights reserved.
+            Copyright {new Date().getFullYear()} PulsePlay. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

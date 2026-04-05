@@ -196,8 +196,8 @@ export function Leaderboards(): React.ReactElement {
   ] as const;
 
   return (
-    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-16">
+      <div className="page-shell max-w-3xl">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
@@ -211,19 +211,21 @@ export function Leaderboards(): React.ReactElement {
         </motion.div>
 
         {/* Tab pills */}
-        <div className="flex items-center gap-2 mb-6 flex-wrap justify-center">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={'flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all border ' +
-                (tab === t.id
-                  ? 'bg-white/12 border-white/20 text-white'
-                  : 'border-white/8 text-white/40 hover:border-white/15 hover:text-white/70')}>
-              <t.icon className={'w-3.5 h-3.5 ' + (tab === t.id ? t.color : '')} />
-              {t.label}
-            </button>
-          ))}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="pill-scroll">
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={'flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ' +
+                  (tab === t.id
+                    ? 'bg-white/12 border-white/20 text-white'
+                    : 'border-white/8 text-white/40 hover:border-white/15 hover:text-white/70')}>
+                <t.icon className={'w-3.5 h-3.5 ' + (tab === t.id ? t.color : '')} />
+                {t.label}
+              </button>
+            ))}
+          </div>
           <button onClick={() => setLastRefresh(Date.now())} disabled={loading}
-            className="ml-auto p-2 rounded-full border border-white/8 text-white/30 hover:text-white hover:border-white/20 transition-all">
+            className="self-center rounded-full border border-white/8 p-2 text-white/30 transition-all hover:border-white/20 hover:text-white sm:self-auto">
             <RefreshCw className={'w-3.5 h-3.5 ' + (loading ? 'animate-spin' : '')} />
           </button>
         </div>

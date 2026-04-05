@@ -89,7 +89,7 @@ function SocialRow(p: { show: boolean; twitter: string | null; discord: string |
 }
 function EditBtn(p: { show: boolean; onClick: () => void }): React.ReactElement {
   return p.show ? (
-    <Button onClick={p.onClick} size="sm" className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs h-8">
+    <Button onClick={p.onClick} size="sm" className="self-start flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs h-8">
       <Edit2 className="w-3.5 h-3.5" />Edit Profile
     </Button>
   ) : <span />;
@@ -119,7 +119,7 @@ function EditPanel(p: { show: boolean; form: EditForm; saving: boolean; onChange
         <button onClick={p.onCancel} className="text-white/40 hover:text-white/80"><X className="w-4 h-4" /></button>
       </div>
       <Separator className="bg-white/10" />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div><label className="text-xs text-white/50 block mb-1.5">First Name</label><Input value={p.form.first_name} onChange={(e) => p.onChange({ ...p.form, first_name: e.target.value })} className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" placeholder="First name" /></div>
         <div><label className="text-xs text-white/50 block mb-1.5">Last Name</label><Input value={p.form.last_name} onChange={(e) => p.onChange({ ...p.form, last_name: e.target.value })} className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" placeholder="Last name" /></div>
       </div>
@@ -128,7 +128,7 @@ function EditPanel(p: { show: boolean; form: EditForm; saving: boolean; onChange
         <Textarea value={p.form.bio} onChange={(e) => p.onChange({ ...p.form, bio: e.target.value })} className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm resize-none" rows={3} placeholder="Tell the community about yourself..." maxLength={300} />
         <span className="text-xs text-white/30 mt-1 block">{p.form.bio.length}/300</span>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div><label className="text-xs text-white/50 block mb-1.5">Twitter</label>
           <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">@</span><Input value={p.form.twitter_username} onChange={(e) => p.onChange({ ...p.form, twitter_username: e.target.value })} className="pl-7 bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" placeholder="username" /></div>
         </div>
@@ -237,7 +237,7 @@ function TabTournaments(p: { active: boolean; userId: string }): React.ReactElem
 function TabAchievements(p: { active: boolean; joinedAt: string | null; postCount: number; tournamentCount: number; wonCount: number }): React.ReactElement {
   if (!p.active) return <span />;
   const items = [
-    { icon: Star,   label: 'First Blood',    desc: 'Joined PulsePay',       color: 'from-yellow-500 to-orange-500', unlocked: true },
+    { icon: Star,   label: 'First Blood',    desc: 'Joined PulsePlay',      color: 'from-yellow-500 to-orange-500', unlocked: true },
     { icon: MessageSquare, label: 'Conversationalist', desc: 'Posted 1+ time', color: 'from-blue-500 to-cyan-500',   unlocked: p.postCount >= 1 },
     { icon: Flame,  label: 'On Fire',        desc: 'Posted 10+ times',       color: 'from-orange-500 to-red-500',   unlocked: p.postCount >= 10 },
     { icon: Trophy, label: 'Contender',      desc: 'Joined a tournament',    color: 'from-purple-500 to-pink-500',  unlocked: p.tournamentCount >= 1 },
@@ -453,7 +453,7 @@ export function Profile(): React.ReactElement {
           {[
             { icon: MessageSquare, label: 'Posts', value: posts.length, color: 'text-cyan-400' },
             { icon: Flame, label: 'Likes', value: totalLikes, color: 'text-orange-400' },
-            { icon: Trophy, label: 'Tournaments', value: 0, color: 'text-yellow-400' },
+            { icon: Trophy, label: 'Tournaments', value: tourneyEntries.length, color: 'text-yellow-400' },
             { icon: Swords, label: 'Matches', value: 0, color: 'text-purple-400' },
           ].map((s) => (
             <div key={s.label} className="p-4 rounded-xl bg-white/5 border border-white/10 text-center hover:border-white/20 transition-all">
@@ -465,7 +465,7 @@ export function Profile(): React.ReactElement {
         </div>
 
         <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-          <div className="flex border-b border-white/10">
+          <div className="flex border-b border-white/10 overflow-x-auto">
             {tabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={'flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all flex-1 justify-center ' + (activeTab === tab.id ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/5' : 'text-white/40 hover:text-white/70 hover:bg-white/5')}>
                 <tab.icon className="w-4 h-4" /><span className="hidden sm:inline">{tab.label}</span>

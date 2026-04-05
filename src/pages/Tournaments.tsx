@@ -213,17 +213,17 @@ export function Tournaments(): React.ReactElement {
   ];
 
   return (
-    <div className="min-h-screen pt-24 px-4 sm:px-6 pb-16">
+    <div className="min-h-screen pt-24 pb-16">
       {/* Hero */}
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
-        className="max-w-7xl mx-auto text-center mb-10">
+        className="page-shell text-center mb-10">
         <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-3">
           Tournament <span className="gradient-text">Arena</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
           Compete in live and upcoming tournaments. Real registrations, real brackets.
         </p>
-        <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto">
+        <div className="grid grid-cols-1 gap-4 max-w-3xl mx-auto sm:grid-cols-3">
           {[
             { label:'Total', val: loading ? '—' : counts.all, Icon: Trophy, color:'text-cyan-400' },
             { label:'Live',  val: loading ? '—' : counts.ongoing, Icon: Flame, color:'text-red-400' },
@@ -240,14 +240,14 @@ export function Tournaments(): React.ReactElement {
 
       {/* Filter bar */}
       <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1 }}
-        className="max-w-7xl mx-auto mb-8 flex flex-wrap items-center justify-between gap-4">
+        className="page-shell mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Filter className="w-4 h-4" /><span>Filter by status</span>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="pill-scroll w-full sm:w-auto">
           {FILTERS.map(f => (
             <Button key={f.value} size="sm" onClick={() => setActiveFilter(f.value)}
-              className={`rounded-full text-xs h-8 ${
+              className={`rounded-full whitespace-nowrap text-xs h-8 ${
                 activeFilter === f.value
                   ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0'
                   : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
@@ -271,7 +271,7 @@ export function Tournaments(): React.ReactElement {
           </div>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto">
+        <div className="page-shell">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {loading ? (
               [1,2,3,4].map(i => <TournamentSkeleton key={i} />)
@@ -390,7 +390,7 @@ export function Tournaments(): React.ReactElement {
 
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={v => { if (!v) setDetail(null); }}>
-        <DialogContent className="max-w-2xl glass border-border/40 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="dialog-mobile glass border-border/40 w-[calc(100vw-1rem)] max-h-[90dvh] overflow-y-auto p-4 sm:max-w-2xl sm:p-6">
           {detail && (
             <>
               <DialogHeader>
@@ -415,7 +415,7 @@ export function Tournaments(): React.ReactElement {
               </div>
 
               <Tabs defaultValue="info">
-                <TabsList className="mb-4">
+                <TabsList className={`mb-4 grid w-full ${detail.status === 'ongoing' ? 'grid-cols-3' : 'grid-cols-2'} sm:inline-flex sm:w-fit`}>
                   <TabsTrigger value="info">Info</TabsTrigger>
                   <TabsTrigger value="participants">Participants ({detail.current_players})</TabsTrigger>
                   {detail.status === 'ongoing' && <TabsTrigger value="live">Live Updates</TabsTrigger>}
@@ -423,7 +423,7 @@ export function Tournaments(): React.ReactElement {
 
                 {/* Info */}
                 <TabsContent value="info" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {[
                       { icon: DollarSign, label: 'Prize Pool', val: detail.prize_pool, cls: 'text-yellow-400' },
                       { icon: Users,      label: 'Players',    val: `${detail.current_players}/${detail.max_players}`, cls: 'text-cyan-400' },
