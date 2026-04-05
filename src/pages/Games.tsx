@@ -1,581 +1,103 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Search, Gamepad2, Users, Trophy, Star, Sparkles, RefreshCw, Video, BookOpen,
-  X, ArrowRight, Clock, Play, CheckCircle, Zap, Bell, ChevronRight,
-  MessageSquare, Activity, Newspaper,
-  BarChart2,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Search, Gamepad2, Users, Trophy, Star, Sparkles, RefreshCw, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { formatDistanceToNow } from 'date-fns';
 
 type Game = {
-  id: string; name: string; description: string; icon: string;
-  logo_url: string | null; badge: string | null;
-  player_count: number; tournament_count: number;
-  category: string; featured: boolean; created_at: string;
-};
-type Tournament = {
-  id: string; name: string; status: 'upcoming' | 'ongoing' | 'completed';
-  date: string; prize_pool: string; max_players: number; current_players: number;
-};
-type Post = {
-  id: string; title: string; content: string; tag: string;
-  likes: number; comments: number; created_at: string;
-  profiles: { username: string } | null;
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  image_url: string | null;
+  badge: string | null;
+  player_count: number;
+  tournament_count: number;
+  category: string;
+  featured: boolean;
+  created_at: string;
 };
 
 const CATEGORIES = [
-  { value: 'all',           label: 'All' },
-  { value: 'fps',           label: 'FPS' },
+  { value: 'all', label: 'All Games' },
+  { value: 'fps', label: 'FPS' },
   { value: 'battle-royale', label: 'Battle Royale' },
-  { value: 'moba',          label: 'MOBA' },
-  { value: 'sports',        label: 'Sports' },
-  { value: 'fighting',      label: 'Fighting' },
+  { value: 'moba', label: 'MOBA' },
+  { value: 'sports', label: 'Sports' },
+  { value: 'fighting', label: 'Fighting' },
 ];
 
 const BADGE_COLORS: Record<string, string> = {
   'Most Popular': 'bg-purple-500',
-  Trending: 'bg-cyan-500',
-  New: 'bg-pink-500',
-  Featured: 'bg-yellow-500',
-  Hot: 'bg-red-500',
-  Popular: 'bg-purple-500',
+  Trending:       'bg-cyan-500',
+  New:            'bg-pink-500',
+  Featured:       'bg-yellow-500',
+  Hot:            'bg-red-500',
 };
 
-const STATUS_META = {
-  upcoming:  { icon: Clock,       color: 'text-blue-400',  bg: 'bg-blue-500/15 border-blue-500/30',   label: 'Upcoming' },
-  ongoing:   { icon: Play,        color: 'text-green-400', bg: 'bg-green-500/15 border-green-500/30', label: 'Live 🔴' },
-  completed: { icon: CheckCircle, color: 'text-white/40',  bg: 'bg-white/8 border-white/10',           label: 'Done' },
-};
-
-// ── GameUpdate type (fetched from DB) ────────────────────────────────────
-type GameUpdate = {
-  id: string; game_id: string | null; type: 'update' | 'news';
-  title: string; content: string; tag: string;
-  is_published: boolean; created_at: string; updated_at: string;
-};
-
-const UPDATE_STYLE = {
-  update: { accent: 'text-cyan-400',   bg: 'bg-cyan-500/8',   border: 'border-cyan-500/20',   tag: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25'   },
-  news:   { accent: 'text-purple-400', bg: 'bg-purple-500/8', border: 'border-purple-500/20', tag: 'bg-purple-500/15 text-purple-400 border-purple-500/25' },
-};
-
-// ── Game logo ─────────────────────────────────────────────────────────────
-function GameLogo({ game, size = 'sm', className }: { game: Game; size?: 'sm' | 'md' | 'lg'; className?: string }): React.ReactElement {
-  const [err, setErr] = useState(false);
-  const sz = size === 'lg' ? 'w-24 h-24 text-5xl' : size === 'md' ? 'w-20 h-20 text-4xl' : 'w-14 h-14 text-2xl';
-  return (
-    <div className={sz + ' rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5 border border-white/10 ' + (className ?? '')}>
-      {game.logo_url && !err
-        ? <img src={game.logo_url} alt={game.name} className="w-full h-full object-cover" onError={() => setErr(true)} />
-        : <span>{game.icon}</span>}
-    </div>
-  );
-}
-
-// ── Analytics mini bar ─────────────────────────────────────────────────────
-function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
-  const pct = max === 0 ? 0 : Math.round((value / max) * 100);
-  return (
-    <div className="h-1.5 rounded-full bg-white/8 overflow-hidden flex-1">
-      <motion.div initial={{ width: 0 }} animate={{ width: pct + '%' }} transition={{ duration: 0.8, ease: 'easeOut' }}
-        className={'h-full rounded-full ' + color} />
-    </div>
-  );
-}
-
-// ── Game Detail Panel ─────────────────────────────────────────────────────
-function GameDetailPanel({ game, onClose, symbol, initialTab = 'overview' }: {
-  game: Game; onClose: () => void; symbol: string;
-  initialTab?: 'overview' | 'tournaments' | 'updates' | 'news' | 'clips' | 'guides';
-}): React.ReactElement {
-  const [tab, setTab] = useState<'overview' | 'tournaments' | 'updates' | 'news' | 'clips' | 'guides'>(initialTab);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [gameUpdates, setGameUpdates] = useState<GameUpdate[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [notifOn, setNotifOn] = useState(false);
-  const [activeUpdate, setActiveUpdate] = useState<GameUpdate | null>(null);
-  const [clips, setClips] = useState<Array<{ id: string; title: string; likes_count: number; views_count: number; created_at: string; profiles: { username: string } | null }>>([]);
-  const [guides, setGuides] = useState<Array<{ id: string; title: string; category: string; likes_count: number; created_at: string; profiles: { username: string } | null }>>([]);
-
-  useEffect(() => { setTab(initialTab); }, [initialTab]);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const [tRes, pRes, uRes] = await Promise.all([
-        supabase.from('tournaments').select('id,name,status,date,prize_pool,max_players,current_players')
-          .eq('game_id', game.id).order('date', { ascending: false }).limit(10),
-        supabase.from('posts').select('id,title,content,tag,likes,comments,created_at,profiles(username)')
-          .order('created_at', { ascending: false }).limit(6),
-        supabase.from('game_updates')
-          .select('id,game_id,type,title,content,tag,is_published,created_at,updated_at')
-          .or(`game_id.eq.${game.id},game_id.is.null`)
-          .eq('is_published', true)
-          .order('created_at', { ascending: false })
-          .limit(20),
-      ]);
-      if (!tRes.error) setTournaments((tRes.data as Tournament[]) ?? []);
-      if (!pRes.error) setPosts((pRes.data as Post[]) ?? []);
-      if (!uRes.error) setGameUpdates((uRes.data as GameUpdate[]) ?? []);
-      // Load clips + guides for this game
-      const [clRes, guRes] = await Promise.all([
-        supabase.from('clips').select('id,title,likes_count,views_count,created_at,profiles(username)')
-          .eq('game_id', game.id).eq('is_published', true).order('created_at', { ascending: false }).limit(8),
-        supabase.from('guides').select('id,title,category,likes_count,created_at,profiles(username)')
-          .eq('game_id', game.id).eq('is_published', true).order('likes_count', { ascending: false }).limit(8),
-      ]);
-      if (!clRes.error) setClips((clRes.data as typeof clips) ?? []);
-      if (!guRes.error) setGuides((guRes.data as typeof guides) ?? []);
-      setLoading(false);
-    };
-    load();
-  }, [game.id]);
-
-  const players = game.player_count >= 1000 ? (game.player_count / 1000).toFixed(1) + 'K' : String(game.player_count);
-
-  const TABS = [
-    { id: 'overview'    as const, label: 'Overview',    icon: Gamepad2,   short: 'Info'   },
-    { id: 'tournaments' as const, label: 'Tournaments', icon: Trophy,     short: 'Events' },
-    { id: 'updates'     as const, label: 'Updates',     icon: Activity,   short: 'Patch'  },
-    { id: 'news'        as const, label: 'News',        icon: Newspaper,  short: 'News'   },
-    { id: 'clips'       as const, label: 'Clips',       icon: Video,      short: 'Clips'  },
-    { id: 'guides'      as const, label: 'Guides',      icon: BookOpen,   short: 'Guides' },
-  ];
-
-  const updates = gameUpdates.filter(u => u.type === 'update');
-  const news    = gameUpdates.filter(u => u.type === 'news');
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <motion.div
-        initial={{ y: 80, opacity: 0, scale: 0.97 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 80, opacity: 0, scale: 0.97 }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        className="w-full sm:max-w-2xl bg-card border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[93vh] flex flex-col"
-      >
-        {/* Drag handle mobile */}
-        <div className="sm:hidden flex justify-center pt-2.5 pb-0.5 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-
-        {/* Hero header */}
-        <div className="relative overflow-hidden flex-shrink-0">
-          {game.logo_url ? (
-            <div className="absolute inset-0 overflow-hidden">
-              <img src={game.logo_url} alt="" className="w-full h-full object-cover scale-110 blur-2xl opacity-25" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-card/70 to-card" />
-            </div>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-card" />
-          )}
-
-          <div className="relative z-10 p-5 sm:p-6 flex items-start gap-4">
-            <GameLogo game={game} size="lg" />
-            <div className="flex-1 min-w-0 pt-1">
-              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                <h2 className="font-orbitron font-black text-lg sm:text-xl text-white leading-snug">{game.name}</h2>
-                {game.badge ? (
-                  <span className={'text-[10px] px-2 py-0.5 rounded-full text-white font-bold ' + (BADGE_COLORS[game.badge] ?? 'bg-purple-500')}>
-                    {game.badge}
-                  </span>
-                ) : null}
-                {game.featured ? <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> : null}
-              </div>
-              <p className="text-[10px] text-white/40 capitalize mb-2">{game.category}</p>
-              <div className="flex items-center gap-3 text-sm flex-wrap">
-                <span className="flex items-center gap-1 text-cyan-400 font-bold text-xs"><Users className="w-3 h-3" />{players}</span>
-                <span className="flex items-center gap-1 text-purple-400 font-bold text-xs"><Trophy className="w-3 h-3" />{game.tournament_count} events</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Notification bell */}
-              <button
-                onClick={() => { setNotifOn(n => !n); }}
-                className={'w-8 h-8 rounded-full flex items-center justify-center transition-all ' +
-                  (notifOn ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white')}
-                title={notifOn ? 'Notifications on' : 'Enable notifications'}
-              >
-                <Bell className={'w-3.5 h-3.5 ' + (notifOn ? 'fill-yellow-400' : '')} />
-              </button>
-              <button onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/50 hover:text-white transition-all">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* 4-tab row */}
-          <div className="relative z-10 flex border-t border-white/10 overflow-x-auto">
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={'flex-1 min-w-0 flex items-center justify-center gap-1.5 py-3 text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap px-1 ' +
-                  (tab === t.id
-                    ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/5'
-                    : 'text-white/35 hover:text-white/65 hover:bg-white/4')}>
-                <t.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="hidden sm:inline">{t.label}</span>
-                <span className="sm:hidden">{t.short}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
-          {loading ? (
-            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />)}</div>
-          ) : (
-            <AnimatePresence mode="wait">
-
-              {/* OVERVIEW */}
-              {tab === 'overview' ? (
-                <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-5">
-                  <p className="text-white/60 text-sm leading-relaxed">{game.description || 'No description available.'}</p>
-
-                  {/* Stat grid */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Players',     value: players,                           icon: Users,   color: 'text-cyan-400'   },
-                      { label: 'Tournaments', value: String(game.tournament_count),      icon: Trophy,  color: 'text-purple-400' },
-                      { label: 'Prize Pool',  value: symbol + '0',                      icon: Zap,     color: 'text-yellow-400' },
-                    ].map(s => (
-                      <div key={s.label} className="p-3.5 rounded-xl bg-white/5 border border-white/8 text-center">
-                        <s.icon className={'w-4 h-4 mx-auto mb-1.5 ' + s.color} />
-                        <div className="font-orbitron font-black text-base text-white">{s.value}</div>
-                        <div className="text-[9px] text-white/30 mt-0.5 uppercase tracking-wide">{s.label}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Engagement analytics */}
-                  <div className="p-4 rounded-xl bg-white/4 border border-white/8 space-y-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <BarChart2 className="w-3.5 h-3.5 text-white/40" />
-                      <span className="text-[10px] text-white/35 uppercase tracking-wider font-bold">Engagement</span>
-                    </div>
-                    {[
-                      { label: 'Popularity', value: game.player_count, max: 30000, color: 'bg-cyan-500' },
-                      { label: 'Activity',   value: game.tournament_count, max: 40,    color: 'bg-purple-500' },
-                    ].map(row => (
-                      <div key={row.label} className="flex items-center gap-3">
-                        <span className="text-[10px] text-white/40 w-16 flex-shrink-0">{row.label}</span>
-                        <MiniBar value={row.value} max={row.max} color={row.color} />
-                        <span className="text-[10px] text-white/40 w-8 text-right flex-shrink-0">
-                          {Math.round((row.value / row.max) * 100)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" asChild className="border-white/15 text-white/70 hover:bg-white/5 gap-1.5 h-10">
-                      <Link to="/tournaments" onClick={onClose}>
-                        <Trophy className="w-3.5 h-3.5" />Tournaments
-                      </Link>
-                    </Button>
-                    <Button size="sm" onClick={() => setTab('updates')}
-                      className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold gap-1.5 h-10">
-                      <Activity className="w-3.5 h-3.5" />View Updates
-                    </Button>
-                  </div>
-                </motion.div>
-              ) : null}
-
-              {/* TOURNAMENTS */}
-              {tab === 'tournaments' ? (
-                <motion.div key="tournaments" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-2">
-                  {tournaments.length === 0 ? (
-                    <div className="text-center py-14">
-                      <Trophy className="w-10 h-10 mx-auto text-white/15 mb-3" />
-                      <p className="text-white/35 text-sm mb-4">No tournaments yet for this game.</p>
-                      <Button asChild size="sm" className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs">
-                        <Link to="/tournaments" onClick={onClose}>Browse All Tournaments</Link>
-                      </Button>
-                    </div>
-                  ) : tournaments.map((t, i) => {
-                    const meta = STATUS_META[t.status];
-                    const StatusIcon = meta.icon;
-                    return (
-                      <motion.div key={t.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                        className="flex items-center gap-3 p-3.5 rounded-xl bg-white/4 border border-white/8 hover:border-white/15 transition-all">
-                        <div className={'flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border font-bold flex-shrink-0 ' + meta.bg + ' ' + meta.color}>
-                          <StatusIcon className="w-2.5 h-2.5" />{meta.label}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-semibold truncate">{t.name}</p>
-                          <p className="text-xs text-white/35 truncate">Prize: {symbol}{t.prize_pool} · {t.current_players}/{t.max_players} players</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-white/20 flex-shrink-0" />
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              ) : null}
-
-              {/* UPDATES */}
-              {tab === 'updates' ? (
-                <motion.div key="updates" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Activity className="w-4 h-4 text-cyan-400" />
-                    <h3 className="text-sm font-bold text-white">Patch Notes & Events</h3>
-                    <span className="ml-auto text-[10px] text-white/30">{updates.length} {updates.length === 1 ? 'update' : 'updates'}</span>
-                  </div>
-                  {updates.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Activity className="w-10 h-10 mx-auto text-white/10 mb-3" />
-                      <p className="text-white/30 text-sm">No updates yet for this game.</p>
-                    </div>
-                  ) : updates.map((u, i) => (
-                    <motion.div key={u.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                      onClick={() => setActiveUpdate(u)}
-                      className="flex items-start gap-3 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/15 hover:border-cyan-500/35 hover:bg-cyan-500/8 transition-all cursor-pointer group active:scale-[0.99]">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/25 font-bold">{u.tag}</span>
-                          <span className="text-[9px] text-white/25">{formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}</span>
-                        </div>
-                        <p className="text-sm text-white font-semibold leading-snug group-hover:text-cyan-400 transition-colors mb-1">{u.title}</p>
-                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">{u.content}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-cyan-500/30 flex-shrink-0 mt-1 group-hover:text-cyan-400 transition-colors" />
-                    </motion.div>
-                  ))}
-                  {posts.length > 0 && (
-                    <div className="pt-3 border-t border-white/8 space-y-1.5">
-                      <p className="text-[10px] text-white/25 uppercase tracking-wider font-bold mb-2">Community Discussions</p>
-                      {posts.slice(0, 3).map((post, i) => (
-                        <motion.div key={post.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 + i * 0.04 }}
-                          className="flex items-start gap-3 p-3 rounded-xl bg-white/3 border border-white/8 hover:border-white/15 hover:bg-white/5 transition-all cursor-pointer group">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-white font-semibold truncate group-hover:text-white/90">{post.title}</p>
-                            <p className="text-[10px] text-white/30 mt-0.5">by {post.profiles?.username ?? 'anonymous'}</p>
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-white/25 flex-shrink-0">
-                            <span className="flex items-center gap-1"><Zap className="w-2.5 h-2.5 text-orange-400" />{post.likes}</span>
-                            <span className="flex items-center gap-1"><MessageSquare className="w-2.5 h-2.5" />{post.comments}</span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              ) : null}
-
-              {/* NEWS */}
-              {tab === 'news' ? (
-                <motion.div key="news" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Newspaper className="w-4 h-4 text-purple-400" />
-                    <h3 className="text-sm font-bold text-white">Announcements & News</h3>
-                    <span className="ml-auto text-[10px] text-white/30">{news.length} {news.length === 1 ? 'story' : 'stories'}</span>
-                  </div>
-                  {news.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Newspaper className="w-10 h-10 mx-auto text-white/10 mb-3" />
-                      <p className="text-white/30 text-sm">No news yet for this game.</p>
-                    </div>
-                  ) : news.map((n, i) => (
-                    <motion.div key={n.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                      onClick={() => setActiveUpdate(n)}
-                      className="flex items-start gap-3 p-4 rounded-xl bg-purple-500/5 border border-purple-500/15 hover:border-purple-500/35 hover:bg-purple-500/8 transition-all cursor-pointer group active:scale-[0.99]">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/25 font-bold">{n.tag}</span>
-                          <span className="text-[9px] text-white/25">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
-                        </div>
-                        <p className="text-sm text-white font-semibold leading-snug group-hover:text-purple-400 transition-colors mb-1">{n.title}</p>
-                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">{n.content}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-purple-500/30 flex-shrink-0 mt-1 group-hover:text-purple-400 transition-colors" />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              ) : null}
-
-
-              {/* CLIPS */}
-              {tab === 'clips' ? (
-                <motion.div key="clips" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Video className="w-4 h-4 text-pink-400" />
-                    <h3 className="text-sm font-bold text-white">Community Clips</h3>
-                    <span className="ml-auto text-[10px] text-white/30">{clips.length} clips</span>
-                  </div>
-                  {clips.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Video className="w-10 h-10 mx-auto text-white/10 mb-3" />
-                      <p className="text-white/30 text-sm">No clips yet. Be the first to share!</p>
-                    </div>
-                  ) : clips.map((c) => (
-                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-pink-500/5 border border-pink-500/12 hover:border-pink-500/30 transition-all">
-                      <div className="w-12 h-9 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0">
-                        <Play className="w-4 h-4 text-pink-400 fill-pink-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">{c.title}</p>
-                        <p className="text-[10px] text-white/30">@{c.profiles?.username ?? '—'} · {c.likes_count} ❤️ {c.views_count} 👁</p>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              ) : null}
-
-              {/* GUIDES */}
-              {tab === 'guides' ? (
-                <motion.div key="guides" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                  className="space-y-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <BookOpen className="w-4 h-4 text-green-400" />
-                    <h3 className="text-sm font-bold text-white">Guides & Tactics</h3>
-                    <span className="ml-auto text-[10px] text-white/30">{guides.length} guides</span>
-                  </div>
-                  {guides.length === 0 ? (
-                    <div className="text-center py-12">
-                      <BookOpen className="w-10 h-10 mx-auto text-white/10 mb-3" />
-                      <p className="text-white/30 text-sm">No guides yet for this game.</p>
-                    </div>
-                  ) : guides.map((g) => (
-                    <div key={g.id} className="p-3.5 rounded-xl bg-green-500/5 border border-green-500/12 hover:border-green-500/30 transition-all cursor-pointer">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/25 font-bold capitalize">{g.category}</span>
-                        <span className="text-[9px] text-white/25 ml-auto">❤️ {g.likes_count}</span>
-                      </div>
-                      <p className="text-sm font-semibold text-white leading-snug">{g.title}</p>
-                      <p className="text-[10px] text-white/35 mt-1">by @{g.profiles?.username ?? '—'}</p>
-                    </div>
-                  ))}
-                </motion.div>
-              ) : null}
-
-            </AnimatePresence>
-          )}
-        </div>
-
-        {/* ── Update / News full detail sub-drawer ──────────────────────── */}
-        <AnimatePresence>
-          {activeUpdate && (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
-              onClick={e => { if (e.target === e.currentTarget) setActiveUpdate(null); }}>
-              <motion.div
-                initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-                className="w-full bg-[#0d0d1e] border-t sm:border border-white/12 rounded-t-2xl sm:rounded-2xl sm:max-w-lg sm:mb-4 max-h-[85%] flex flex-col shadow-2xl overflow-hidden">
-                {/* sub-drawer drag handle */}
-                <div className="sm:hidden flex justify-center pt-2.5 flex-shrink-0">
-                  <div className="w-8 h-1 rounded-full bg-white/20" />
-                </div>
-                {/* sub-drawer header */}
-                <div className={'flex items-start gap-3 p-4 border-b border-white/8 flex-shrink-0 ' + UPDATE_STYLE[activeUpdate.type].bg}>
-                  <div className={'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ' + UPDATE_STYLE[activeUpdate.type].bg + ' border ' + UPDATE_STYLE[activeUpdate.type].border}>
-                    {activeUpdate.type === 'update'
-                      ? <Activity className={'w-4 h-4 ' + UPDATE_STYLE.update.accent} />
-                      : <Newspaper className={'w-4 h-4 ' + UPDATE_STYLE.news.accent} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                      <span className={'text-[9px] px-2 py-0.5 rounded-full font-bold border ' + UPDATE_STYLE[activeUpdate.type].tag}>{activeUpdate.tag}</span>
-                      <span className="text-[9px] text-white/25">{formatDistanceToNow(new Date(activeUpdate.created_at), { addSuffix: true })}</span>
-                    </div>
-                    <h3 className="font-orbitron font-black text-sm text-white leading-snug">{activeUpdate.title}</h3>
-                  </div>
-                  <button onClick={() => setActiveUpdate(null)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all flex-shrink-0">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                {/* sub-drawer body */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  <p className="text-sm text-white/65 leading-relaxed whitespace-pre-wrap">{activeUpdate.content}</p>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// ── Game skeleton ─────────────────────────────────────────────────────────
 function GameSkeleton(): React.ReactElement {
   return (
-    <div className="gaming-card p-5 flex flex-col gap-4">
+    <div className="gaming-card p-6 flex flex-col gap-4">
       <div className="flex items-start justify-between">
-        <div className="w-14 h-14 rounded-2xl bg-white/10 animate-pulse" />
-        <div className="w-16 h-5 rounded-full bg-white/10 animate-pulse" />
+        <div className="w-16 h-16 rounded-2xl bg-white/10 animate-pulse" />
+        <div className="w-20 h-6 rounded-full bg-white/10 animate-pulse" />
       </div>
-      <div className="h-4 bg-white/10 rounded w-3/4 animate-pulse" />
+      <div className="h-5 bg-white/10 rounded w-3/4 animate-pulse" />
       <div className="space-y-2 flex-1">
         <div className="h-3 bg-white/10 rounded w-full animate-pulse" />
         <div className="h-3 bg-white/10 rounded w-5/6 animate-pulse" />
+        <div className="h-3 bg-white/10 rounded w-4/6 animate-pulse" />
+      </div>
+      <div className="flex gap-4">
+        <div className="h-3 w-16 bg-white/10 rounded animate-pulse" />
+        <div className="h-3 w-16 bg-white/10 rounded animate-pulse" />
       </div>
       <div className="h-9 bg-white/10 rounded-xl animate-pulse" />
     </div>
   );
 }
 
-// ── Featured banner ───────────────────────────────────────────────────────
-function FeaturedBanner({ game, symbol, onClick }: { game: Game; symbol: string; onClick: () => void }): React.ReactElement {
-  const players = game.player_count >= 1000 ? (game.player_count / 1000).toFixed(1) + 'K' : String(game.player_count);
+function FeaturedBanner(p: { game: Game }): React.ReactElement {
+  const g = p.game;
+  const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-      className="max-w-7xl mx-auto mb-10 cursor-pointer group" onClick={onClick}>
-      <div className="gaming-card p-7 md:p-10 relative overflow-hidden hover:border-cyan-500/30 transition-all duration-300">
-        {game.logo_url ? (
-          <div className="absolute inset-0 overflow-hidden">
-            <img src={game.logo_url} alt="" className="w-full h-full object-cover opacity-15 scale-105 group-hover:scale-110 transition-transform duration-700" />
-            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/70 to-transparent" />
-          </div>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-cyan-500/10" />
-        )}
+      className="max-w-7xl mx-auto mb-12">
+      <div className="gaming-card p-8 md:p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-cyan-500/10" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           <div>
             <Badge className="mb-4 bg-gradient-to-r from-yellow-500 to-orange-500">
-              <Star className="w-3 h-3 mr-1 fill-current" />Featured Game
+              <Star className="w-3 h-3 mr-1" />Featured Game of the Month
             </Badge>
-            <h2 className="font-orbitron text-3xl md:text-4xl font-black mb-3 group-hover:text-cyan-400 transition-colors">{game.name}</h2>
-            <p className="text-muted-foreground mb-6 line-clamp-2">{game.description}</p>
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {[
-                { label: 'Players',    value: players,                   color: 'text-cyan-400' },
-                { label: 'Prize Pool', value: symbol + '0',              color: 'text-yellow-400' },
-                { label: 'Events',     value: game.tournament_count + '+', color: 'text-purple-400' },
-              ].map(s => (
-                <div key={s.label} className="text-center p-3 rounded-xl bg-white/5 border border-white/8">
-                  <div className={'font-orbitron text-xl font-black ' + s.color}>{s.value}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">{s.label}</div>
-                </div>
-              ))}
+            <h2 className="font-orbitron text-3xl md:text-4xl font-bold mb-4">{g.name}</h2>
+            <p className="text-muted-foreground text-lg mb-6">{g.description}</p>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="text-center p-4 rounded-xl bg-muted/50">
+                <div className="font-orbitron text-2xl font-bold gradient-text">{players}</div>
+                <div className="text-xs text-muted-foreground">Active Players</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-muted/50">
+                <div className="font-orbitron text-2xl font-bold gradient-text">&#x20A6;10M</div>
+                <div className="text-xs text-muted-foreground">Prize Pool</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-muted/50">
+                <div className="font-orbitron text-2xl font-bold gradient-text">{g.tournament_count}+</div>
+                <div className="text-xs text-muted-foreground">Tournaments</div>
+              </div>
             </div>
-            <Button className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white gap-2">
-              <Gamepad2 className="w-4 h-4" />View Details <ArrowRight className="w-4 h-4 ml-1" />
+            <Button asChild className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
+              <Link to="/tournaments">View Tournaments <ArrowRight className="ml-2 w-4 h-4" /></Link>
             </Button>
           </div>
-          <div className="relative hidden lg:block">
-            <div className="aspect-square max-w-xs mx-auto rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-yellow-500/20 via-purple-500/20 to-cyan-500/20 flex items-center justify-center">
-              {game.logo_url ? <img src={game.logo_url} alt={game.name} className="w-full h-full object-cover" /> : <span className="text-9xl">{game.icon}</span>}
+          <div className="relative">
+            <div className="aspect-square max-w-sm mx-auto rounded-3xl bg-gradient-to-br from-yellow-500/20 via-purple-500/20 to-cyan-500/20 flex items-center justify-center">
+              {g.image_url
+                ? <img src={g.image_url} alt={g.name} className="w-48 h-48 object-contain drop-shadow-2xl" />
+                : <span className="text-9xl">{g.icon}</span>}
             </div>
           </div>
         </div>
@@ -584,168 +106,135 @@ function FeaturedBanner({ game, symbol, onClick }: { game: Game; symbol: string;
   );
 }
 
-// ── Game card — fully clickable, deep-link to tab ─────────────────────────
-function GameCard({ game, index, onOpen }: {
-  game: Game;
-  index: number;
-  onOpen: (tab?: 'overview' | 'tournaments' | 'updates' | 'news') => void;
-}): React.ReactElement {
-  const badgeColor = game.badge ? (BADGE_COLORS[game.badge] ?? 'bg-purple-500') : '';
-  const players = game.player_count >= 1000 ? (game.player_count / 1000).toFixed(1) + 'K' : String(game.player_count);
-
+function GameCard(p: { game: Game; index: number }): React.ReactElement {
+  const g = p.game;
+  const badgeColor = g.badge ? (BADGE_COLORS[g.badge] ?? 'bg-purple-500') : '';
+  const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
-    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: index * 0.06 }}>
-      {/* Entire card is one clickable block */}
-      <div
-        className="gaming-card p-5 h-full flex flex-col cursor-pointer hover:border-cyan-500/30 hover:shadow-cyan-500/10 hover:shadow-lg transition-all duration-300 group select-none"
-        onClick={() => onOpen('overview')}
-        role="button" tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && onOpen('overview')}
-      >
-        {/* Logo + badge */}
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: p.index * 0.07 }}>
+      <div className="gaming-card p-6 h-full flex flex-col">
         <div className="flex items-start justify-between mb-4">
-          <GameLogo game={game} size="sm" className="group-hover:border-cyan-500/30 transition-colors" />
-          {game.badge ? (
-            <Badge className={badgeColor + ' text-white text-[10px] gap-1'}>
-              <Sparkles className="w-2.5 h-2.5" />{game.badge}
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+            {g.image_url
+              ? <img src={g.image_url} alt={g.name} className="w-full h-full object-cover" />
+              : g.icon}
+          </div>
+          {g.badge ? (
+            <Badge className={badgeColor + ' text-white text-xs'}>
+              <Sparkles className="w-3 h-3 mr-1" />{g.badge}
             </Badge>
           ) : null}
         </div>
-
-        {/* Name + category */}
-        <h3 className="font-orbitron text-base font-black mb-0.5 leading-snug group-hover:text-cyan-400 transition-colors">{game.name}</h3>
-        <span className="text-[10px] text-white/30 uppercase tracking-wider mb-2">{game.category}</span>
-        <p className="text-muted-foreground text-xs mb-4 flex-1 leading-relaxed line-clamp-3">{game.description}</p>
-
-        {/* Stats row */}
-        <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-cyan-400" />{players}</div>
-          <div className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-purple-400" />{game.tournament_count} events</div>
+        <h3 className="font-orbitron text-lg font-bold mb-2 leading-snug">{g.name}</h3>
+        <p className="text-muted-foreground text-sm mb-4 flex-1 leading-relaxed line-clamp-3">{g.description}</p>
+        <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-cyan-400" /><span>{players}</span></div>
+          <div className="flex items-center gap-1.5"><Trophy className="w-4 h-4 text-purple-400" /><span>{g.tournament_count} events</span></div>
         </div>
-
-        {/* Quick-action buttons — stop propagation to open specific tab */}
-        <div className="grid grid-cols-3 gap-1.5">
-          {[
-            { tab: 'tournaments' as const, label: 'Events',  icon: Trophy,    cls: 'border-purple-500/25 hover:bg-purple-500/10 text-purple-300' },
-            { tab: 'updates'     as const, label: 'Updates', icon: Activity,  cls: 'border-cyan-500/25 hover:bg-cyan-500/10 text-cyan-300' },
-            { tab: 'news'        as const, label: 'News',    icon: Newspaper, cls: 'border-pink-500/25 hover:bg-pink-500/10 text-pink-300' },
-          ].map(btn => (
-            <button
-              key={btn.tab}
-              className={'flex items-center justify-center gap-1 h-8 rounded-lg border bg-white/4 text-[10px] font-bold transition-all active:scale-95 ' + btn.cls}
-              onClick={(e) => { e.stopPropagation(); onOpen(btn.tab); }}
-              title={'View ' + btn.label}
-            >
-              <btn.icon className="w-3 h-3" />{btn.label}
-            </button>
-          ))}
-        </div>
+        <Button asChild variant="outline" className="w-full border-purple-500/40 hover:bg-purple-500/10 text-sm">
+          <Link to="/tournaments">
+            <Gamepad2 className="mr-2 w-4 h-4" />View Tournaments
+          </Link>
+        </Button>
       </div>
     </motion.div>
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────
-function EmptyGames({ isFiltered, onClear }: { isFiltered: boolean; onClear: () => void }): React.ReactElement {
+function EmptyGames(p: { isFiltered: boolean; onClear: () => void }): React.ReactElement {
   return (
     <div className="text-center py-20 col-span-3">
       <Gamepad2 className="w-16 h-16 mx-auto text-white/20 mb-4" />
       <h3 className="font-orbitron text-xl font-bold text-white mb-2">No games found</h3>
       <p className="text-white/40 text-sm mb-6">
-        {isFiltered ? 'Try a different category or search term.' : 'No games have been added yet.'}
+        {p.isFiltered ? 'Try a different category or search term.' : 'No games have been added yet.'}
       </p>
-      {isFiltered ? <Button onClick={onClear} variant="outline" className="border-white/20 text-white hover:bg-white/10">Clear Filters</Button> : null}
+      {p.isFiltered ? (
+        <Button onClick={p.onClear} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+          Clear Filters
+        </Button>
+      ) : null}
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────
 export function Games(): React.ReactElement {
-  const { symbol } = useCurrency();
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
-  const [selected, setSelected] = useState<Game | null>(null);
-  const [openTab, setOpenTab] = useState<'overview' | 'tournaments' | 'updates' | 'news'>('overview');
 
   const load = useCallback(async () => {
-    setLoading(true); setFetchError('');
-    const { data, error } = await supabase.from('games').select('*')
+    setLoading(true);
+    setFetchError('');
+    const { data, error } = await supabase
+      .from('games')
+      .select('*')
       .order('featured', { ascending: false })
       .order('player_count', { ascending: false });
-    if (error) setFetchError(error.message);
-    else setAllGames((data as Game[]) ?? []);
+    if (error) {
+      console.error('[Games] fetch error:', error.message);
+      setFetchError(error.message);
+    } else {
+      setAllGames((data as Game[]) ?? []);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelected(null); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, []);
 
-  const open = (game: Game, tab: 'overview' | 'tournaments' | 'updates' | 'news' = 'overview') => {
-    setSelected(game);
-    setOpenTab(tab);
-  };
-
-  const featured = allGames.find(g => g.featured);
+  const featured = allGames.find((g) => g.featured);
   const isFiltered = search.trim() !== '' || category !== 'all';
 
-  const filtered = allGames.filter(g => {
+  const filtered = allGames.filter((g) => {
     if (g.featured && !isFiltered) return false;
     const q = search.toLowerCase();
-    return (g.name.toLowerCase().includes(q) || g.description.toLowerCase().includes(q))
-      && (category === 'all' || g.category === category);
+    const matchSearch = g.name.toLowerCase().includes(q) || g.description.toLowerCase().includes(q);
+    const matchCat = category === 'all' || g.category === category;
+    return matchSearch && matchCat;
   });
 
   return (
-    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
-      {/* Header */}
+    <div className="min-h-screen pt-24 px-4 sm:px-6 pb-16">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto text-center mb-10">
-        <h1 className="font-orbitron text-4xl md:text-5xl font-black mb-4">
+        <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-4">
           Trending <span className="gradient-text">Mobile Games</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Click any card to explore details — or jump straight to Updates, Events, or News
+          Stay updated on the hottest mobile games, tips, and tournaments
         </p>
       </motion.div>
 
-      {/* Search + filter bar */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="max-w-4xl mx-auto mb-10">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="max-w-4xl mx-auto mb-10">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <Input placeholder="Search games, categories…" value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-11 h-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl" />
-            {search ? (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            ) : null}
+            <Input
+              placeholder="Search games..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-11 h-11 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl"
+            />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
-            {CATEGORIES.map(c => (
-              <Button key={c.value} size="sm" onClick={() => setCategory(c.value)}
-                className={'rounded-full flex-shrink-0 text-xs h-9 px-4 ' + (category === c.value
-                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0'
-                  : 'bg-white/5 border border-white/10 text-white/55 hover:bg-white/10 hover:text-white')}>
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+            {CATEGORIES.map((c) => (
+              <Button
+                key={c.value}
+                size="sm"
+                onClick={() => setCategory(c.value)}
+                className={
+                  'rounded-full flex-shrink-0 text-xs h-9 ' +
+                  (category === c.value
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0'
+                    : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white')
+                }
+              >
                 {c.label}
               </Button>
             ))}
           </div>
         </div>
-
-        {/* Result count */}
-        {!loading && allGames.length > 0 && (
-          <p className="text-[11px] text-white/25 mt-2 pl-1">
-            {isFiltered ? `${filtered.length} of ${allGames.length} games` : `${allGames.length} games`} · click a card to open, or use the tab buttons
-          </p>
-        )}
       </motion.div>
 
       {fetchError ? (
@@ -759,35 +248,31 @@ export function Games(): React.ReactElement {
         </div>
       ) : loading ? (
         <>
-          <div className="max-w-7xl mx-auto mb-10">
-            <div className="gaming-card p-8 h-52 animate-pulse bg-white/5" />
+          <div className="max-w-7xl mx-auto mb-12">
+            <div className="gaming-card p-8 h-64 animate-pulse bg-white/5" />
           </div>
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1,2,3,4,5,6].map(i => <GameSkeleton key={i} />)}
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => <GameSkeleton key={i} />)}
           </div>
         </>
       ) : (
         <>
-          {featured && !isFiltered ? (
-            <FeaturedBanner game={featured} symbol={symbol} onClick={() => open(featured)} />
-          ) : null}
+          {featured && !isFiltered ? <FeaturedBanner game={featured} /> : null}
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.length > 0
-                ? filtered.map((g, i) => <GameCard key={g.id} game={g} index={i} onOpen={(tab) => open(g, tab)} />)
+                ? filtered.map((g, i) => <GameCard key={g.id} game={g} index={i} />)
                 : <EmptyGames isFiltered={isFiltered} onClear={() => { setSearch(''); setCategory('all'); }} />
               }
             </div>
+            {!loading && allGames.length > 0 ? (
+              <p className="text-center text-white/30 text-xs mt-8">
+                {filtered.length} game{filtered.length !== 1 ? 's' : ''} shown
+              </p>
+            ) : null}
           </div>
         </>
       )}
-
-      <AnimatePresence>
-        {selected ? (
-          <GameDetailPanel key={selected.id} game={selected} symbol={symbol}
-            initialTab={openTab} onClose={() => setSelected(null)} />
-        ) : null}
-      </AnimatePresence>
     </div>
   );
 }

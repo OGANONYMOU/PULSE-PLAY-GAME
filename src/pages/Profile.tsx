@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Swords, Star, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
@@ -11,9 +10,18 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 
-type TabId = 'posts' | 'tournaments' | 'achievements' | 'clips' | 'rivals';
+type TabId = 'posts' | 'tournaments' | 'achievements';
 type PostItem = { id: string; title: string; content: string; tag: string; likes: number; comments: number; created_at: string };
 type EditForm = { first_name: string; last_name: string; bio: string; discord_username: string; twitter_username: string };
+type TournamentItem = {
+  id: string;
+  status: string;
+  registered_at: string;
+  tournaments: {
+    id: string; name: string; prize_pool: string; status: string; date: string;
+    games: { name: string; icon: string } | null;
+  } | null;
+};
 
 function roleGradient(role: string): string {
   if (role === 'ADMIN') return 'from-red-500 to-pink-500';
@@ -167,84 +175,87 @@ function TabPosts(p: { active: boolean; posts: PostItem[]; isOwn: boolean }): Re
     )
   ) : <span />;
 }
-function TabTournaments(p: { active: boolean }): React.ReactElement {
-  return p.active ? (
-    <div className="text-center py-14"><Trophy className="w-12 h-12 mx-auto text-white/20 mb-3" /><p className="text-white/40 text-sm">No tournament history yet.</p></div>
-  ) : <span />;
+function TabTournaments(p: { active: boolean; userId: string }): React.ReactElement {
+  const [entries, setEntries] = React.useState<TournamentItem[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!p.active || !p.userId) return;
+    setLoading(true);
+    supabase
+      .from('tournament_participants')
+      .select('id, status, registered_at, tournaments(id, name, prize_pool, status, date, games(name, icon))')
+      .eq('user_id', p.userId)
+      .neq('status', 'withdrawn')
+      .order('registered_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        setEntries((data as unknown as TournamentItem[]) ?? []);
+        setLoading(false);
+      });
+  }, [p.active, p.userId]);
+
+  if (!p.active) return <span />;
+  if (loading) return (
+    <div className="space-y-3">
+      {[1,2,3].map(i => <div key={i} className="h-14 bg-white/5 rounded-xl animate-pulse" />)}
+    </div>
+  );
+  if (entries.length === 0) return (
+    <div className="text-center py-14">
+      <Trophy className="w-12 h-12 mx-auto text-white/20 mb-3" />
+      <p className="text-white/40 text-sm">No tournament history yet.</p>
+    </div>
+  );
+  return (
+    <div className="space-y-2">
+      {entries.map(e => {
+        const t = e.tournaments;
+        if (!t) return null;
+        const statusCls = e.status === 'winner' ? 'text-yellow-400' : e.status === 'eliminated' ? 'text-red-400' : e.status === 'checked_in' ? 'text-green-400' : 'text-cyan-400';
+        return (
+          <div key={e.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8">
+            <span className="text-xl flex-shrink-0">{t.games?.icon ?? '🎮'}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-white truncate">{t.name}</div>
+              <div className="text-xs text-white/35 flex items-center gap-2">
+                <span>{t.games?.name}</span>
+                <span>·</span>
+                <span>{t.prize_pool}</span>
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className={`text-xs font-bold capitalize ${statusCls}`}>{e.status.replace('_', ' ')}</div>
+              <div className="text-[10px] text-white/30">{format(new Date(t.date), 'MMM d, yyyy')}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
-function TabAchievements(p: { active: boolean }): React.ReactElement {
+function TabAchievements(p: { active: boolean; joinedAt: string | null; postCount: number; tournamentCount: number; wonCount: number }): React.ReactElement {
+  if (!p.active) return <span />;
   const items = [
-    { icon: Star, label: 'First Blood', desc: 'Joined PulsePlay', color: 'text-yellow-400', unlocked: true },
-    { icon: Trophy, label: 'Champion', desc: 'Win a tournament', color: 'text-purple-400', unlocked: false },
-    { icon: Flame, label: 'On Fire', desc: 'Post 10 times', color: 'text-orange-400', unlocked: false },
-    { icon: Zap, label: 'Speed Runner', desc: 'Top 10 registrant', color: 'text-cyan-400', unlocked: false },
+    { icon: Star,   label: 'First Blood',    desc: 'Joined PulsePay',       color: 'from-yellow-500 to-orange-500', unlocked: true },
+    { icon: MessageSquare, label: 'Conversationalist', desc: 'Posted 1+ time', color: 'from-blue-500 to-cyan-500',   unlocked: p.postCount >= 1 },
+    { icon: Flame,  label: 'On Fire',        desc: 'Posted 10+ times',       color: 'from-orange-500 to-red-500',   unlocked: p.postCount >= 10 },
+    { icon: Trophy, label: 'Contender',      desc: 'Joined a tournament',    color: 'from-purple-500 to-pink-500',  unlocked: p.tournamentCount >= 1 },
+    { icon: Zap,    label: 'Veteran',        desc: 'Joined 5+ tournaments',  color: 'from-cyan-500 to-blue-500',    unlocked: p.tournamentCount >= 5 },
+    { icon: Star,   label: 'Champion',       desc: 'Won a tournament',       color: 'from-yellow-400 to-yellow-600', unlocked: p.wonCount >= 1 },
   ];
-  return p.active ? (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {items.map((a) => (
-        <div key={a.label} className={'p-4 rounded-xl border text-center transition-all ' + (a.unlocked ? 'bg-white/5 border-white/20' : 'bg-white/2 border-white/5 opacity-40')}>
-          <a.icon className={'w-8 h-8 mx-auto mb-2 ' + (a.unlocked ? a.color : 'text-white/20')} />
-          <div className="font-orbitron text-xs font-bold text-white mb-1">{a.label}</div>
-          <div className="text-xs text-white/40">{a.desc}</div>
+        <div key={a.label} className={'p-4 rounded-xl border text-center transition-all ' + (a.unlocked ? 'bg-white/5 border-white/15' : 'bg-white/2 border-white/5 opacity-35')}>
+          <div className={'w-10 h-10 rounded-xl bg-gradient-to-br ' + (a.unlocked ? a.color : 'from-white/10 to-white/5') + ' flex items-center justify-center mx-auto mb-2.5'}>
+            <a.icon className={`w-5 h-5 ${a.unlocked ? 'text-white' : 'text-white/20'}`} />
+          </div>
+          <div className="font-orbitron text-xs font-bold text-white mb-0.5">{a.label}</div>
+          <div className="text-[10px] text-white/40">{a.desc}</div>
+          {a.unlocked && <div className="text-[9px] text-green-400 font-bold mt-1">UNLOCKED</div>}
         </div>
       ))}
-    </div>
-  ) : <span />;
-}
-
-// ── Loyalty bar for users/moderators ─────────────────────────────────────────
-interface PLvl { name: string; emoji: string; min: number; max: number; from: string; to: string; color: string }
-const P_LEVELS: PLvl[] = [
-  { name: 'Newcomer',   emoji: '🌱', min: 0,   max: 99,  from: '#6b7280', to: '#9ca3af', color: 'text-gray-400'   },
-  { name: 'Regular',    emoji: '⚡', min: 100,  max: 299, from: '#06b6d4', to: '#3b82f6', color: 'text-cyan-400'   },
-  { name: 'Competitor', emoji: '🎯', min: 300,  max: 699, from: '#8b5cf6', to: '#ec4899', color: 'text-purple-400' },
-  { name: 'Pro',        emoji: '🏆', min: 700,  max: 1499, from: '#eab308', to: '#f97316', color: 'text-yellow-400' },
-  { name: 'Legend',     emoji: '👑', min: 1500, max: Infinity, from: '#ec4899', to: '#a855f7', color: 'text-pink-400' },
-];
-
-function ProfileLoyaltyBar(p: { posts: number; likes: number; role: string }): React.ReactElement {
-  const xp = 50 + p.posts * 15 + p.likes * 5;
-  const lvl = P_LEVELS.find(l => xp >= l.min && xp <= l.max) ?? P_LEVELS[0];
-  const nextLvl = P_LEVELS[P_LEVELS.indexOf(lvl) + 1];
-  const pct = lvl.max === Infinity ? 100 : Math.min(100, Math.round(((xp - lvl.min) / (lvl.max - lvl.min)) * 100));
-  const isMod = p.role === 'MODERATOR';
-
-  return (
-    <div className="mb-4 p-4 rounded-2xl bg-white/5 border border-white/10">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{lvl.emoji}</span>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className={'font-orbitron font-black text-sm ' + lvl.color}>{lvl.name}</span>
-              {isMod ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-bold">MOD</span> : null}
-            </div>
-            <p className="text-[11px] text-white/35 font-mono">{xp.toLocaleString()} XP</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-white/40">
-            {nextLvl ? `${(nextLvl.min - xp).toLocaleString()} XP to ${nextLvl.emoji} ${nextLvl.name}` : 'Max level reached!'}
-          </p>
-          <p className="text-[10px] text-white/25">{pct}% complete</p>
-        </div>
-      </div>
-      <div className="h-3 rounded-full bg-white/8 overflow-hidden border border-white/8 relative">
-        <motion.div
-          initial={{ width: 0 }} animate={{ width: pct + '%' }}
-          transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-          className="h-full rounded-full relative overflow-hidden"
-          style={{ background: `linear-gradient(90deg, ${lvl.from}, ${lvl.to})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full animate-[shimmerP_2s_ease-in-out_infinite]" />
-        </motion.div>
-      </div>
-      <div className="flex items-center gap-4 mt-2.5 text-[10px] text-white/30">
-        <span>📝 {p.posts} posts × 15 XP</span>
-        <span>🔥 {p.likes} likes × 5 XP</span>
-        <span>🎁 +50 joining bonus</span>
-      </div>
-      <style>{`@keyframes shimmerP { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }`}</style>
     </div>
   );
 }
@@ -253,13 +264,8 @@ export function Profile(): React.ReactElement {
   const { username } = useParams<{ username?: string }>();
   const { user, profile: ownProfile, updateProfile, isLoading: authLoading } = useAuth();
   const [profile, setProfile] = useState<ProfileType | null>(null);
-  const [posts, setPosts] = useState<PostItem[]>([]);
-  const [profileClips, setProfileClips] = useState<Array<{ id: string; title: string; likes_count: number; views_count: number; created_at: string }>>([]);
-  const [followers, setFollowers] = useState<number>(0);
-  const [following, setFollowing] = useState<number>(0);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [gamerCred, setGamerCred] = useState<{ score: number; wins: number; losses: number; verified_badge: boolean } | null>(null);
-  const [pulsePoints, setPulsePoints] = useState<number>(0);
+  const [posts, setPosts]           = useState<PostItem[]>([]);
+  const [tourneyEntries, setTourneyEntries] = useState<TournamentItem[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [notFound, setNotFound] = useState(false);
@@ -298,28 +304,14 @@ export function Profile(): React.ReactElement {
         setEditForm({ first_name: found.first_name ?? '', last_name: found.last_name ?? '', bio: found.bio ?? '', discord_username: found.discord_username ?? '', twitter_username: found.twitter_username ?? '' });
         const { data: postsData } = await supabase.from('posts').select('*').eq('author_id', found.id).order('created_at', { ascending: false }).limit(20);
         setPosts((postsData as PostItem[]) ?? []);
-        // Load GamerCred + PulsePoints (graceful – tables may not exist yet)
-        const [credRes, ppRes] = await Promise.all([
-          supabase.from('gamercred_scores').select('score,wins,losses,verified_badge').eq('user_id', found.id).maybeSingle(),
-          supabase.from('pulsepoints_balances').select('balance').eq('user_id', found.id).maybeSingle(),
-        ]);
-        if (!credRes.error && credRes.data) setGamerCred(credRes.data as typeof gamerCred);
-        if (!ppRes.error && ppRes.data) setPulsePoints((ppRes.data as { balance: number }).balance);
-        // Load clips
-        const clipsRes = await supabase.from('clips').select('id, title, likes_count, views_count, created_at').eq('user_id', found.id).eq('is_published', true).order('created_at', { ascending: false }).limit(6);
-        if (!clipsRes.error) setProfileClips((clipsRes.data as typeof profileClips) ?? []);
-        // Load follower counts
-        const [fwrs, fwng] = await Promise.all([
-          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', found.id),
-          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', found.id),
-        ]);
-        setFollowers(fwrs.count ?? 0);
-        setFollowing(fwng.count ?? 0);
-        // Check if current user follows this profile
-        if (user && found.id !== user.id) {
-          const { data: fCheck } = await supabase.from('follows').select('id').eq('follower_id', user.id).eq('following_id', found.id).maybeSingle();
-          setIsFollowing(!!fCheck);
-        }
+        const { data: tData } = await supabase
+          .from('tournament_participants')
+          .select('id, status, registered_at, tournaments(id, name, prize_pool, status, date, games(name, icon))')
+          .eq('user_id', found.id)
+          .neq('status', 'withdrawn')
+          .order('registered_at', { ascending: false })
+          .limit(30);
+        setTourneyEntries((tData as unknown as TournamentItem[]) ?? []);
       } else { setNotFound(true); }
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : 'Failed to load profile');
@@ -424,8 +416,7 @@ export function Profile(): React.ReactElement {
           <BannerBg url={profile.banner_url} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <BannerUploadBtn show={isOwnProfile} uploading={isUploadingBanner} onClick={() => bannerRef.current?.click()} />
-          {/* accept="image/*" without capture lets user choose gallery OR camera on mobile */}
-          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'banner', 'banner_url', setIsUploadingBanner); e.target.value = ''; }} />
+          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'banner', 'banner_url', setIsUploadingBanner); }} />
         </div>
 
         <div className="relative -mt-16 mx-2 sm:mx-0 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl p-5 sm:p-6 mb-4">
@@ -435,8 +426,7 @@ export function Profile(): React.ReactElement {
                 {isUploadingAvatar ? <div className="w-full h-full bg-white/10 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-cyan-400" /></div> : <AvatarDisplay url={profile.avatar_url} username={profile.username} />}
               </div>
               <AvatarUploadBtn show={isOwnProfile} uploading={isUploadingAvatar} onClick={() => avatarRef.current?.click()} />
-              {/* Reset value so same file can be re-selected; no capture = shows gallery + camera option sheet */}
-              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'avatar', 'avatar_url', setIsUploadingAvatar); e.target.value = ''; }} />
+              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, 'avatar', 'avatar_url', setIsUploadingAvatar); }} />
             </div>
             <div className="flex-1 min-w-0 pt-1 sm:pt-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -454,31 +444,12 @@ export function Profile(): React.ReactElement {
               <BioText show={!isEditing} bio={profile.bio} isOwn={isOwnProfile} />
               <SocialRow show={!isEditing} twitter={profile.twitter_username} discord={profile.discord_username} />
             </div>
-            {!isOwnProfile && (
-              <button
-                onClick={async () => {
-                  if (!user) return;
-                  if (isFollowing) {
-                    await (supabase as any).from('follows').delete().eq('follower_id', user.id).eq('following_id', profile.id);
-                    setIsFollowing(false); setFollowers(f => Math.max(0, f - 1));
-                  } else {
-                    await (supabase as any).from('follows').insert({ follower_id: user.id, following_id: profile.id });
-                    setIsFollowing(true); setFollowers(f => f + 1);
-                  }
-                }}
-                className={'px-4 py-2 rounded-xl text-sm font-bold transition-all border ' +
-                  (isFollowing
-                    ? 'bg-white/8 border-white/15 text-white/60 hover:border-red-500/30 hover:text-red-400'
-                    : 'bg-gradient-to-r from-cyan-500 to-purple-600 border-transparent text-white hover:opacity-90')}>
-                {isFollowing ? '✓ Following' : '+ Follow'}
-              </button>
-            )}
             <EditBtn show={isOwnProfile && !isEditing} onClick={() => setIsEditing(true)} />
           </div>
           <EditPanel show={isEditing} form={editForm} saving={isSaving} onChange={setEditForm} onSave={handleSave} onCancel={() => setIsEditing(false)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {[
             { icon: MessageSquare, label: 'Posts', value: posts.length, color: 'text-cyan-400' },
             { icon: Flame, label: 'Likes', value: totalLikes, color: 'text-orange-400' },
@@ -491,54 +462,6 @@ export function Profile(): React.ReactElement {
               <div className="text-xs text-white/40 mt-0.5">{s.label}</div>
             </div>
           ))}
-        </div>
-
-        {/* Loyalty bar — visible for USER and MODERATOR only, hidden for ADMIN */}
-        {profile.role !== 'ADMIN' ? (
-          <ProfileLoyaltyBar posts={posts.length} likes={totalLikes} role={profile.role} />
-        ) : null}
-
-        {/* Follower stats */}
-        <div className="flex items-center gap-2 sm:gap-4 mb-3 px-1 overflow-x-auto">
-          <div className="text-center">
-            <p className="font-orbitron font-black text-lg text-white">{followers}</p>
-            <p className="text-[10px] text-white/35">Followers</p>
-          </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div className="text-center">
-            <p className="font-orbitron font-black text-lg text-white">{following}</p>
-            <p className="text-[10px] text-white/35">Following</p>
-          </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div className="text-center">
-            <p className="font-orbitron font-black text-lg text-white">{(profile as any).matches_won ?? 0}</p>
-            <p className="text-[10px] text-white/35">Wins</p>
-          </div>
-          <div className="w-px h-8 bg-white/10" />
-          <div className="text-center">
-            <p className="font-orbitron font-black text-lg text-white">{(profile as any).matches_played > 0 ? Math.round(((profile as any).matches_won ?? 0) / (profile as any).matches_played * 100) + '%' : '—'}</p>
-            <p className="text-[10px] text-white/35">Win Rate</p>
-          </div>
-        </div>
-        {/* GamerCred + PulsePoints stat cards */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="p-3.5 rounded-2xl bg-cyan-500/8 border border-cyan-500/18">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">GamerCred</span>
-              {gamerCred?.verified_badge && <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">✓ Verified</span>}
-            </div>
-            <p className="font-orbitron font-black text-2xl text-cyan-400">{gamerCred?.score?.toLocaleString() ?? '1,000'}</p>
-            {gamerCred && <p className="text-[10px] text-white/30 mt-0.5">{gamerCred.wins}W / {gamerCred.losses}L</p>}
-          </div>
-          <div className="p-3.5 rounded-2xl bg-purple-500/8 border border-purple-500/18">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">PulsePoints</span>
-            </div>
-            <p className="font-orbitron font-black text-2xl text-purple-400">{pulsePoints.toLocaleString()}</p>
-            <p className="text-[10px] text-white/30 mt-0.5">Earn by playing & posting</p>
-          </div>
         </div>
 
         <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
@@ -557,33 +480,14 @@ export function Profile(): React.ReactElement {
               ) : null}
             </div>
             <TabPosts active={activeTab === 'posts'} posts={posts} isOwn={isOwnProfile} />
-            <TabTournaments active={activeTab === 'tournaments'} />
-            <TabAchievements active={activeTab === 'achievements'} />
-            {/* Clips tab */}
-            {activeTab === 'clips' && (
-              profileClips.length === 0 ? (
-                <div className="text-center py-14"><Zap className="w-12 h-12 mx-auto text-white/20 mb-3" /><p className="text-white/40 text-sm">No clips yet.</p></div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {profileClips.map(c => (
-                    <div key={c.id} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-pink-500/30 transition-all">
-                      <p className="text-xs font-semibold text-white truncate mb-1">{c.title}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-white/35">
-                        <span>❤️ {c.likes_count}</span><span>👁 {c.views_count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-            {/* Rivals tab */}
-            {activeTab === 'rivals' && (
-              <div className="text-center py-14">
-                <Swords className="w-12 h-12 mx-auto text-white/20 mb-3" />
-                <p className="text-white/40 text-sm">No recorded rivalries yet.</p>
-                <p className="text-white/25 text-xs mt-1">Play against the same opponent repeatedly to create a rivalry.</p>
-              </div>
-            )}
+            <TabTournaments active={activeTab === 'tournaments'} userId={profile?.id ?? ''} />
+            <TabAchievements
+                  active={activeTab === 'achievements'}
+                  joinedAt={profile?.created_at ?? null}
+                  postCount={posts.length}
+                  tournamentCount={tourneyEntries.length}
+                  wonCount={tourneyEntries.filter(e => e.status === 'winner').length}
+                />
           </div>
         </div>
       </div>

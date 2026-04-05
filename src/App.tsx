@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ParticleBackground } from '@/components/ui-custom/ParticleBackground';
@@ -12,69 +11,41 @@ import { AppLoader } from '@/components/AppLoader';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-// ── Lazy pages ───────────────────────────────────────────────────────────────
-const Home          = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
-const Games         = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
-const Tournaments   = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
-const Community     = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
-const About         = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
-const SignIn        = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
-const Register      = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
-const AuthCallback  = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
-const Profile       = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
-const NotFound       = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
-const Clubs          = lazy(() => import('@/pages/Clubs').then(m => ({ default: m.Clubs })));
-const Leaderboards   = lazy(() => import('@/pages/Leaderboards').then(m => ({ default: m.Leaderboards })));
+// ── Lazy pages ────────────────────────────────────────────────────────────────
+const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
+const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
+const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
+const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
+const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
+const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
+const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
+const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
+const Profile      = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
+const NotFound     = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
 
-// Admin chunk — separate bundle
-const AdminLayout       = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
-const AdminDashboard    = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const AdminUsers        = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
-const AdminGames        = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
-const AdminAnalytics    = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
-const AdminTournaments  = lazy(() => import('@/pages/admin/AdminTournaments').then(m => ({ default: m.AdminTournaments })));
-const AdminPosts        = lazy(() => import('@/pages/admin/AdminPosts').then(m => ({ default: m.AdminPosts })));
+// ── Admin chunk ───────────────────────────────────────────────────────────────
+const AdminLayout        = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboard     = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminUsers         = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
+const AdminGames         = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
+const AdminTournaments   = lazy(() => import('@/pages/admin/AdminTournaments').then(m => ({ default: m.AdminTournaments })));
+const AdminPosts         = lazy(() => import('@/pages/admin/AdminPosts').then(m => ({ default: m.AdminPosts })));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements').then(m => ({ default: m.AdminAnnouncements })));
-const AdminUpdates      = lazy(() => import('@/pages/admin/AdminUpdates').then(m => ({ default: m.AdminUpdates })));
-const AdminSettings     = lazy(() => import('@/pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
-const AdminMatches      = lazy(() => import('@/pages/admin/AdminMatches').then(m => ({ default: m.AdminMatches })));
-const AdminDisputes     = lazy(() => import('@/pages/admin/AdminDisputes').then(m => ({ default: m.AdminDisputes })));
-const AdminAuditLog     = lazy(() => import('@/pages/admin/AdminAuditLog').then(m => ({ default: m.AdminAuditLog })));
-const AdminClubs        = lazy(() => import('@/pages/admin/AdminClubs').then(m => ({ default: m.AdminClubs })));
-const AdminModeration   = lazy(() => import('@/pages/admin/AdminModeration').then(m => ({ default: m.AdminModeration })));
-const RivalryPage            = lazy(() => import('@/pages/Rivalry').then(m => ({ default: m.RivalryPage })));
-const TournamentDetail       = lazy(() => import('@/pages/TournamentDetail').then(m => ({ default: m.TournamentDetail })));
-const TournamentCreate       = lazy(() => import('@/pages/TournamentCreate').then(m => ({ default: m.TournamentCreate })));
-const AdminTournamentControl = lazy(() => import('@/pages/admin/AdminTournamentControl').then(m => ({ default: m.AdminTournamentControl })));
+const AdminAnalytics     = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
+const AdminSettings      = lazy(() => import('@/pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
+const AdminAuditLog      = lazy(() => import('@/pages/admin/AdminAuditLog').then(m => ({ default: m.AdminAuditLog })));
+const AdminLoyalty       = lazy(() => import('@/pages/admin/AdminLoyalty').then(m => ({ default: m.AdminLoyalty })));
 
-// ── Route prefetching on nav hover ───────────────────────────────────────────
-const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
-  '/':            () => import('@/pages/Home'),
-  '/games':       () => import('@/pages/Games'),
-  '/tournaments': () => import('@/pages/Tournaments'),
-  '/community':   () => import('@/pages/Community'),
-  '/about':       () => import('@/pages/About'),
-  '/clubs':        () => import('@/pages/Clubs'),
-  '/leaderboards': () => import('@/pages/Leaderboards'),
-  '/signin':      () => import('@/pages/SignIn'),
-  '/register':    () => import('@/pages/Register'),
-  '/profile':     () => import('@/pages/Profile'),
-};
-export function prefetchRoute(path: string): void {
-  const fn = PREFETCH_MAP[path];
-  if (fn) fn();
-}
-
-// ── Page skeleton ────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 function PageSkeleton(): React.ReactElement {
   return (
     <div className="min-h-screen pt-24 px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="h-10 w-56 rounded-2xl bg-white/5 animate-pulse mb-3" />
-        <div className="h-5 w-80 rounded-xl bg-white/5 animate-pulse mb-10" />
+        <div className="h-8 w-48 rounded-2xl bg-white/5 animate-pulse mb-3" />
+        <div className="h-4 w-72 rounded-xl bg-white/5 animate-pulse mb-10" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[0, 1, 2].map(i => (
-            <div key={i} className="h-52 rounded-2xl bg-white/5 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+            <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
           ))}
         </div>
       </div>
@@ -82,18 +53,18 @@ function PageSkeleton(): React.ReactElement {
   );
 }
 
-// ── Page transition ──────────────────────────────────────────────────────────
+// ── Page transition ───────────────────────────────────────────────────────────
 function PageTransition({ children }: { children: React.ReactNode }): React.ReactElement {
   const { pathname } = useLocation();
   return (
     <AnimatePresence mode="sync" initial={false}>
       <motion.div
         key={pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.12, ease: 'linear' }}
-        style={{ willChange: 'opacity' }}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.14, ease: 'easeOut' }}
+        style={{ willChange: 'opacity, transform' }}
       >
         {children}
       </motion.div>
@@ -101,20 +72,21 @@ function PageTransition({ children }: { children: React.ReactNode }): React.Reac
   );
 }
 
-// ── Prefetch critical pages after first load ─────────────────────────────────
+// ── Background prefetch ───────────────────────────────────────────────────────
 function PrefetchCritical(): null {
   useEffect(() => {
     const t = setTimeout(() => {
       import('@/pages/Home');
       import('@/pages/Games');
       import('@/pages/Tournaments');
-    }, 800);
+      import('@/pages/Community');
+    }, 200);
     return () => clearTimeout(t);
   }, []);
   return null;
 }
 
-// ── App shell ────────────────────────────────────────────────────────────────
+// ── App shell ─────────────────────────────────────────────────────────────────
 function AppContent(): React.ReactElement {
   const { isLoading } = useAuth();
   const location = useLocation();
@@ -122,13 +94,14 @@ function AppContent(): React.ReactElement {
   if (isLoading) return <AppLoader />;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div className="relative min-h-screen">
       <ParticleBackground />
-      {!location.pathname.startsWith("/admin") && <Navbar />}
-      <main className="relative z-10 responsive-container">
+      <Navbar />
+      <main className="relative z-10">
         <PageTransition>
           <Suspense fallback={<PageSkeleton />}>
-            <Routes location={location} key={location.pathname}>
+            <Routes location={location}>
+              {/* Public */}
               <Route path="/"                  element={<Home />} />
               <Route path="/games"             element={<Games />} />
               <Route path="/tournaments"       element={<Tournaments />} />
@@ -139,29 +112,19 @@ function AppContent(): React.ReactElement {
               <Route path="/auth/callback"     element={<AuthCallback />} />
               <Route path="/profile"           element={<Profile />} />
               <Route path="/profile/:username" element={<Profile />} />
-              <Route path="/clubs"             element={<Clubs />} />
-              <Route path="/leaderboards"      element={<Leaderboards />} />
-              <Route path="/rivalry/:playerA/:playerB"  element={<RivalryPage />} />
-              <Route path="/tournaments/create"            element={<TournamentCreate />} />
-              <Route path="/tournaments/:id"               element={<TournamentDetail />} />
 
-              {/* Admin — all 8 sub-routes now wired */}
+              {/* Admin — nested layout */}
               <Route path="/admin" element={<AdminLayout />}>
-                <Route index                    element={<AdminDashboard />} />
-                <Route path="analytics"         element={<AdminAnalytics />} />
-                <Route path="users"             element={<AdminUsers />} />
-                <Route path="tournaments"       element={<AdminTournaments />} />
-                <Route path="games"             element={<AdminGames />} />
-                <Route path="posts"             element={<AdminPosts />} />
-                <Route path="announcements"     element={<AdminAnnouncements />} />
-                <Route path="updates"           element={<AdminUpdates />} />
-                <Route path="settings"          element={<AdminSettings />} />
-                <Route path="matches"           element={<AdminMatches />} />
-                <Route path="disputes"          element={<AdminDisputes />} />
-                <Route path="audit"             element={<AdminAuditLog />} />
-                <Route path="clubs"             element={<AdminClubs />} />
-                <Route path="moderation"        element={<AdminModeration />} />
-                <Route path="tournaments/:id/control" element={<AdminTournamentControl />} />
+                <Route index                      element={<AdminDashboard />} />
+                <Route path="analytics"           element={<AdminAnalytics />} />
+                <Route path="users"               element={<AdminUsers />} />
+                <Route path="games"               element={<AdminGames />} />
+                <Route path="tournaments"         element={<AdminTournaments />} />
+                <Route path="posts"               element={<AdminPosts />} />
+                <Route path="announcements"       element={<AdminAnnouncements />} />
+                <Route path="settings"            element={<AdminSettings />} />
+                <Route path="audit"               element={<AdminAuditLog />} />
+                <Route path="loyalty"             element={<AdminLoyalty />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
@@ -169,7 +132,7 @@ function AppContent(): React.ReactElement {
           </Suspense>
         </PageTransition>
       </main>
-      {!location.pathname.startsWith("/admin") && <Footer />}
+      <Footer />
     </div>
   );
 }
@@ -177,16 +140,14 @@ function AppContent(): React.ReactElement {
 function App(): React.ReactElement {
   return (
     <ThemeProvider>
-      <CurrencyProvider>
-        <AuthProvider>
-          <Router>
-            <ScrollToTop />
-            <PrefetchCritical />
-            <AppContent />
-            <Toaster richColors closeButton position="top-right" />
-          </Router>
-        </AuthProvider>
-      </CurrencyProvider>
+      <AuthProvider>
+        <Router>
+          <ScrollToTop />
+          <PrefetchCritical />
+          <AppContent />
+          <Toaster richColors closeButton position="top-right" />
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
