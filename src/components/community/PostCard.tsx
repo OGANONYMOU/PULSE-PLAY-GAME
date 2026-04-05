@@ -2,7 +2,7 @@
 // This component is available for use but Community.tsx renders posts inline.
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageSquare, Share2, Bookmark } from 'lucide-react';
+import { Heart, MessageSquare, Share2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
