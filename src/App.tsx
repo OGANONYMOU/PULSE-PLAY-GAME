@@ -36,6 +36,24 @@ const AdminSettings      = lazy(() => import('@/pages/admin/AdminSettings').then
 const AdminAuditLog      = lazy(() => import('@/pages/admin/AdminAuditLog').then(m => ({ default: m.AdminAuditLog })));
 const AdminLoyalty       = lazy(() => import('@/pages/admin/AdminLoyalty').then(m => ({ default: m.AdminLoyalty })));
 
+// ── Route prefetching ──────────────────────────────────────────────────────────
+const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
+  '/':            () => import('@/pages/Home'),
+  '/games':       () => import('@/pages/Games'),
+  '/tournaments': () => import('@/pages/Tournaments'),
+  '/community':   () => import('@/pages/Community'),
+  '/about':       () => import('@/pages/About'),
+  '/signin':      () => import('@/pages/SignIn'),
+  '/register':    () => import('@/pages/Register'),
+  '/profile':     () => import('@/pages/Profile'),
+};
+
+export function prefetchRoute(path: string): void {
+  const fn = PREFETCH_MAP[path];
+  if (fn) fn();
+}
+
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function PageSkeleton(): React.ReactElement {
   return (

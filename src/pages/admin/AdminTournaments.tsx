@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, AlertCircle, Loader2, Flame, Calendar, CheckCircle,
-  Users, RefreshCw, Trophy, DollarSign, Clock, Shield,
-  UserCheck, ChevronDown, ChevronRight, Eye,
+  Users, RefreshCw, Trophy, DollarSign, Clock,
+  UserCheck, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,10 +60,9 @@ function AvatarSmall({ url, username }: { url: string | null; username: string }
 
 // ── Participant panel ─────────────────────────────────────────────────────────
 function ParticipantsPanel({
-  tournamentId, onClose,
+  tournamentId,
 }: {
   tournamentId: string;
-  onClose: () => void;
 }) {
   const [parts, setParts]     = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -349,7 +348,7 @@ export function AdminTournaments(): React.ReactElement {
                 {/* Expanded participants */}
                 {expandedId === t.id && (
                   <div className="border-t border-white/8 p-4">
-                    <ParticipantsPanel tournamentId={t.id} onClose={() => setExpandedId(null)} />
+                    <ParticipantsPanel tournamentId={t.id} />
 
                     {/* Set winner */}
                     {t.status !== 'completed' && (

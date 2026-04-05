@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Tag, Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Shield, LayoutDashboard, Users, Gamepad2, LogOut,
   ChevronRight, ChevronLeft, Menu, X, BarChart2, Settings,
-  Megaphone, Trophy, FileText, MessageSquare, ClipboardList,
-  Search, Zap, Bell,
+  Megaphone, Trophy, FileText, ClipboardList,
+  Search, Zap, Tag,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
