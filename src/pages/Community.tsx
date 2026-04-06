@@ -190,15 +190,15 @@ export function Community() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16">
+    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
       {/* Hero */}
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
-        className="page-shell mb-10">
-        <div className="gaming-card p-8 text-center relative overflow-hidden">
+        className="max-w-7xl mx-auto mb-10">
+        <div className="gaming-card p-5 sm:p-8 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
           <div className="relative z-10">
-            <h1 className="font-orbitron text-3xl md:text-4xl font-bold mb-3">
-              The <span className="gradient-text">PulsePlay</span> Community
+            <h1 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-3">
+              The <span className="gradient-text">PulsePay</span> Community
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto mb-5">
               Share updates, discuss tactics, celebrate victories.
@@ -215,14 +215,14 @@ export function Community() {
         </div>
       </motion.div>
 
-      <div className="page-shell">
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:gap-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main feed */}
-          <div className="xl:col-span-2 space-y-5">
+          <div className="lg:col-span-2 space-y-5">
             {/* Composer */}
             <div className="gaming-card p-5">
               {isAuthenticated ? (
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex gap-3">
                   <AvatarBlock url={profile?.avatar_url ?? null} username={profile?.username ?? '?'} />
                   <div className="flex-1">
                     <Textarea
@@ -232,7 +232,7 @@ export function Community() {
                       className="min-h-[90px] bg-muted/50 border-border/40 resize-none mb-3 text-sm"
                       maxLength={1000}
                     />
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       {/* Tag picker */}
                       <div className="flex flex-wrap gap-1.5">
                         {tags.map(tag => (
@@ -247,7 +247,7 @@ export function Community() {
                       </div>
                       <Button
                         disabled={!newPostContent.trim() || isSubmitting}
-                        className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 text-white gap-2 text-xs h-10 sm:h-8 flex-shrink-0"
+                        className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white gap-2 text-xs h-8 flex-shrink-0"
                         onClick={handleSubmitPost}>
                         {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         {isSubmitting ? 'Posting…' : 'Post'}
@@ -256,26 +256,26 @@ export function Community() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Lock className="w-4 h-4" />Sign in to join the conversation
                   </div>
                   <Link to="/signin">
-                    <Button size="sm" className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs sm:w-auto">Sign In</Button>
+                    <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs">Sign In</Button>
                   </Link>
                 </div>
               )}
             </div>
 
             {/* Filter */}
-            <div className="pill-scroll">
+            <div className="flex gap-1.5 flex-wrap">
               <button onClick={() => setActiveFilter('all')}
-                className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === 'all' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === 'all' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
                 All Posts
               </button>
               {tags.map(tag => (
                 <button key={tag.value} onClick={() => setActiveFilter(tag.value)}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === tag.value ? tag.color + ' ring-1 ring-current' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === tag.value ? tag.color + ' ring-1 ring-current' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
                   {tag.label}
                 </button>
               ))}
@@ -357,7 +357,7 @@ export function Community() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-5 xl:sticky xl:top-28 self-start">
+          <div className="space-y-5">
             {/* Trending tags */}
             <div className="gaming-card p-5">
               <h3 className="font-orbitron text-sm font-bold mb-4 flex items-center gap-2">

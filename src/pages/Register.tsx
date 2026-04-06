@@ -130,9 +130,8 @@ export function Register(): React.ReactElement {
 
   if (success) {
     return (
-      <div className="min-h-screen pt-24 pb-12">
-        <div className="page-shell flex justify-center">
-          <div className="max-w-md w-full text-center">
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-6">
             <CheckCircle className="w-8 h-8 text-green-400" />
           </div>
@@ -144,7 +143,6 @@ export function Register(): React.ReactElement {
           <Button onClick={() => navigate('/signin')} className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
             Go to Sign In
           </Button>
-          </div>
         </div>
       </div>
     );
@@ -157,16 +155,15 @@ export function Register(): React.ReactElement {
   ) : null;
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
-      <div className="page-shell flex justify-center">
-        <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-10 overflow-x-hidden">
+      <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 mb-4">
             <Gamepad2 className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-orbitron text-2xl font-bold mb-1">
-            Join <span className="gradient-text">PulsePlay</span>
+            Join <span className="gradient-text">PulsePay</span>
           </h1>
           <p className="text-muted-foreground text-sm">Create your free gaming account</p>
         </div>
@@ -193,7 +190,7 @@ export function Register(): React.ReactElement {
         {/* Form */}
         <div className="gaming-card p-6 space-y-4">
           {/* Name row */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">First Name *</label>
               <div className="relative">
@@ -293,7 +290,6 @@ export function Register(): React.ReactElement {
           Already have an account?{' '}
           <Link to="/signin" className="text-cyan-400 hover:text-cyan-300 font-medium">Sign in</Link>
         </p>
-        </div>
       </div>
     </div>
   );

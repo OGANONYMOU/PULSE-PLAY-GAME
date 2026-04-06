@@ -1,31 +1,9 @@
-/* FIX: Removed @import url('https://fonts.googleapis.com/...') from here.
-   CSS @import is render-blocking — it halts the entire stylesheet parse until
-   the imported URL resolves. The font is now loaded via <link> in index.html,
-   which the browser fetches in parallel without blocking page render. */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    min-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  #root {
-    width: 100%;
-    max-width: 100vw;
-    min-height: 100dvh;
-    overflow-x: hidden;
-  }
-
   :root {
-    /* Gaming Dark Theme (Default) */
     --background: 240 20% 4%;
     --foreground: 0 0% 100%;
     --card: 240 15% 8%;
@@ -46,17 +24,18 @@
     --input: 240 10% 15%;
     --ring: 187 100% 50%;
     --radius: 0.75rem;
-
-    /* Custom Gaming Colors */
     --cyan: 187 100% 50%;
     --purple: 270 60% 55%;
     --pink: 330 100% 50%;
     --green: 150 100% 50%;
-
-    /* Glow Effects */
     --glow-cyan: 0 0 20px hsl(var(--cyan) / 0.5);
     --glow-purple: 0 0 20px hsl(var(--purple) / 0.5);
     --glow-pink: 0 0 20px hsl(var(--pink) / 0.5);
+    /* Safe area insets for notched phones */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
   }
 
   .light {
@@ -85,124 +64,14 @@
 @layer base {
   * {
     @apply border-border;
+    /* Prevent horizontal overflow everywhere */
+    box-sizing: border-box;
   }
 
   html {
-    font-size: 100%;
-    scroll-behavior: auto;
     overflow-x: hidden;
-    -webkit-text-size-adjust: 100%; /* prevent iOS font inflation */
-  }
-
-  @media (max-width: 480px) {
-    html { font-size: 90%; }
-  }
-
-  @media (min-width: 1280px) {
-    html { font-size: 110%; }
-  }
-
-  body {
-    max-width: 100vw;
-    overflow-x: hidden;
-    /* Safe area insets for notched phones (iPhone X+, Android with notch) */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Prevent media from overflowing their containers */
-  img, picture, video, svg {
-    max-width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  /* Ensure touch targets are accessible (44x44 recommended) */
-  a, button, input, textarea, select {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Responsive content container (mobile-first) */
-  .responsive-container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
-    overflow-wrap: break-word;
-  }
-
-  .section-container {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 1.5rem 0;
-  }
-
-  .page-shell {
-    width: 100%;
-    max-width: 80rem;
-    margin: 0 auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .section-shell {
-    width: 100%;
-    max-width: 80rem;
-    margin: 0 auto;
-  }
-
-  .pill-scroll {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .pill-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  .dialog-mobile {
-    width: min(100%, calc(100vw - 1rem));
-    max-height: min(90dvh, 48rem);
-  }
-
-  @media (min-width: 640px) {
-    .page-shell {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-
-  .responsive-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 1fr;
-  }
-
-  @media (min-width: 768px) {
-    .responsive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  @media (min-width: 1024px) {
-    .responsive-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
-
-  /* Improve tap targets on mobile — only apply to block-level buttons, not inline */
-  input, select, textarea {
-    min-height: 36px;
-  }
-
-  /* Fix iOS input styling */
-  input, textarea, select {
-    -webkit-appearance: none;
-    appearance: none;
+    /* Smooth native scroll momentum on iOS */
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
@@ -213,216 +82,141 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    /* Padding for notched phones (bottom nav bars, etc.) */
+    padding-bottom: var(--safe-bottom);
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Orbitron', sans-serif;
   }
 
-  /* ── Mobile layout fixes ─────────────────────────────────────────────── */
-
-  /* Prevent any element from ever causing horizontal scroll */
-  * {
-    min-width: 0;
-  }
-
-  /* Ensure root fills the full viewport on all devices */
-  #root {
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-
-  /* Fix iOS momentum scrolling */
-  .overflow-y-auto, .overflow-auto {
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Prevent iOS double-tap zoom on buttons */
-  button {
-    touch-action: manipulation;
-  }
-
-  /* Fix iOS Safari vh issue — use dvh where supported */
-  .min-h-screen {
-    min-height: 100dvh;
+  /* Prevent images from overflowing their containers */
+  img {
+    max-width: 100%;
+    height: auto;
   }
 }
 
 @layer components {
-  /* Gaming Card Style */
+  /* ── Gaming Card ──────────────────────────────────────────────────────────── */
   .gaming-card {
-    @apply relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden w-full;
+    @apply relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     contain: layout style;
   }
 
+  /* Hover lift only on devices that support hover (not touch) */
   @media (hover: hover) and (pointer: fine) {
     .gaming-card:hover {
       @apply border-primary/50;
-      transform: translateY(-8px);
+      transform: translateY(-4px);
       box-shadow: var(--glow-cyan);
     }
   }
 
-  /* Gradient Text */
+  /* ── Gradient Text ────────────────────────────────────────────────────────── */
   .gradient-text {
     @apply bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent;
   }
 
-  /* Glow Button */
+  /* ── Glow Button ──────────────────────────────────────────────────────────── */
   .btn-glow {
     @apply relative overflow-hidden;
   }
 
   .btn-glow::before {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 opacity-0 transition-opacity duration-300;
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: radial-gradient(circle at center, rgba(0, 255, 255, 0.15), transparent 70%);
   }
 
   .btn-glow:hover::before {
     @apply opacity-100;
   }
 
-  /* Live Badge */
-  .live-badge {
-    @apply relative inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm font-bold;
-  }
-
-  .live-badge::before {
-    content: '';
-    @apply w-2 h-2 rounded-full bg-red-500 animate-pulse;
-  }
-
-  /* Particle Background */
-  .particles-bg {
-    @apply fixed inset-0 pointer-events-none z-0;
-    background:
-      radial-gradient(circle at 20% 30%, hsl(var(--purple) / 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, hsl(var(--cyan) / 0.1) 0%, transparent 50%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
-  }
-
-  /* Glass Effect */
+  /* ── Glass Morphism ───────────────────────────────────────────────────────── */
   .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-white/10;
+    @apply bg-card/90 backdrop-blur-2xl border border-white/10 shadow-xl;
   }
 
-  /* Nav Link */
+  /* ── Nav Link ─────────────────────────────────────────────────────────────── */
   .nav-link {
-    @apply relative text-muted-foreground font-bold uppercase tracking-wider text-sm transition-colors duration-300;
+    @apply text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150 relative;
   }
 
   .nav-link::after {
     content: '';
-    @apply absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-300;
-  }
-
-  .nav-link:hover,
-  .nav-link.active {
-    @apply text-cyan-400;
+    @apply absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400 to-purple-500 scale-x-0 transition-transform duration-200 origin-left;
   }
 
   .nav-link:hover::after,
   .nav-link.active::after {
-    @apply w-full;
+    @apply scale-x-100;
   }
 
-  /* Section Title */
+  .nav-link.active {
+    @apply text-foreground;
+  }
+
+  /* ── Section Title ────────────────────────────────────────────────────────── */
   .section-title {
-    @apply font-['Orbitron'] text-3xl md:text-4xl font-bold text-center gradient-text mb-4;
+    @apply font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold;
   }
 
-  /* Input Focus */
-  .input-gaming {
-    @apply bg-muted/50 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20;
-  }
-  @media (max-width: 768px) {
-    /* Prevent horizontal overflow from any stray element */
-    body, #root {
-      overflow-x: hidden !important;
-      max-width: 100vw !important;
-    }
-
-    /* Ensure modals and overlays fit mobile screen */
-    [class*="fixed"][class*="inset-0"] {
-      max-width: 100vw;
-      max-height: 100dvh;
-    }
-
-    /* Bracket horizontal scroll on mobile */
-    .bracket-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x mandatory;
-    }
-  }
-}
-
-@layer utilities {
-  /* Animation Utilities */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .animate-gradient {
-    animation: gradient 8s linear infinite;
-    background-size: 200% 200%;
-  }
-
-  /* Scrollbar */
+  /* ── Scrollbar ────────────────────────────────────────────────────────────── */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  /* ── Animate Gradient ─────────────────────────────────────────────────────── */
+  .animate-gradient {
+    animation: gradient 8s linear infinite;
+    background-size: 200% 200%;
   }
 }
 
+/* ── Custom Scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--purple) / 0.4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--purple) / 0.65); }
+
+/* ── Keyframes ───────────────────────────────────────────────────────────────── */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50%       { transform: translateY(-14px); }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(var(--cyan) / 0.5); }
-  50% { box-shadow: 0 0 40px hsl(var(--cyan) / 0.8); }
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--cyan) / 0.4); }
+  50%       { box-shadow: 0 0 36px hsl(var(--cyan) / 0.7); }
 }
 
 @keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
 
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+/* ── Skeleton ─────────────────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
 }
 
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--purple) / 0.5);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--purple) / 0.7);
-}
-
-/* ── Performance & Accessibility ──────────────────────────────────── */
-
-/* Respect OS-level reduced motion preference */
+/* ── Performance & Accessibility ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -432,38 +226,38 @@
   }
 }
 
-/* Off-screen sections skip rendering until near viewport */
+/* Content sections skip rendering until near viewport */
 .content-section {
   content-visibility: auto;
   contain-intrinsic-size: 0 400px;
 }
 
-/* GPU-composited fade — avoids layout recalculation during page transitions */
+/* GPU-composited fade */
 .page-fade {
   will-change: opacity;
   backface-visibility: hidden;
 }
 
-/* Instant tap feedback — eliminates 300ms delay on mobile */
+/* Instant tap feedback — eliminates 300ms delay */
 button, a, [role="button"] {
   touch-action: manipulation;
 }
 
-/* Skeleton shimmer — cheaper than animate-pulse for many concurrent elements */
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
-}
-
-.skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
-}
-
-/* ── Page transition smoothing ────────────────────────────────────── */
-/* Prevent layout shift during enter/exit animations */
+/* Page transition smoothing */
 .page-transition-enter {
   position: relative;
   z-index: 1;
 }
+
+/* Prevent text overflow in flex children universally */
+.min-w-0 { min-width: 0; }
+
+/* ── Mobile-specific utilities ────────────────────────────────────────────────── */
+/* Horizontal scroll containers (game chips, filter pills, etc.) */
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }

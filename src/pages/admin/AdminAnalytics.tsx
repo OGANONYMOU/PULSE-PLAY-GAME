@@ -188,11 +188,11 @@ export function AdminAnalytics(): React.ReactElement {
 
       {/* KPIs */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {[1,2,3,4].map(i => <div key={i} className="h-32 rounded-2xl bg-white/5 animate-pulse" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Kpi Icon={Users}    label="Total Players"   value={kpis.users.toLocaleString()}       sub={`+${kpis.newThisMonth} this month`} color="text-cyan-400"   glow="bg-cyan-500"   border="border-cyan-500/15"   delay={0} />
           <Kpi Icon={Gamepad2} label="Games Listed"    value={kpis.games.toString()}             sub="in library"                         color="text-purple-400" glow="bg-purple-500" border="border-purple-500/15" delay={0.06} />
           <Kpi Icon={Trophy}   label="Tournaments"     value={kpis.tournaments.toString()}       sub="total created"                      color="text-yellow-400" glow="bg-yellow-500" border="border-yellow-500/15" delay={0.12} />

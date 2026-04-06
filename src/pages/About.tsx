@@ -2,389 +2,290 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trophy, DollarSign, Gamepad2, Users, Check, ArrowRight, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { useAuth } from '@/contexts/AuthContext';
 
-
-
+const stats = [
+  { value: '10K+', label: 'Active Gamers',      icon: Users },
+  { value: '50+',  label: 'Tournaments Hosted', icon: Trophy },
+  { value: '₦5M+', label: 'Total Prize Pool',   icon: DollarSign },
+  { value: '15+',  label: 'Partner Games',      icon: Gamepad2 },
+];
 
 const features = [
-  {
-    icon: Trophy,
-    title: 'Weekly Tournaments',
-    description: 'Compete every week across multiple games',
-  },
-  {
-    icon: DollarSign,
-    title: 'Real Cash Prizes',
-    description: 'Win and get paid directly',
-  },
-  {
-    icon: Gamepad2,
-    title: 'Your Favourite Games',
-    description: 'CODM, eFootball, Free Fire & more',
-  },
+  { icon: Trophy,      title: 'Weekly Tournaments', description: 'Compete every week across multiple games' },
+  { icon: DollarSign,  title: 'Real Cash Prizes',   description: 'Win and get paid directly' },
+  { icon: Gamepad2,    title: 'Your Favourite Games', description: 'CODM, eFootball, Free Fire & more' },
 ];
 
 const values = [
   {
-    icon: '🌍',
-    title: 'Community First',
-    description: 'Every feature we build starts with what\'s best for the players and tournament organizers in our community.',
+    icon: '🌍', title: 'Community First',
+    description: "Every feature we build starts with what's best for the players and tournament organizers in our community.",
     featured: false,
   },
   {
-    icon: '⚡',
-    title: 'Built for Growth',
+    icon: '⚡', title: 'Built for Growth',
     description: 'Scalable brackets, real-time leaderboards, and transparent rules make every competition fair and exciting.',
     featured: true,
   },
   {
-    icon: '🔒',
-    title: 'Secure & Transparent',
+    icon: '🔒', title: 'Secure & Transparent',
     description: 'We protect player data and keep prize distribution fully transparent — no hidden fees, no surprises.',
     featured: false,
   },
 ];
 
 const timeline = [
-  {
-    year: '2024',
-    title: 'PulsePlay Founded',
-    description: 'A small team of mobile gaming enthusiasts launched PulsePlay with a single goal: make competitive mobile gaming accessible to everyone.',
-  },
-  {
-    year: 'Early 2025',
-    title: 'First 1,000 Players',
-    description: 'We hit our first milestone — 1,000 registered players and our inaugural tournament series across CODM and eFootball.',
-  },
-  {
-    year: 'Mid 2025',
-    title: 'Prize Distribution Launched',
-    description: 'Players earned real cash through PulsePlay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.',
-  },
-  {
-    year: 'Now',
-    title: '10K+ Gamers & Growing',
-    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePlay is just getting started.',
-    current: true,
-  },
+  { year: '2024',      title: 'PulsePay Founded',         description: 'A small team of mobile gaming enthusiasts launched PulsePay with a single goal: make competitive mobile gaming accessible to everyone.', current: false },
+  { year: 'Early 2025', title: 'First 1,000 Players',     description: 'We hit our first milestone — 1,000 registered players and our inaugural tournament series across CODM and eFootball.', current: false },
+  { year: 'Mid 2025',  title: '₦1M in Prizes Distributed', description: 'Players earned real cash through PulsePay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.', current: false },
+  { year: 'Now',       title: '10K+ Gamers & Growing',    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePay is just getting started.', current: true },
 ];
 
 export function About() {
-  const { symbol } = useCurrency();
-  const { isAuthenticated } = useAuth();
-
-  const stats = [
-    { value: '10K+',      label: 'Active Gamers',       icon: Users },
-    { value: '50+',       label: 'Tournaments Hosted',   icon: Trophy },
-    { value: symbol + '0', label: 'Total Prize Pool',    icon: DollarSign },
-    { value: '15+',       label: 'Partner Games',        icon: Gamepad2 },
-  ];
   return (
-    <div className="min-h-screen pt-20 sm:pt-24">
-      {/* Hero Section */}
-      <section className="relative px-4 sm:px-6 py-14 sm:py-20 overflow-hidden">
-        {/* Background Orbs */}
-        <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-purple-500/10 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl" />
+    <div className="min-h-screen pt-20 sm:pt-24 overflow-x-hidden">
 
-        <div className="max-w-7xl mx-auto relative">
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <section className="relative px-4 sm:px-6 py-14 sm:py-20 overflow-hidden">
+        {/* Ambient blobs — clipped to section */}
+        <div className="absolute top-10 left-0 w-48 sm:w-64 h-48 sm:h-64 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-0 w-56 sm:w-80 h-56 sm:h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+        <div className="max-w-5xl mx-auto relative">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-10 sm:mb-16"
+            transition={{ duration: 0.7 }}
+            className="text-center mb-12 sm:mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-xs sm:text-sm font-medium mb-5 sm:mb-6">
               Empowering Mobile Gamers Since 2024
             </div>
-            <h1 className="font-orbitron text-3xl sm:text-5xl md:text-6xl font-bold mb-5 sm:mb-6">
-              We Live &<br />
+            <h1 className="font-orbitron text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-bold mb-5 leading-tight">
+              We Live &amp;<br />
               <span className="gradient-text">Breathe Gaming</span>
             </h1>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
-              PulsePlay is the home of competitive mobile gaming in Nigeria and beyond. 
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl sm:max-w-2xl mx-auto mb-8 px-2">
+              PulsePay is the home of competitive mobile gaming in Nigeria and beyond.
               We build community-first experiences for players who are hungry to compete, connect, and win.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {isAuthenticated ? (
-                <>
-                  <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600">
-                    <Link to="/tournaments">Browse Tournaments <ArrowRight className="ml-2 w-4 h-4" /></Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="border-purple-500/50">
-                    <Link to="/community">Community</Link>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600">
-                    <Link to="/register">Join PulsePlay <ArrowRight className="ml-2 w-4 h-4" /></Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="border-purple-500/50">
-                    <Link to="/tournaments">View Tournaments</Link>
-                  </Button>
-                </>
-              )}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 sm:px-0">
+              <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold h-12 px-6">
+                <Link to="/register">
+                  Join PulsePay<ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="border-purple-500/50 hover:bg-purple-500/10 h-12 px-6">
+                <Link to="/tournaments">View Tournaments</Link>
+              </Button>
             </div>
           </motion.div>
 
-          {/* Stats Row */}
+          {/* Stats grid */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"
           >
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="gaming-card p-4 sm:p-6 text-center"
-              >
-                <stat.icon className="w-7 h-7 sm:w-8 sm:h-8 mx-auto mb-2 sm:mb-3 text-cyan-400" />
-                <div className="font-orbitron text-xl sm:text-2xl md:text-3xl font-bold gradient-text">
-                  {stat.value}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
+            {stats.map((s) => (
+              <div key={s.label} className="gaming-card p-4 sm:p-6 text-center">
+                <s.icon className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 sm:mb-3 text-cyan-400" />
+                <div className="font-orbitron text-xl sm:text-2xl md:text-3xl font-bold gradient-text">{s.value}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground mt-0.5 leading-tight">{s.label}</div>
               </div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* Mission Section */}
+      {/* ── Mission ──────────────────────────────────────────────────────────── */}
       <section className="py-14 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Text */}
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12 items-center">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.55 }}
             >
-              <div className="text-cyan-400 text-sm font-bold uppercase tracking-wider mb-4">
-                Our Purpose
-              </div>
-              <h2 className="font-orbitron text-3xl md:text-4xl font-bold mb-6">
+              <div className="text-cyan-400 text-xs sm:text-sm font-bold uppercase tracking-wider mb-3 sm:mb-4">Our Purpose</div>
+              <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-5 leading-tight">
                 Built for Players,<br />By Players
               </h2>
-              <p className="text-muted-foreground text-lg mb-6 leading-relaxed">
-                PulsePlay was founded by mobile gamers who were frustrated with the lack of 
-                structured competition and community on mobile platforms. We set out to change that.
+              <p className="text-muted-foreground text-sm sm:text-base mb-5 leading-relaxed">
+                PulsePay was founded by mobile gamers who were frustrated with the lack of structured competition and community on mobile platforms. We set out to change that.
               </p>
-              <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Today we organize high-stakes tournaments, surface player highlights, and create 
-                real opportunities for players of all skill levels to compete, grow, and earn recognition.
+              <p className="text-muted-foreground text-sm sm:text-base mb-7 leading-relaxed">
+                Today we organize high-stakes tournaments, surface player highlights, and create real opportunities for players of all skill levels to compete, grow, and earn recognition.
               </p>
-
-              {/* Highlights */}
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 {[
                   'Fair, transparent prize distribution',
                   'Open to all skill levels',
                   'Community-driven game selection',
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <Check className="w-4 h-4 text-green-500" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                     </div>
-                    <span>{item}</span>
+                    <span className="text-sm sm:text-base">{item}</span>
                   </div>
                 ))}
               </div>
             </motion.div>
 
-            {/* Feature Cards */}
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
+              initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
+              transition={{ duration: 0.55, delay: 0.15 }}
+              className="space-y-3 sm:space-y-4"
             >
-              <div className="space-y-4">
-                {features.map((feature, idx) => (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.1 * idx }}
-                    className="gaming-card p-6 flex items-center gap-4"
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
-                      <feature.icon className="w-7 h-7 text-cyan-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-orbitron font-bold text-lg">{feature.title}</h3>
-                      <p className="text-muted-foreground text-sm">{feature.description}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              {features.map((f, i) => (
+                <div key={f.title} className="gaming-card p-4 sm:p-5 flex items-start gap-4">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    i === 0 ? 'bg-cyan-500/20' : i === 1 ? 'bg-purple-500/20' : 'bg-pink-500/20'
+                  }`}>
+                    <f.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                      i === 0 ? 'text-cyan-400' : i === 1 ? 'text-purple-400' : 'text-pink-400'
+                    }`} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-orbitron font-bold text-sm sm:text-base mb-1">{f.title}</h3>
+                    <p className="text-muted-foreground text-xs sm:text-sm">{f.description}</p>
+                  </div>
+                </div>
+              ))}
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Values Section */}
-      <section className="py-20 px-4 sm:px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-cyan-500/5" />
-        
-        <div className="max-w-7xl mx-auto relative">
+      {/* ── Values ───────────────────────────────────────────────────────────── */}
+      <section className="py-14 sm:py-20 px-4 sm:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-14"
           >
-            <div className="text-cyan-400 text-sm font-bold uppercase tracking-wider mb-4">
-              Why PulsePlay?
-            </div>
-            <h2 className="font-orbitron text-3xl md:text-4xl font-bold">
-              Built on Three Pillars
-            </h2>
+            <h2 className="section-title mb-3">Our Values</h2>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
+              The principles that guide every decision we make
+            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {values.map((value, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            {values.map((v, i) => (
               <motion.div
-                key={value.title}
-                initial={{ opacity: 0, y: 30 }}
+                key={v.title}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 * idx }}
-                className={`relative gaming-card p-8 text-center ${value.featured ? 'border-cyan-500/50' : ''}`}
+                transition={{ delay: i * 0.08 }}
+                className={`gaming-card p-5 sm:p-6 text-center ${v.featured ? 'ring-1 ring-cyan-500/40' : ''}`}
               >
-                <div className="text-5xl mb-6">{value.icon}</div>
-                <h3 className="font-orbitron text-xl font-bold mb-4">{value.title}</h3>
-                <p className="text-muted-foreground">{value.description}</p>
-                {value.featured && (
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 -z-10" />
-                )}
+                <div className="text-3xl sm:text-4xl mb-3">{v.icon}</div>
+                <h3 className="font-orbitron font-bold text-sm sm:text-base mb-2">{v.title}</h3>
+                <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{v.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Timeline Section */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
+      {/* ── Timeline ─────────────────────────────────────────────────────────── */}
+      <section className="py-14 sm:py-20 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-14"
           >
-            <div className="text-cyan-400 text-sm font-bold uppercase tracking-wider mb-4">
-              Our Journey
-            </div>
-            <h2 className="font-orbitron text-3xl md:text-4xl font-bold">
-              How We Got Here
-            </h2>
+            <h2 className="section-title mb-3">Our Journey</h2>
+            <p className="text-muted-foreground text-sm sm:text-base">From idea to Nigeria's premier gaming platform</p>
           </motion.div>
 
           <div className="relative">
-            {/* Line */}
-            <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500 via-purple-500 to-pink-500" />
+            {/* Vertical line — hidden on very small screens */}
+            <div className="absolute left-4 sm:left-1/2 sm:-translate-x-px top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-purple-500/30 to-transparent" />
 
-            {timeline.map((item, idx) => (
-              <motion.div
-                key={item.year}
-                initial={{ opacity: 0, x: idx % 2 === 0 ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 * idx }}
-                className={`relative flex items-start gap-8 mb-12 ${
-                  idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
-                }`}
-              >
-                {/* Dot */}
-                <div className={`absolute left-4 md:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full ${
-                  item.current 
-                    ? 'bg-cyan-500 ring-4 ring-cyan-500/30' 
-                    : 'bg-purple-500'
-                }`} />
-
-                {/* Content */}
-                <div className={`ml-12 md:ml-0 md:w-1/2 ${
-                  idx % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'
-                }`}>
-                  <div className="gaming-card p-6 w-full">
-                    <div className="text-cyan-400 font-bold text-sm mb-2">{item.year}</div>
-                    <h3 className="font-orbitron text-lg font-bold mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground text-sm">{item.description}</p>
+            <div className="space-y-8 sm:space-y-10">
+              {timeline.map((item, i) => (
+                <motion.div
+                  key={item.year}
+                  initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className={`relative flex items-start gap-4 sm:gap-0 ${
+                    i % 2 === 0 ? 'sm:flex-row' : 'sm:flex-row-reverse'
+                  }`}
+                >
+                  {/* Dot */}
+                  <div className="relative z-10 flex-shrink-0 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:top-3">
+                    <div className={`w-3 h-3 rounded-full border-2 ${
+                      item.current
+                        ? 'bg-cyan-400 border-cyan-400 shadow-glow'
+                        : 'bg-background border-white/30'
+                    }`} />
                   </div>
-                </div>
-              </motion.div>
-            ))}
+
+                  {/* Content */}
+                  <div className={`flex-1 ml-6 sm:ml-0 ${
+                    i % 2 === 0 ? 'sm:pr-12 sm:text-right' : 'sm:pl-12'
+                  }`}>
+                    <div className="gaming-card p-4 sm:p-5">
+                      <div className={`text-xs font-mono font-bold mb-1 ${item.current ? 'text-cyan-400' : 'text-purple-400'}`}>
+                        {item.year}
+                      </div>
+                      <h3 className="font-orbitron font-bold text-sm sm:text-base mb-2">{item.title}</h3>
+                      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{item.description}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* ── Contact CTA ──────────────────────────────────────────────────────── */}
       <section className="py-14 sm:py-20 px-4 sm:px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <div className="gaming-card p-8 sm:p-12 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
-
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="gaming-card p-7 sm:p-10 text-center relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/8 via-purple-500/8 to-pink-500/8 pointer-events-none" />
             <div className="relative z-10">
-              {isAuthenticated ? (
-                <>
-                  <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                    Ready to <span className="gradient-text">Compete?</span>
-                  </h2>
-                  <p className="text-muted-foreground text-base sm:text-lg mb-8">
-                    Jump into a tournament and start climbing the leaderboards.
-                  </p>
-                  <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 mb-8">
-                    <Link to="/tournaments">
-                      Browse Tournaments <ArrowRight className="ml-2 w-4 h-4" />
-                    </Link>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <h2 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                    Ready to Compete?
-                  </h2>
-                  <p className="text-muted-foreground text-base sm:text-lg mb-8">
-                    Join thousands of players already on PulsePlay. Sign up free and enter your first tournament today.
-                  </p>
-                  <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-pink-500 mb-8">
-                    <Link to="/register">
-                      Create Free Account <ArrowRight className="ml-2 w-4 h-4" />
-                    </Link>
-                  </Button>
-                </>
-              )}
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
-                <a href="mailto:support@pulseplay.com" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
-                  <Mail className="w-4 h-4" />
-                  support@pulseplay.com
-                </a>
-                <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
-                  <MessageCircle className="w-4 h-4" />
-                  Join our Discord
-                </a>
+              <h2 className="font-orbitron text-2xl sm:text-3xl font-bold mb-3">Get in Touch</h2>
+              <p className="text-muted-foreground text-sm sm:text-base mb-7 max-w-md mx-auto">
+                Questions? Partnerships? We'd love to hear from you.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button asChild className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold gap-2 h-11 px-6">
+                  <a href="mailto:hello@pulsepay.gg">
+                    <Mail className="w-4 h-4" />Email Us
+                  </a>
+                </Button>
+                <Button asChild variant="outline" className="border-purple-500/40 hover:bg-purple-500/10 gap-2 h-11 px-6">
+                  <a href="https://discord.com" target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="w-4 h-4" />Discord
+                  </a>
+                </Button>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
+
     </div>
   );
 }
