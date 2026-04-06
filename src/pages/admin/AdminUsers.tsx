@@ -185,7 +185,6 @@ export function AdminUsers(): React.ReactElement {
             const isSelf      = self?.id === u.id;
             const isExpanded  = expandedId === u.id;
             const fullName    = [u.first_name, u.last_name].filter(Boolean).join(' ');
-            const initials    = fullName || u.username;
 
             return (
               <motion.div key={u.id} initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}
@@ -268,9 +267,9 @@ export function AdminUsers(): React.ReactElement {
                         )}
 
                         {/* Ban reason */}
-                        {u.is_banned && u.ban_reason && (
+                        {u.is_banned && (u as { ban_reason?: string | null }).ban_reason && (
                           <div className="w-full text-xs text-rose-400 bg-rose-500/8 border border-rose-500/20 rounded-lg px-3 py-2">
-                            Ban reason: {u.ban_reason}
+                            Ban reason: {(u as { ban_reason?: string | null }).ban_reason}
                           </div>
                         )}
                       </div>

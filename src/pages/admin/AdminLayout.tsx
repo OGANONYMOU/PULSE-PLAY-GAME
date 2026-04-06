@@ -99,7 +99,7 @@ export function AdminLayout(): React.ReactElement {
           </div>
           {(!collapsed || mobile) && (
             <div>
-              <div className="font-orbitron font-black text-sm text-white leading-tight">PulsePlay</div>
+              <div className="font-orbitron font-black text-sm text-white leading-tight">PulsePay</div>
               <div className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">Admin</div>
             </div>
           )}
