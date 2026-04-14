@@ -1,29 +1,32 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-import { initWebVitals, logPerformanceStats } from './lib/metrics'
-import { initResourceHints } from './lib/resourceHints'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+import { initWebVitals, logPerformanceStats } from './lib/metrics';
+import { initResourceHints } from './lib/resourceHints';
 
-// Initialize resource hints (preconnect, dns-prefetch)
+// Preconnect to critical external domains
 if (typeof document !== 'undefined') {
   initResourceHints();
 }
 
-// Initialize Web Vitals tracking early
+// Track Core Web Vitals — console-only, no /api/ calls
 initWebVitals((metric) => {
-  console.log(`📊 ${metric.name}: ${metric.value.toFixed(2)}ms [${metric.rating}]`);
+  if (import.meta.env.DEV) {
+    console.log(`📊 ${metric.name}: ${metric.value.toFixed(1)} [${metric.rating}]`);
+  }
 });
 
-// Development: log performance stats
+// Dev-only performance summary
 if (import.meta.env.DEV) {
-  window.addEventListener('load', () => {
-    setTimeout(() => logPerformanceStats(), 100);
-  });
+  logPerformanceStats();
 }
 
-createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root');
+if (!rootEl) throw new Error('#root element not found in index.html');
+
+createRoot(rootEl).render(
   <StrictMode>
     <App />
   </StrictMode>,
-)
+);
