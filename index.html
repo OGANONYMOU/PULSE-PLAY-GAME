@@ -3,55 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="PulsePlay — Nigeria's premier mobile gaming tournament platform. Compete, win, and connect with the gaming community." />
+    <meta name="description" content="PulsePay — Nigeria's premier mobile gaming tournament platform. Compete, win, and connect with the gaming community." />
     <meta name="theme-color" content="#0a0a12" />
 
-    <!-- FIX: Preconnect so DNS + TLS is resolved before the font link fires -->
+    <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://api.dicebear.com" />
 
-    <!-- FIX: Load Google Fonts as a non-render-blocking <link> instead of
-         CSS @import. @import in a stylesheet halts CSS parsing until the font
-         stylesheet is fetched. A <link rel="stylesheet"> in <head> is loaded
-         in parallel with other resources and does NOT block rendering when
-         combined with font-display:swap (set in the URL below). -->
+    <!-- Google Fonts — non-render-blocking -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap"
       media="print"
       onload="this.media='all'"
     />
-    <!-- Fallback for no-JS environments -->
     <noscript>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" />
     </noscript>
 
-    <!-- Inline critical styles — prevents dark flash and FOUC before CSS loads -->
+    <!-- Critical inline styles — prevents dark flash before CSS bundle loads -->
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { background: hsl(240 20% 4%); }
+      html { background: hsl(240 20% 4%); overflow-x: hidden; }
       body {
         background: hsl(240 20% 4%);
         color: #fff;
         overflow-x: hidden;
-        /* System font stack as fallback until Space Mono loads */
         font-family: 'Space Mono', 'Courier New', monospace;
+        -webkit-text-size-adjust: 100%;
       }
-      #root { min-height: 100dvh; }
-      /* font-display: swap prevents invisible text during font load */
-      @font-face { font-family: 'Orbitron'; font-display: swap; src: local('Orbitron'); }
-      @font-face { font-family: 'Space Mono'; font-display: swap; src: local('Space Mono'); }
+      #root { min-height: 100dvh; display: flex; flex-direction: column; }
     </style>
 
     <!-- Emoji favicon — zero network request -->
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
 
-    <title>PulsePlay — Gaming Platform</title>
+    <title>PulsePay — Gaming Platform</title>
   </head>
   <body>
     <div id="root"></div>
