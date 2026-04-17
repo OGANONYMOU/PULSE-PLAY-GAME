@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
 const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
 const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
+const TournamentCreate = lazy(() => import('@/pages/TournamentCreateNew').then(m => ({ default: m.TournamentCreateNew })));
 const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
 const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
 const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
@@ -35,6 +36,8 @@ const AdminAnalytics     = lazy(() => import('@/pages/admin/AdminAnalytics').the
 const AdminSettings      = lazy(() => import('@/pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 const AdminAuditLog      = lazy(() => import('@/pages/admin/AdminAuditLog').then(m => ({ default: m.AdminAuditLog })));
 const AdminLoyalty       = lazy(() => import('@/pages/admin/AdminLoyalty').then(m => ({ default: m.AdminLoyalty })));
+const AdminOrganizers    = lazy(() => import('@/pages/admin/AdminOrganizers').then(m => ({ default: m.AdminOrganizers })));
+const AdminPermissions   = lazy(() => import('@/pages/admin/AdminPermissions').then(m => ({ default: m.AdminPermissions })));
 
 // ── Route prefetching ──────────────────────────────────────────────────────────
 const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
@@ -138,6 +141,8 @@ function AppContent(): React.ReactElement {
                 <Route path="users"               element={<AdminUsers />} />
                 <Route path="games"               element={<AdminGames />} />
                 <Route path="tournaments"         element={<AdminTournaments />} />
+                <Route path="organizers"          element={<AdminOrganizers />} />
+                <Route path="permissions"         element={<AdminPermissions />} />
                 <Route path="posts"               element={<AdminPosts />} />
                 <Route path="announcements"       element={<AdminAnnouncements />} />
                 <Route path="settings"            element={<AdminSettings />} />

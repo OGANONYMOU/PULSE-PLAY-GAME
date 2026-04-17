@@ -4,7 +4,7 @@ import {
   Shield, LayoutDashboard, Users, Gamepad2, LogOut,
   ChevronRight, ChevronLeft, Menu, X, BarChart2, Settings,
   Megaphone, Trophy, FileText, ClipboardList,
-  Search, Zap, Tag,
+  Search, Zap, Tag, Building2, UserCheck, Swords, Crown
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,16 +20,23 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: 'Tournament Management',
+    items: [
+      { href: '/admin/organizers',    label: 'Organizers',    Icon: Building2 },
+      { href: '/admin/tournaments',  label: 'Tournaments',   Icon: Trophy },
+      { href: '/admin/permissions',   label: 'Permissions',   Icon: UserCheck },
+    ],
+  },
+  {
     label: 'Content',
     items: [
       { href: '/admin/announcements', label: 'Announcements', Icon: Megaphone },
       { href: '/admin/posts',         label: 'Posts',         Icon: FileText },
-      { href: '/admin/tournaments',   label: 'Tournaments',   Icon: Trophy },
       { href: '/admin/games',         label: 'Games',         Icon: Gamepad2 },
     ],
   },
   {
-    label: 'Community',
+    label: 'Community & Trust',
     items: [
       { href: '/admin/users',  label: 'Users',     Icon: Users },
       { href: '/admin/audit',  label: 'Audit Log', Icon: ClipboardList },

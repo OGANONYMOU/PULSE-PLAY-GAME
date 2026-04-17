@@ -14,7 +14,7 @@ export interface Profile {
   bio: string | null;
   discord_username: string | null;
   twitter_username: string | null;
-  role: 'USER' | 'ADMIN' | 'MODERATOR';
+  role: 'USER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
   is_banned: boolean;
   created_at: string;
   updated_at: string;
