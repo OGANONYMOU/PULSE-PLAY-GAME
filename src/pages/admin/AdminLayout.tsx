@@ -4,7 +4,7 @@ import {
   Shield, LayoutDashboard, Users, Gamepad2, LogOut,
   ChevronRight, ChevronLeft, Menu, X, BarChart2, Settings,
   Megaphone, Trophy, FileText, ClipboardList,
-  Search, Zap, Tag, Building2, UserCheck, Swords, Crown
+  Search, Zap, Tag, Building2, UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';

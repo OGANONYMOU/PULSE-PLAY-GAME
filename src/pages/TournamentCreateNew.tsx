@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Shield, ChevronRight, ArrowLeft, Building2,
   Loader2, Lock, Globe, Info, Sparkles, CheckCircle,
-  Users, Zap, Gamepad2, Swords, Medal, Clock,
-  Calendar, DollarSign, MapPin, ChevronDown
+  Gamepad2, Swords, Medal,
+  Calendar, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHostableOrganizers } from '@/hooks/useOrganizers';
-import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
 

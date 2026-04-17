@@ -125,7 +125,8 @@ function AppContent(): React.ReactElement {
               {/* Public */}
               <Route path="/"                  element={<Home />} />
               <Route path="/games"             element={<Games />} />
-              <Route path="/tournaments"       element={<Tournaments />} />
+              <Route path="/tournaments"         element={<Tournaments />} />
+              <Route path="/tournaments/create"  element={<TournamentCreate />} />
               <Route path="/community"         element={<Community />} />
               <Route path="/about"             element={<About />} />
               <Route path="/signin"            element={<SignIn />} />

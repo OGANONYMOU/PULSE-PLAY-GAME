@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 
 const PRIMARY_ADMIN_EMAIL = 'adegbesanadebola@outlook.com';
-type Role = 'USER' | 'MODERATOR' | 'ADMIN';
+type Role = 'USER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function writeAudit(actorId: string, action: string, targetId: string, meta?: object) {
@@ -28,7 +28,7 @@ async function writeAudit(actorId: string, action: string, targetId: string, met
 }
 
 function RolePill({ role }: { role: Role }) {
-  const cls = role === 'ADMIN'
+  const cls = role === 'ADMIN' || role === 'SUPER_ADMIN'
     ? 'bg-red-500/20 text-red-400 border-red-500/30'
     : role === 'MODERATOR'
       ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
@@ -57,7 +57,7 @@ export function AdminUsers(): React.ReactElement {
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const isSuper = self?.role === 'ADMIN';
+  const isSuper = self?.role === 'ADMIN' || self?.role === 'SUPER_ADMIN';
 
   const load = useCallback(async () => {
     setLoading(true); setFetchError('');
