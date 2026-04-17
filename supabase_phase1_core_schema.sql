@@ -40,15 +40,7 @@ create table if not exists public.organizers (
 
 alter table public.organizers enable row level security;
 
--- RLS: Public can view public organizers
- drop policy if exists "organizers_public_view" on public.organizers;
- create policy "organizers_public_view" on public.organizers for select using (
-   visibility = 'public' or 
-   owner_id = auth.uid() or
-   exists (select 1 from public.organizer_members where organizer_id = id and user_id = auth.uid())
- );
-
--- RLS: Owner or admin can manage
+-- RLS: Owner or admin can manage (doesn't depend on other tables)
  drop policy if exists "organizers_manage" on public.organizers;
  create policy "organizers_manage" on public.organizers for all using (
    owner_id = auth.uid() or
@@ -75,7 +67,7 @@ create table if not exists public.organizer_members (
   unique (organizer_id, user_id)
 );
 
-alter table public.organizers_members enable row level security;
+alter table public.organizer_members enable row level security;
 
  drop policy if exists "organizer_members_view" on public.organizer_members;
  create policy "organizer_members_view" on public.organizer_members for select using (true);
@@ -96,6 +88,14 @@ alter table public.organizers_members enable row level security;
 
  create index if not exists idx_organizer_members_org on public.organizer_members(organizer_id);
  create index if not exists idx_organizer_members_user on public.organizer_members(user_id);
+
+-- RLS: Public can view public organizers (must be after organizer_members table exists)
+ drop policy if exists "organizers_public_view" on public.organizers;
+ create policy "organizers_public_view" on public.organizers for select using (
+   visibility = 'public' or 
+   owner_id = auth.uid() or
+   exists (select 1 from public.organizer_members where organizer_id = id and user_id = auth.uid())
+ );
 
 -- ── 4. GLOBAL PERMISSIONS TABLE (Admin-granted moderator permissions) ─────────
 create table if not exists global_permissions (
@@ -152,11 +152,11 @@ alter table public.tournaments
   add column if not exists season_name       text        null,  -- For football leagues
   add column if not exists season_year       int         null,
   add column if not exists category          text        null,  -- For multi-category tournaments
-  add column if not requires_check_in      boolean     not null default false,
-  add column if not bracket_lock_at         timestamptz null,
-  add column if not refund_policy           text        null,
-  add column if not min_players             int         null default 2,
-  add column if not team_size               int         null default 1;  -- 1 = solo, >1 = team
+  add column if not exists requires_check_in boolean     not null default false,
+  add column if not exists bracket_lock_at   timestamptz null,
+  add column if not exists refund_policy     text        null,
+  add column if not exists min_players       int         null default 2,
+  add column if not exists team_size         int         null default 1;  -- 1 = solo, >1 = team
 
 -- Index for organizer lookups
  create index if not exists idx_tournaments_organizer on public.tournaments(organizer_id);
