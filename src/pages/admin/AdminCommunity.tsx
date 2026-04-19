@@ -3,9 +3,9 @@
 // Comprehensive management for posts, clips, comments, and discussions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { subscriptionManager } from '@/lib/realtime/subscriptionManager';
@@ -13,18 +13,18 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import {
   MessageSquare, Play, FileText, MessageCircle, Filter,
-  Search, RefreshCw, MoreHorizontal, Eye, EyeOff, Pin,
+  Search, RefreshCw, Eye, EyeOff, Pin,
   Trash2, Flag, CheckCircle2, XCircle, AlertTriangle,
-  TrendingUp, TrendingDown, Clock, User, ThumbsUp, Share2,
+  Clock, User, ThumbsUp,
   Lock, Unlock, Sparkles, Shield, ExternalLink, Loader2,
-  ChevronDown, ChevronRight, Image as ImageIcon, Video,
+  ChevronDown, Image as ImageIcon, Video,
   Ban, VolumeX, Gavel, Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -37,7 +37,6 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 // ═══════════════════════════════════════════════════════════════════════════════

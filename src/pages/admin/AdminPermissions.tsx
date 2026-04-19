@@ -2,16 +2,16 @@
 // PulsePlay Admin System - Permissions & Role Management Module
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import {
-  Shield, ShieldAlert, Crown, Users, Trophy, Search, Filter,
-  Check, X, ChevronRight, RefreshCw, MoreHorizontal, Building2,
-  FileText, Settings, Eye, EyeOff, Lock, Unlock, Clock,
+  Shield, ShieldAlert, Crown, Users, Trophy, Search,
+  Check, X, ChevronRight, RefreshCw, MoreHorizontal,
+  FileText, Settings, Lock, Unlock,
   AlertTriangle, CheckCircle2, XCircle, Edit3, Loader2, Plus,
   LayoutGrid, Ban, VolumeX, Key,
 } from 'lucide-react';
@@ -28,7 +28,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';

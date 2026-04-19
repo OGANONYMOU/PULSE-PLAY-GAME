@@ -3,7 +3,7 @@
 // Professional trust & safety workflow with AI-assisted moderation
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -13,11 +13,11 @@ import { toast } from 'sonner';
 import {
   Shield, ShieldAlert, ShieldCheck, Flag, AlertTriangle, AlertOctagon,
   RefreshCw, Search, Filter, X, CheckCircle2, XCircle, MessageSquare,
-  FileText, Video, User, Users, Loader2, Eye, Ban, VolumeX, Volume2,
-  ExternalLink, ChevronDown, ChevronRight, MoreHorizontal, Clock,
-  Sparkles, Brain, Bot, TrendingUp, TrendingDown, Hash,
-  Gavel, AlertCircle, CheckCircle, XCircle as XCircleIcon,
-  MessageCircle, ThumbsUp, ThumbsDown, Send, Archive,
+  FileText, Video, User, Loader2, Eye, Ban, VolumeX,
+  ExternalLink, ChevronDown, MoreHorizontal, Clock,
+  Sparkles, Brain, TrendingUp, Hash,
+  Gavel, AlertCircle,
+  MessageCircle, ThumbsUp, ThumbsDown, Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,8 +40,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
 import type {
-  Report, ReportStatus, ReportPriority, ReportReason, ReportType,
-  ToxicityAnalysis, ModerationAction, RepeatOffender,
+  Report, ReportStatus, ReportPriority, ReportReason,
+  ToxicityAnalysis,
 } from '@/types/admin';
 
 // ═══════════════════════════════════════════════════════════════════════════════
