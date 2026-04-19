@@ -3,7 +3,7 @@
 // Real-time operations center for critical alerts and incident management
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
@@ -12,19 +12,19 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import {
   AlertTriangle, AlertOctagon, Bell, CheckCircle2, Clock,
-  RefreshCw, Filter, Search, MoreHorizontal, User,
-  TrendingUp, TrendingDown, Activity, Shield,
+  RefreshCw, Filter, Search, User,
+  Activity, Shield,
   Users, Trophy, MessageSquare, Ban, Flag,
-  ChevronDown, ChevronUp, ExternalLink, Eye,
-  Check, X, Loader2, Radio, Zap, Flame,
-  AlertCircle, BarChart3, ArrowUpRight,
-  ArrowDownRight, Target, ShieldAlert,
+  ChevronDown, ExternalLink, Eye,
+  Check, X, Loader2, Zap,
+  AlertCircle, BarChart3,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -37,7 +37,6 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -3,9 +3,8 @@
 // Professional tournament operations with health monitoring, disputes, fraud detection
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow, format, differenceInDays, isPast, isFuture } from 'date-fns';
@@ -15,7 +14,7 @@ import {
   AlertTriangle, AlertOctagon, ShieldAlert, RefreshCw, ChevronRight,
   ExternalLink, Lock, Unlock, Edit3, Trash2,
   Activity, Flag, DollarSign, X, Loader2, FileText, Gavel,
-  Skull, Crown, UserCheck,
+  Crown, UserCheck,
   AlertCircle, XCircle, CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,10 +37,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
-import type {
-  TournamentHealth, TournamentDispute, HealthIndicator,
-  FraudRiskLevel, TournamentHealthStatus,
-} from '@/types/admin';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
