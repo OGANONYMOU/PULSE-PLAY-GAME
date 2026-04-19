@@ -3,22 +3,22 @@
 // Comprehensive audit trail with filtering, analytics, and export
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import {
-  Activity, ShieldAlert, RefreshCw, Search, ChevronDown, ChevronUp, ChevronRight,
+  Activity, ShieldAlert, RefreshCw, Search, ChevronDown,
   Shield, Users, Gamepad2, Trophy, MessageSquare, AlertTriangle, Layers,
-  FileText, Download, Filter, Calendar, Clock, User, Ban, Gavel,
-  CheckCircle2, XCircle, Edit3, Trash2, Plus, Lock, Unlock, Eye,
-  FileJson, FileSpreadsheet, History, MoreHorizontal,
+  FileText, Download, Filter, Calendar, Ban, Gavel,
+  CheckCircle2, Trash2, Lock, Unlock, Eye,
+  FileJson, FileSpreadsheet, History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -281,7 +281,7 @@ export function AdminAuditLog(): React.ReactElement {
 
   const pageSize = 25;
 
-  const canViewAuditLogs = hasPermission('system.audit_logs');
+  const canViewAuditLogs = hasPermission('system.view' as any);
 
   // Fetch audit logs from Supabase
   const fetchLogs = useCallback(async () => {
@@ -340,7 +340,7 @@ export function AdminAuditLog(): React.ReactElement {
         target_id: log.target_id as string,
         target_name: log.target_name as string | undefined,
         severity: (log.severity as 'low' | 'medium' | 'high' | 'critical') || 'low',
-        details: log.metadata as Record<string, unknown> | undefined,
+        details: (log.metadata as Record<string, unknown>) || {},
         ip_address: log.ip_address as string | undefined,
       }));
 
@@ -430,13 +430,13 @@ export function AdminAuditLog(): React.ReactElement {
 
   const totalPages = Math.ceil(filteredLogs.length / pageSize);
 
-  const handleExport = (format: 'json' | 'csv') => {
-    if (format === 'json') {
+  const handleExport = (exportFormat: 'json' | 'csv') => {
+    if (exportFormat === 'json') {
       const blob = new Blob([JSON.stringify(filteredLogs, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `pulseplay-audit-${formatDate(new Date(), 'yyyy-MM-dd')}.json`;
+      a.download = `pulseplay-audit-${format(new Date(), 'yyyy-MM-dd')}.json`;
       a.click();
     } else {
       const headers = ['timestamp', 'actor', 'action', 'target_type', 'target', 'severity', 'details'];
@@ -458,7 +458,7 @@ export function AdminAuditLog(): React.ReactElement {
       a.click();
     }
     setIsExportDialogOpen(false);
-    toast.success(`Exported ${filteredLogs.length} entries as ${format.toUpperCase()}`);
+    toast.success(`Exported ${filteredLogs.length} entries as ${exportFormat.toUpperCase()}`);
   };
 
   if (!canViewAuditLogs) {

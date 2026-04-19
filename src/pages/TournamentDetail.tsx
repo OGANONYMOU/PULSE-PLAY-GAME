@@ -11,7 +11,6 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
-import { withSupabaseRetry } from '@/lib/utils/retry';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { submitDispute } from '@/lib/dispute/disputeSystem';
 import { type FraudFlag } from '@/lib/fraud/fraudDetection';
