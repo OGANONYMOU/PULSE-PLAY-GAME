@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Navbar } from '@/components/layout/Navbar';
@@ -239,6 +240,7 @@ function App(): React.ReactElement {
             <PrefetchCritical />
             <AppContent />
             <Toaster richColors closeButton position="top-right" />
+            <Analytics />
           </Router>
         </AuthProvider>
       </ThemeProvider>
