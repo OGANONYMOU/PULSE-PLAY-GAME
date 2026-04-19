@@ -16,7 +16,7 @@ import {
   Zap, Activity, AlertTriangle, CheckCircle2, Clock,
   UserCircle, Crown, Terminal, Sparkles, Filter,
   ArrowUpRight, ArrowDownRight, TrendingUp, Eye, Ban,
-  MoreHorizontal, ExternalLink, RefreshCw
+  MoreHorizontal, ExternalLink, RefreshCw, Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

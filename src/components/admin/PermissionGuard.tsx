@@ -241,7 +241,7 @@ export function SensitiveAction({
   onConfirm,
   confirmationData,
 }: SensitiveActionProps): ReactElement {
-  const { profile } = useAuth();
+  const { profile: _profile } = useAuth();
 
   const handleAction = () => {
     const actionLabels: Record<string, { title: string; warning: string }> = {
@@ -305,10 +305,10 @@ interface AuditWrapperProps {
 
 export function AuditWrapper({
   children,
-  action,
-  targetType,
-  targetId,
-  metadata,
+  action: _action,
+  targetType: _targetType,
+  targetId: _targetId,
+  metadata: _metadata,
 }: AuditWrapperProps): ReactElement {
   return (
     <>{children}</>

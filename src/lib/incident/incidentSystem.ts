@@ -4,7 +4,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { supabase } from '@/lib/supabase';
-import { writeAudit } from '@/lib/audit';
 import { checkServerPermission } from '@/lib/security';
 import type { AdminPermission } from '@/types/admin';
 
@@ -94,7 +93,7 @@ export async function createIncident(
     metrics?: IncidentMetric[];
     auto_response?: boolean;
   },
-  created_by: string
+  _created_by: string
 ): Promise<{ success: boolean; incident?: Incident; error?: string }> {
   try {
     // Generate incident number
@@ -173,7 +172,7 @@ export async function acknowledgeIncident(
   acknowledged_by: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data: user } = await supabase
+    const { data: _user } = await supabase
       .from('profiles')
       .select('username')
       .eq('id', acknowledged_by)
@@ -375,7 +374,7 @@ async function checkDisputeSpike(): Promise<void> {
       severity: 'high',
       title: 'Dispute Spike Detected',
       description: `${recentDisputes.length} disputes filed in the last 24 hours.`,
-      affected_entities: recentDisputes.map(d => ({ type: 'tournament', id: d.tournament_id })),
+      affected_entities: (recentDisputes as { tournament_id: string }[]).map(d => ({ type: 'tournament', id: d.tournament_id })),
       auto_response: true,
     }, 'system');
   }
@@ -431,7 +430,7 @@ async function evaluateAutoResponse(params: {
 }
 
 async function executeAutoResponse(
-  incident_id: string,
+  _incident_id: string,
   action: string,
   entities: IncidentEntity[]
 ): Promise<void> {
@@ -526,13 +525,13 @@ async function notifyAdmins(incident: Incident): Promise<void> {
   
   if (!admins) return;
   
-  for (const admin of admins) {
+  for (const admin of admins as { id: string }[]) {
     await supabase.rpc('create_notification', {
       user_id: admin.id,
       type: 'critical_incident',
       title: `Critical Incident: ${incident.title}`,
       message: incident.description,
       link: `/admin/incidents/${incident.id}`,
-    });
+    } as any);
   }
 }

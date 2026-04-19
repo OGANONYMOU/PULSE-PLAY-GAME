@@ -459,7 +459,7 @@ async function notifyAdminsAboutFraud(
       created_at: new Date().toISOString(),
     }));
     
-    await supabase.from('notifications').insert(notifications);
+    await supabase.from('notifications').insert(notifications as any);
     
     // Log to audit
     await writeAudit(
@@ -469,7 +469,7 @@ async function notifyAdminsAboutFraud(
         category: 'fraud',
         target_type: 'tournament',
         target_id: tournament_id,
-        severity: risk_score > 70 ? 'high' : 'medium',
+        severity: risk_score > 70 ? 'critical' : 'warning',
         metadata: { risk_score, flag_count, incident_id },
       }
     );
@@ -531,7 +531,7 @@ export async function runPostTournamentFraudAnalysis(
         category: 'fraud',
         target_type: 'tournament',
         target_id: tournament_id,
-        severity: result.risk_score > 70 ? 'high' : 'low',
+        severity: result.risk_score > 70 ? 'critical' : 'info',
         metadata: { triggered_by, risk_score: result.risk_score, flags_found: result.flags.length },
       }
     );
@@ -553,7 +553,7 @@ export async function runPostTournamentFraudAnalysis(
         category: 'fraud',
         target_type: 'tournament',
         target_id: tournament_id,
-        severity: 'high',
+        severity: 'critical',
         metadata: { error: message },
       }
     );
@@ -595,7 +595,7 @@ export async function investigateFraudFlag(
         category: 'fraud',
         target_type: 'fraud_flag',
         target_id: flag_id,
-        severity: params.status === 'confirmed' ? 'critical' : 'medium',
+        severity: params.status === 'confirmed' ? 'critical' : 'warning',
         metadata: { status: params.status, notes: params.notes },
       }
     );

@@ -17,6 +17,8 @@ import type {
   AuditLogEntry,
   SearchResult,
   SearchFilters,
+  ReportType,
+  ReportTarget,
 } from '@/types/admin';
 
 // ── Context State ─────────────────────────────────────────────────────────────
@@ -158,7 +160,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [recentAuditLogs, _setRecentAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -182,7 +184,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   // Permission check function
   const hasPermission = useCallback((
     permission: AdminPermission,
-    scope?: { type: string; id?: string }
+    _scope?: { type: string; id?: string }
   ): boolean => {
     // Super admin has all permissions
     if (role === 'SUPER_ADMIN') return true;
@@ -308,7 +310,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           } : null,
           target: log.target_id ? {
             id: log.target_id as string,
-            type: log.target_type as AdminActivity['type'] || 'user',
+            type: (log.target_type as ReportType) || 'user',
             title: log.target_name as string || 'Unknown',
             content: null,
             author: {
@@ -317,7 +319,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
               avatar_url: null,
               risk_level: 'low',
             },
-          } : null,
+          } as ReportTarget : null,
           created_at: log.created_at as string,
           is_read: false,
         }));
@@ -556,7 +558,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase
         .from('system_alerts')
-        .update({ acknowledged_by: user.id, acknowledged_at: new Date().toISOString() })
+        .update({ acknowledged_by: user.id, acknowledged_at: new Date().toISOString() } as unknown as never)
         .eq('id', alertId);
       
       markAlertRead(alertId);
@@ -705,7 +707,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 function getRolePermissions(role: AdminRole): AdminPermission[] {
   switch (role) {
     case 'SUPER_ADMIN':
-      return ['*'] as AdminPermission[]; // All permissions
+      return ['*' as AdminPermission]; // All permissions
     case 'ADMIN':
       return [
         'users.view', 'users.manage', 'users.ban', 'users.suspend',

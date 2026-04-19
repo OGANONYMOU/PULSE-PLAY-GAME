@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { writeAudit } from '@/lib/audit';
-import { checkServerPermission, validateAction } from '@/lib/security';
+import { checkServerPermission } from '@/lib/security';
 import { createIncident } from '../incident/incidentSystem';
 import type { AdminPermission } from '@/types/admin';
 
@@ -184,7 +184,7 @@ export async function submitDispute(
         .select('username, gamertag')
         .eq('id', params.respondent_id)
         .single();
-      respondent = r;
+      respondent = r as { username: string; gamertag: string | null } | null;
     }
     
     // Generate dispute number
@@ -206,7 +206,7 @@ export async function submitDispute(
         initiator_username: initiator?.username || 'Unknown',
         
         respondent_id: params.respondent_id || null,
-        respondent_username: respondent?.username || null,
+        respondent_username: (respondent as { username: string } | null)?.username || null,
         
         type: params.type,
         status: 'submitted',
@@ -391,7 +391,7 @@ export async function assignReferee(
  */
 export async function requestEvidence(
   dispute_id: string,
-  params: {
+  _params: {
     from_party: 'initiator' | 'respondent' | 'both';
     evidence_type: string;
     reason: string;
@@ -552,7 +552,7 @@ export async function makeDecision(
  */
 export async function resolveDispute(
   dispute_id: string,
-  resolved_by: string
+  _resolved_by: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
@@ -617,7 +617,7 @@ async function enforcePenalty(
         user_id,
         reason: penalty.description,
         source: 'dispute',
-      });
+      } as any);
       break;
       
     case 'disqualification':
@@ -737,5 +737,5 @@ async function notifyDisputeCreated(dispute_id: string, respondent_id: string): 
     title: 'Dispute Filed Against You',
     message: 'A dispute has been filed against you in a tournament. Please respond within the deadline.',
     link: `/disputes/${dispute_id}`,
-  });
+  } as any);
 }

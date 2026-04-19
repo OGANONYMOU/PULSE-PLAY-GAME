@@ -13,7 +13,7 @@ import type { AdminPermission, PermissionScope } from '@/types/admin';
 
 export type AuditActionCategory = 
   | 'user' | 'game' | 'tournament' | 'community' | 'moderation' 
-  | 'permission' | 'system' | 'auth' | 'incident' | 'dispute';
+  | 'permission' | 'system' | 'auth' | 'incident' | 'dispute' | 'fraud';
 
 export type AuditSeverity = 'debug' | 'info' | 'warning' | 'critical';
 

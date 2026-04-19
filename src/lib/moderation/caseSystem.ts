@@ -4,9 +4,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { supabase } from '@/lib/supabase';
-import { writeAudit, executeSecuredAction } from '@/lib/audit/auditSystem';
-import { checkServerPermission, validateAction } from '@/lib/security/permissions';
-import type { AdminPermission, PermissionScope } from '@/types/admin';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -452,7 +449,7 @@ export async function addCaseNote(
     }
 
     // Increment notes count on case
-    await supabase.rpc('increment_case_notes', { case_id });
+    await supabase.rpc('increment_case_notes', { case_id } as any);
 
     return { success: true };
   } catch (err) {
@@ -688,10 +685,10 @@ async function addCaseHistory(
   await supabase.rpc('append_case_history', {
     case_id,
     entry: historyEntry,
-  });
+  } as any);
 }
 
-async function executeModerationAction(params: {
+async function executeModerationAction(_params: {
   action: string;
   subject_type: ContentType;
   subject_id: string;
@@ -721,5 +718,5 @@ async function recordOffense(
     offense_type: params.offense_type,
     severity: params.severity,
     action_taken: params.action_taken,
-  });
+  } as any);
 }
