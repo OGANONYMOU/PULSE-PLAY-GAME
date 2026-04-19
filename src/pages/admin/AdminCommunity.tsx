@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { subscriptionManager } from '@/lib/realtime/subscriptionManager';
@@ -15,7 +15,7 @@ import {
   MessageSquare, Play, FileText, MessageCircle, Filter,
   Search, RefreshCw, Eye, EyeOff, Pin,
   Trash2, Flag, CheckCircle2, XCircle, AlertTriangle,
-  Clock, User, ThumbsUp,
+  Clock, User, ThumbsUp, Share2,
   Lock, Unlock, Sparkles, Shield, ExternalLink, Loader2,
   ChevronDown, Image as ImageIcon, Video,
   Ban, VolumeX, Gavel, Archive,
