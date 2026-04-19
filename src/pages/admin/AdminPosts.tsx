@@ -3,14 +3,14 @@
 // Comprehensive content moderation for posts, comments, clips, discussions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
-  MessageSquare, Flame, Eye, Pin, Trash2, AlertCircle, Search, Filter,
-  FileText, Play, MessageCircle, BarChart3, ThumbsUp, Flag, MoreHorizontal,
-  EyeOff, Crown, Link, Clock, ChevronDown, CheckCircle2, X, RefreshCw,
-  ShieldAlert, TrendingUp, Sparkles, Archive, ChevronRight
+  MessageSquare, Eye, Pin, Trash2, AlertCircle, Search, Filter,
+  FileText, Play, MessageCircle, ThumbsUp, Flag, MoreHorizontal,
+  EyeOff, Crown, Clock, CheckCircle2, RefreshCw,
+  ShieldAlert, TrendingUp, Sparkles
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -18,10 +18,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';

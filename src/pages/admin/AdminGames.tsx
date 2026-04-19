@@ -3,14 +3,14 @@
 // Comprehensive game catalog management with analytics
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search, X, Save, Loader2,
-  Star, AlertTriangle, Trophy, Users, TrendingUp, BarChart3, LayoutGrid,
-  Image, Sparkles, Filter, ArrowUpRight, Eye, EyeOff, ChevronDown,
-  Target, Zap, Crown,
+  Star, AlertTriangle, Trophy, Users, TrendingUp, LayoutGrid,
+  Filter, ArrowUpRight, Eye, EyeOff, ChevronDown,
+  Crown,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
