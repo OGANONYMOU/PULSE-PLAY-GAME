@@ -1,9 +1,9 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-  Trophy, Users, ArrowRight, Sparkles, Flame, Shield, 
+  Trophy, Users, ArrowRight, Sparkles, Shield, 
   Zap, Video, Crown, Play, ChevronRight,
-  Gem, Lock, CheckCircle2
+  Gem, Lock, CheckCircle2, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRef } from 'react';

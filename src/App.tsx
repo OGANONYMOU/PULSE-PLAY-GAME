@@ -12,7 +12,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
-const Home         = lazy(() => import('@/pages/Home').then(m => ({ default: m.Home })));
+const Home         = lazy(() => import('@/pages/Home'));
 const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
 const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
 const TournamentCreate = lazy(() => import('@/pages/TournamentCreateNew').then(m => ({ default: m.TournamentCreateNew })));
