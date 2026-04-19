@@ -12,8 +12,8 @@ import { supabase } from '@/lib/supabase';
 import {
   Users, Trophy, MessageSquare, ShieldAlert, Activity,
   TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
-  Zap, Clock, AlertTriangle, CheckCircle2,
-  Ban, UserCheck, Gamepad2, RefreshCw,
+  Zap, Clock, AlertTriangle,
+  Ban, Gamepad2, RefreshCw,
   ChevronRight, Flame, Terminal,
   BarChart3, PieChart,
 } from 'lucide-react';
@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { format, subDays, differenceInHours } from 'date-fns';
+import { differenceInHours } from 'date-fns';
 import type { AdminActivity, SystemAlert } from '@/types/admin';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -462,7 +462,6 @@ export function AdminDashboard() {
     metrics, 
     activities, 
     alerts, 
-    unreadAlerts,
     refreshMetrics, 
     isLoading,
     isRealtimeConnected,
