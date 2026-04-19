@@ -3,7 +3,6 @@
 // Professional esports operations console type definitions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import type { Profile } from './database';
 
 // ── RBAC System ───────────────────────────────────────────────────────────────
 

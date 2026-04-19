@@ -16,9 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHostableOrganizers } from '@/hooks/useOrganizers';
 import { toast } from 'sonner';
 import { writeAudit } from '@/lib/audit';
-import { generateSingleEliminationBracket, generateDoubleEliminationBracket, saveBracket } from '@/lib/tournament/bracketEngine';
-import { generateRoundRobin, generateGroupStage, saveFixtures } from '@/lib/tournament/fixtureGenerator';
-import { applySeeding } from '@/lib/tournament/seedingSystem';
+// Note: tournament engine imports removed as they're dynamically imported when needed
 
 type Game = { id: string; name: string; icon: string; logo_url: string | null; category: string };
 type TournamentType = 'esports' | 'football' | 'league';
@@ -409,7 +407,7 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export function TournamentCreateNew() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, profile, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { organizers, loading: organizersLoading } = useHostableOrganizers();
   
@@ -472,7 +470,7 @@ export function TournamentCreateNew() {
   };
 
   // Generate tournament structure based on type
-  const generateTournamentStructure = async (tournamentId: string, form: TournamentForm, userId: string) => {
+  const generateTournamentStructure = async (tournamentId: string, form: TournamentForm, _userId: string) => {
     try {
       // For bracket-based tournaments (esports/shooters)
       if (form.tournament_family === 'esports') {
