@@ -509,3 +509,26 @@ export async function executeSecuredAction<T extends Record<string, unknown>>(
 
   return auditResult;
 }
+
+/**
+ * Backwards-compatible wrapper for writeAudit
+ * Supports legacy signature: writeAudit(actor_id, action, target_id, metadata)
+ * @deprecated Use writeAudit with new signature instead
+ */
+export async function writeAuditLegacy(
+  actor_id: string,
+  action: string,
+  target_id: string,
+  metadata?: Record<string, unknown>
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  return writeAudit(
+    { actor_id, actor_role: 'admin' },
+    {
+      action,
+      category: 'system',
+      target_id,
+      target_type: 'user',
+      metadata,
+    }
+  );
+}

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
+import { writeAudit } from '@/lib/audit';
 import { formatDistanceToNow, format, subDays, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -779,7 +780,7 @@ export function AdminUsers(): React.ReactElement {
 
       if (error) throw error;
 
-      await writeAudit(self?.id || '', `user.${action}`, user.id, { reason: data?.reason, username: user.username });
+      await writeAudit({ actor_id: self?.id || '', actor_role: self?.role || 'admin' }, { action: `user.${action}`, category: 'user', target_id: user.id, target_type: 'user', metadata: { reason: data?.reason, username: user.username } });
 
       toast.success(`User ${action.replace('_', ' ')}ed successfully`);
       load();
@@ -798,7 +799,7 @@ export function AdminUsers(): React.ReactElement {
     if (!isSuper) { toast.error('Only super-admins can change roles.'); return; }
     const { error } = await supabase.from('profiles').update({ role }).eq('id', user.id);
     if (error) { toast.error('Failed: ' + error.message); return; }
-    await writeAudit(self?.id || '', 'change_role', user.id, { from: user.role, to: role, username: user.username });
+    await writeAudit({ actor_id: self?.id || '', actor_role: self?.role || 'admin' }, { action: 'change_role', category: 'user', target_id: user.id, target_type: 'user', metadata: { from: user.role, to: role, username: user.username } });
     toast.success(`${user.username} → ${role}`);
     load();
   };
@@ -809,7 +810,7 @@ export function AdminUsers(): React.ReactElement {
     setActionLoading(true);
     const { error } = await supabase.from('profiles').delete().eq('id', deleteTarget.id);
     if (error) { toast.error('Failed: ' + error.message); setActionLoading(false); return; }
-    await writeAudit(self.id, 'delete_user', deleteTarget.id, { username: deleteTarget.username });
+    await writeAudit({ actor_id: self.id, actor_role: self.role || 'admin' }, { action: 'delete_user', category: 'user', target_id: deleteTarget.id, target_type: 'user', metadata: { username: deleteTarget.username } });
     toast.success(`${deleteTarget.username} deleted.`);
     setDeleteTarget(null);
     setActionLoading(false);

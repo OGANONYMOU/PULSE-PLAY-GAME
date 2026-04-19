@@ -20,10 +20,14 @@ import type {
   ReportType,
   ReportTarget,
 } from '@/types/admin';
+import type { Profile } from './AuthContext';
 
 // ── Context State ─────────────────────────────────────────────────────────────
 
 interface AdminContextState {
+  // User Profile
+  profile: Profile | null;
+  
   // Permissions
   role: AdminRole | null;
   permissions: AdminPermission[];
@@ -64,6 +68,7 @@ interface AdminContextState {
 // ── Default State ────────────────────────────────────────────────────────────
 
 const defaultState: AdminContextState = {
+  profile: null,
   role: null,
   permissions: [],
   hasPermission: () => false,
@@ -673,6 +678,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const unreadAlerts = alerts.filter(a => !a.acknowledged_by).length;
 
   const value: AdminContextState = {
+    profile,
     role,
     permissions,
     hasPermission,
