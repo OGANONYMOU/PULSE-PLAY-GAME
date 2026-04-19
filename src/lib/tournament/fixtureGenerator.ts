@@ -170,7 +170,7 @@ export function generateGroupStage(
   const allFixtures: Omit<Fixture, 'id'>[] = [];
   let maxRounds = 0;
   
-  groups.forEach((group, groupIdx) => {
+  groups.forEach((group, _groupIdx) => {
     const groupFixtures = generateRoundRobin(tournament_id, group.participants, {
       home_and_away: group.home_and_away,
       start_date: options.start_date,

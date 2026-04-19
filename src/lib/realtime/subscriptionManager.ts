@@ -243,7 +243,7 @@ export function subscribeToAuditLogs(
 // REAL-TIME HOOKS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * React hook for real-time moderation cases

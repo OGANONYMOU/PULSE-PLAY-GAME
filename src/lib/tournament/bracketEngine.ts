@@ -525,7 +525,7 @@ export async function reportMatchResult(
           status: 'completed',
           winner_id: params.winner_id,
           completed_at: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', match.tournament_id);
       
       // Trigger automated fraud analysis
