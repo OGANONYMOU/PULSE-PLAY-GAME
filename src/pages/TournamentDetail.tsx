@@ -11,7 +11,10 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
+import { withSupabaseRetry } from '@/lib/utils/retry';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { submitDispute } from '@/lib/dispute/disputeSystem';
+import { type FraudFlag } from '@/lib/fraud/fraudDetection';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type TournamentFull = {
@@ -52,6 +55,35 @@ type TournPost = {
   id: string; type: string; content: string; created_at: string;
   match_id: string | null;
   profiles: { username: string; avatar_url: string | null } | null;
+};
+
+type Fixture = {
+  id: string;
+  round: number;
+  match_number: number;
+  home_participant_id: string;
+  away_participant_id: string;
+  home_score: number | null;
+  away_score: number | null;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  scheduled_at: string;
+  home_participant: { username: string; avatar_url: string | null } | null;
+  away_participant: { username: string; avatar_url: string | null } | null;
+};
+
+type Standing = {
+  participant_id: string;
+  username: string;
+  avatar_url: string | null;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  points: number;
+  form: string[];
 };
 
 // ── Avatar helper ──────────────────────────────────────────────────────────
@@ -270,14 +302,29 @@ function MatchActionDrawer({ match, tournament, myId, onClose, onRefresh }: {
     if (decision === 'dispute' && !disputeReason.trim()) { toast.error('Please explain the dispute'); return; }
     setUploading(true);
     try {
-      const { error } = await (supabase as any).rpc('confirm_match_result', {
-        p_match_id: match.id,
-        p_report_id: existingReport.id,
-        p_decision: decision,
-        p_reason: decision === 'dispute' ? disputeReason : null,
-      });
-      if (error) throw new Error(error.message);
-      toast.success(decision === 'confirm' ? 'Result confirmed! You advance. 🎉' : 'Dispute opened. An admin will review.');
+      if (decision === 'confirm') {
+        const { error } = await (supabase as any).rpc('confirm_match_result', {
+          p_match_id: match.id,
+          p_report_id: existingReport.id,
+          p_decision: decision,
+          p_reason: null,
+        });
+        if (error) throw new Error(error.message);
+        toast.success('Result confirmed! You advance. 🎉');
+      } else {
+        // Use the real dispute system
+        const result = await submitDispute({
+          tournament_id: tournament.id,
+          match_id: match.id,
+          initiator_id: myId,
+          respondent_id: existingReport.reporter_id,
+          type: 'disputed_result',
+          claim: disputeReason,
+          evidence_urls: existingReport.proof_url ? [existingReport.proof_url] : [],
+        });
+        if (!result.success) throw new Error(result.error || 'Failed to submit dispute');
+        toast.success('Dispute opened. An admin will review.');
+      }
       onRefresh();
       onClose();
     } catch (err) {
@@ -523,6 +570,153 @@ function LiveFeed({ posts }: { posts: TournPost[] }) {
   );
 }
 
+// ── Fixture view (for football/league tournaments) ──────────────────────────
+function FixtureView({ fixtures, onOpenFixture }: { fixtures: Fixture[]; onOpenFixture?: (f: Fixture) => void }) {
+  if (fixtures.length === 0) return (
+    <div className="text-center py-16">
+      <Trophy className="w-14 h-14 mx-auto text-white/15 mb-4" />
+      <p className="text-white/35 text-sm">Fixtures not generated yet.</p>
+      <p className="text-white/20 text-xs mt-1">Waiting for registration to complete.</p>
+    </div>
+  );
+
+  const fixturesByRound = fixtures.reduce((acc, f) => {
+    acc[f.round] = acc[f.round] || [];
+    acc[f.round].push(f);
+    return acc;
+  }, {} as Record<number, Fixture[]>);
+
+  return (
+    <div className="space-y-6">
+      {Object.entries(fixturesByRound).map(([round, roundFixtures]) => (
+        <div key={round} className="space-y-3">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs font-orbitron font-bold text-white/50">Round {round}</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+          <div className="grid gap-2">
+            {roundFixtures.map(f => (
+              <motion.div
+                key={f.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => onOpenFixture?.(f)}
+                className={`flex items-center gap-3 p-3 rounded-xl border ${
+                  f.status === 'completed' ? 'bg-green-500/5 border-green-500/20' :
+                  f.status === 'in_progress' ? 'bg-cyan-500/5 border-cyan-500/30' :
+                  'bg-white/3 border-white/8'
+                } ${onOpenFixture ? 'cursor-pointer hover:bg-white/5' : ''} transition-all`}
+              >
+                <div className="flex-1 flex items-center justify-end gap-2">
+                  <span className="text-sm font-semibold text-white">{f.home_participant?.username ?? 'TBD'}</span>
+                  <PlayerAvatar username={f.home_participant?.username ?? '?'} url={f.home_participant?.avatar_url} />
+                </div>
+                <div className="px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 min-w-[80px] text-center">
+                  {f.status === 'completed' ? (
+                    <span className="font-orbitron font-black text-lg text-white">{f.home_score} - {f.away_score}</span>
+                  ) : (
+                    <span className="text-xs text-white/40">VS</span>
+                  )}
+                </div>
+                <div className="flex-1 flex items-center gap-2">
+                  <PlayerAvatar username={f.away_participant?.username ?? '?'} url={f.away_participant?.avatar_url} />
+                  <span className="text-sm font-semibold text-white">{f.away_participant?.username ?? 'TBD'}</span>
+                </div>
+                {f.status === 'in_progress' && <span className="text-[10px] text-cyan-400 animate-pulse">● Live</span>}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Standings table (for league/round-robin tournaments) ────────────────────
+function StandingsTable({ standings }: { standings: Standing[] }) {
+  if (standings.length === 0) return (
+    <div className="text-center py-16">
+      <Trophy className="w-14 h-14 mx-auto text-white/15 mb-4" />
+      <p className="text-white/35 text-sm">Standings not available yet.</p>
+      <p className="text-white/20 text-xs mt-1">Waiting for matches to complete.</p>
+    </div>
+  );
+
+  const sorted = [...standings].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference;
+    return b.goals_for - a.goals_for;
+  });
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-white/10">
+            <th className="text-left py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">#</th>
+            <th className="text-left py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">Player</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">P</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">W</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">D</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">L</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">GF</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">GA</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">GD</th>
+            <th className="text-center py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">Pts</th>
+            <th className="text-left py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">Form</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((s, i) => (
+            <tr key={s.participant_id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+              <td className="py-3 px-2">
+                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-xs font-bold ${
+                  i === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                  i === 1 ? 'bg-slate-400/20 text-slate-300' :
+                  i === 2 ? 'bg-orange-600/20 text-orange-400' :
+                  'bg-white/5 text-white/50'
+                }`}>
+                  {i + 1}
+                </span>
+              </td>
+              <td className="py-3 px-2">
+                <div className="flex items-center gap-2">
+                  <PlayerAvatar username={s.username} url={s.avatar_url} />
+                  <span className="text-sm font-medium text-white">{s.username}</span>
+                </div>
+              </td>
+              <td className="py-3 px-2 text-center text-sm text-white/60">{s.played}</td>
+              <td className="py-3 px-2 text-center text-sm text-green-400">{s.won}</td>
+              <td className="py-3 px-2 text-center text-sm text-yellow-400">{s.drawn}</td>
+              <td className="py-3 px-2 text-center text-sm text-red-400">{s.lost}</td>
+              <td className="py-3 px-2 text-center text-sm text-white/60">{s.goals_for}</td>
+              <td className="py-3 px-2 text-center text-sm text-white/60">{s.goals_against}</td>
+              <td className="py-3 px-2 text-center text-sm font-bold text-cyan-400">{s.goal_difference > 0 ? '+' : ''}{s.goal_difference}</td>
+              <td className="py-3 px-2 text-center">
+                <span className="font-orbitron font-black text-lg text-white">{s.points}</span>
+              </td>
+              <td className="py-3 px-2">
+                <div className="flex gap-1">
+                  {s.form.slice(-5).map((r, idx) => (
+                    <span key={idx} className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${
+                      r === 'W' ? 'bg-green-500/20 text-green-400' :
+                      r === 'D' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      {r}
+                    </span>
+                  ))}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 export function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -533,8 +727,12 @@ export function TournamentDetail() {
   const [rounds, setRounds] = useState<Round[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [posts, setPosts] = useState<TournPost[]>([]);
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [standings, setStandings] = useState<Standing[]>([]);
+  const [fraudFlags, setFraudFlags] = useState<FraudFlag[]>([]);
+  const [fraudRisk, setFraudRisk] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'bracket' | 'participants' | 'feed'>('overview');
+  const [tab, setTab] = useState<'overview' | 'bracket' | 'fixtures' | 'standings' | 'participants' | 'feed'>('overview');
   const [joining, setJoining] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -547,7 +745,7 @@ export function TournamentDetail() {
     if (!id) return;
     setLoading(true);
 
-    const [tRes, pRes, rRes, mRes, postRes] = await Promise.all([
+    const [tRes, pRes, rRes, mRes, postRes, fRes, sRes] = await Promise.all([
       supabase.from('tournaments')
         .select('*, games(id, name, icon, logo_url)')
         .eq('id', id).single(),
@@ -567,6 +765,15 @@ export function TournamentDetail() {
         .eq('tournament_id', id)
         .order('created_at', { ascending: false })
         .limit(30),
+      supabase.from('tournament_fixtures')
+        .select('*, home_participant:profiles!home_participant_id(username, avatar_url), away_participant:profiles!away_participant_id(username, avatar_url)')
+        .eq('tournament_id', id)
+        .order('round').order('match_number'),
+      supabase.from('tournament_standings')
+        .select('*, participant:profiles!participant_id(username, avatar_url)')
+        .eq('tournament_id', id)
+        .order('points', { ascending: false })
+        .order('goal_difference', { ascending: false }),
     ]);
 
     if (tRes.error) { toast.error('Tournament not found'); navigate('/tournaments'); return; }
@@ -576,10 +783,61 @@ export function TournamentDetail() {
     setMatches((mRes.data as Match[]) ?? []);
     setPosts((postRes.data as TournPost[]) ?? []);
 
+    // Transform fixtures data
+    const rawFixtures = fRes.data ?? [];
+    setFixtures(rawFixtures.map((f: Record<string, unknown>) => ({
+      id: f.id as string,
+      round: f.round as number,
+      match_number: f.match_number as number,
+      home_participant_id: f.home_participant_id as string,
+      away_participant_id: f.away_participant_id as string,
+      home_score: f.home_score as number | null,
+      away_score: f.away_score as number | null,
+      status: f.status as Fixture['status'],
+      scheduled_at: f.scheduled_at as string,
+      home_participant: f.home_participant as { username: string; avatar_url: string | null } | null,
+      away_participant: f.away_participant as { username: string; avatar_url: string | null } | null,
+    })));
+
+    // Transform standings data
+    const rawStandings = sRes.data ?? [];
+    setStandings(rawStandings.map((s: Record<string, unknown>) => ({
+      participant_id: s.participant_id as string,
+      username: (s.participant as { username: string })?.username ?? 'Unknown',
+      avatar_url: (s.participant as { avatar_url: string | null })?.avatar_url ?? null,
+      played: s.played as number,
+      won: s.won as number,
+      drawn: s.drawn as number,
+      lost: s.lost as number,
+      goals_for: s.goals_for as number,
+      goals_against: s.goals_against as number,
+      goal_difference: s.goal_difference as number,
+      points: s.points as number,
+      form: (s.form as string[]) ?? [],
+    })));
+
     if (user) {
       const mine = (pRes.data as Participant[])?.find(p => p.user_id === user.id) ?? null;
       setMyParticipant(mine);
     }
+
+    // Fetch fraud flags for this tournament
+    const { data: fraudData } = await supabase
+      .from('fraud_flags')
+      .select('*')
+      .eq('tournament_id', id)
+      .order('created_at', { ascending: false });
+
+    const typedFraudFlags = (fraudData ?? []) as FraudFlag[];
+    setFraudFlags(typedFraudFlags);
+
+    // Calculate risk score from flags
+    const calculatedRisk = typedFraudFlags.reduce((score, flag) => {
+      const severityWeight = { low: 10, medium: 30, high: 50 }[flag.severity] || 10;
+      return score + severityWeight;
+    }, 0);
+    setFraudRisk(Math.min(calculatedRisk, 100));
+
     setLoading(false);
   }, [id, user, navigate]);
 
@@ -594,6 +852,9 @@ export function TournamentDetail() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_participants', filter: `tournament_id=eq.${id}` }, load)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tournament_posts', filter: `tournament_id=eq.${id}` }, load)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tournaments', filter: `id=eq.${id}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `tournament_id=eq.${id}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_fixtures', filter: `tournament_id=eq.${id}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_standings', filter: `tournament_id=eq.${id}` }, load)
       .subscribe();
     realtimeRef.current = channel;
     return () => { supabase.removeChannel(channel); };
@@ -637,10 +898,29 @@ export function TournamentDetail() {
   };
 
   if (loading) return (
-    <div className="min-h-screen pt-24 flex items-center justify-center">
-      <div className="flex items-center gap-3 text-white/40">
-        <Loader2 className="w-6 h-6 animate-spin" />
-        <span className="text-sm">Loading tournament…</span>
+    <div className="min-h-screen pt-24 pb-16">
+      {/* Header Skeleton */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+        <div className="h-4 w-24 bg-white/10 rounded animate-pulse mb-4" />
+        <div className="flex flex-col sm:flex-row gap-5 mb-8">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 animate-pulse" />
+          <div className="flex-1 space-y-3">
+            <div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
+            <div className="h-8 w-64 bg-white/10 rounded animate-pulse" />
+            <div className="h-3 w-48 bg-white/10 rounded animate-pulse" />
+          </div>
+        </div>
+        {/* Tabs Skeleton */}
+        <div className="flex gap-2 mb-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 w-24 bg-white/10 rounded-lg animate-pulse" />
+          ))}
+        </div>
+        {/* Content Skeleton */}
+        <div className="space-y-4">
+          <div className="h-48 bg-white/5 rounded-xl animate-pulse" />
+          <div className="h-48 bg-white/5 rounded-xl animate-pulse" />
+        </div>
       </div>
     </div>
   );
@@ -659,12 +939,18 @@ export function TournamentDetail() {
     completed: { label: 'Completed',  color: 'text-white/40',   bg: 'bg-white/8      border-white/12'     },
   }[tournament.status] ?? { label: tournament.status, color: 'text-white/40', bg: 'bg-white/8 border-white/12' };
 
+  // Determine tournament type and show appropriate tabs
+  const isBracketTournament = tournament?.format?.includes('elimination') || tournament?.format === 'single' || tournament?.format === 'double';
+  const isLeagueTournament = tournament?.format?.includes('round') || tournament?.format?.includes('league') || tournament?.format?.includes('group');
+
   const TABS = [
     { id: 'overview',     label: 'Overview',     icon: Info       },
-    { id: 'bracket',      label: 'Bracket',      icon: Trophy     },
+    ...(isBracketTournament ? [{ id: 'bracket', label: 'Bracket', icon: Trophy }] : []),
+    ...(isLeagueTournament && fixtures.length > 0 ? [{ id: 'fixtures', label: 'Fixtures', icon: Calendar }] : []),
+    ...(isLeagueTournament && standings.length > 0 ? [{ id: 'standings', label: 'Standings', icon: Trophy }] : []),
     { id: 'participants', label: 'Players',       icon: Users      },
     { id: 'feed',         label: 'Live Feed',     icon: Bell       },
-  ] as const;
+  ] as { id: typeof tab; label: string; icon: typeof Info }[];
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-16">
@@ -693,6 +979,20 @@ export function TournamentDetail() {
                 {tournament.games && <span className="text-[10px] text-white/40">{tournament.games.icon} {tournament.games.name}</span>}
               </div>
               <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-2 leading-tight">{tournament.name}</h1>
+              {/* Fraud Risk Indicator - visible to all when risk exists, or admins always */}
+              {fraudRisk > 0 && (
+                <div className={`mb-2 flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border ${
+                  fraudRisk >= 70 ? 'bg-red-500/15 border-red-500/30 text-red-400' :
+                  fraudRisk >= 40 ? 'bg-orange-500/15 border-orange-500/30 text-orange-400' :
+                  'bg-yellow-500/15 border-yellow-500/30 text-yellow-400'
+                }`}>
+                  <Flag className="w-3.5 h-3.5" />
+                  <span className="font-semibold">Risk: {fraudRisk}/100</span>
+                  {fraudFlags.length > 0 && (
+                    <span className="text-white/50">({fraudFlags.length} flag{fraudFlags.length !== 1 ? 's' : ''})</span>
+                  )}
+                </div>
+              )}
               <div className="flex flex-wrap gap-4 text-xs text-white/40">
                 <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{format(new Date(tournament.date), 'MMM d, yyyy HH:mm')}</span>
                 <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />{tournament.current_players}/{tournament.max_players} players</span>
@@ -852,6 +1152,14 @@ export function TournamentDetail() {
 
         {tab === 'bracket' && (
           <BracketView rounds={rounds} matches={matches} myId={user?.id ?? null} onOpenMatch={setActiveMatch} />
+        )}
+
+        {tab === 'fixtures' && (
+          <FixtureView fixtures={fixtures} onOpenFixture={() => {}} />
+        )}
+
+        {tab === 'standings' && (
+          <StandingsTable standings={standings} />
         )}
 
         {tab === 'participants' && (

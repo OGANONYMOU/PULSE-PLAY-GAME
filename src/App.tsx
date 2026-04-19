@@ -30,6 +30,7 @@ const AdminDashboard     = lazy(() => import('@/pages/admin/AdminDashboard').the
 const AdminUsers         = lazy(() => import('@/pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
 const AdminGames         = lazy(() => import('@/pages/admin/AdminGames').then(m => ({ default: m.AdminGames })));
 const AdminTournaments   = lazy(() => import('@/pages/admin/AdminTournaments').then(m => ({ default: m.AdminTournaments })));
+const AdminCommunity     = lazy(() => import('@/pages/admin/AdminCommunity').then(m => ({ default: m.AdminCommunity })));
 const AdminPosts         = lazy(() => import('@/pages/admin/AdminPosts').then(m => ({ default: m.AdminPosts })));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements').then(m => ({ default: m.AdminAnnouncements })));
 const AdminAnalytics     = lazy(() => import('@/pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
@@ -38,6 +39,8 @@ const AdminAuditLog      = lazy(() => import('@/pages/admin/AdminAuditLog').then
 const AdminLoyalty       = lazy(() => import('@/pages/admin/AdminLoyalty').then(m => ({ default: m.AdminLoyalty })));
 const AdminOrganizers    = lazy(() => import('@/pages/admin/AdminOrganizers').then(m => ({ default: m.AdminOrganizers })));
 const AdminPermissions   = lazy(() => import('@/pages/admin/AdminPermissions').then(m => ({ default: m.AdminPermissions })));
+const AdminModeration    = lazy(() => import('@/pages/admin/AdminModeration').then(m => ({ default: m.AdminModeration })));
+const AdminIncidents     = lazy(() => import('@/pages/admin/AdminIncidents').then(m => ({ default: m.AdminIncidents })));
 
 // ── Route prefetching ──────────────────────────────────────────────────────────
 const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
@@ -144,8 +147,11 @@ function AppContent(): React.ReactElement {
                 <Route path="tournaments"         element={<AdminTournaments />} />
                 <Route path="organizers"          element={<AdminOrganizers />} />
                 <Route path="permissions"         element={<AdminPermissions />} />
+                <Route path="moderation"          element={<AdminModeration />} />
+                <Route path="community"           element={<AdminCommunity />} />
                 <Route path="posts"               element={<AdminPosts />} />
                 <Route path="announcements"       element={<AdminAnnouncements />} />
+                <Route path="incidents"           element={<AdminIncidents />} />
                 <Route path="settings"            element={<AdminSettings />} />
                 <Route path="audit"               element={<AdminAuditLog />} />
                 <Route path="loyalty"             element={<AdminLoyalty />} />

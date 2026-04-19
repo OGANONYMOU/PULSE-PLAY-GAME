@@ -4,11 +4,13 @@ import {
   Shield, LayoutDashboard, Users, Gamepad2, LogOut,
   ChevronRight, ChevronLeft, Menu, X, BarChart2, Settings,
   Megaphone, Trophy, FileText, ClipboardList,
-  Search, Zap, Tag, Building2, UserCheck
+  Search, Zap, Tag, Building2, UserCheck,
+  ShieldAlert, MessageSquare, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_GROUPS = [
@@ -17,29 +19,32 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin',           label: 'Dashboard',    Icon: LayoutDashboard, exact: true },
       { href: '/admin/analytics', label: 'Analytics',    Icon: BarChart2 },
+      { href: '/admin/incidents', label: 'Incidents',    Icon: AlertTriangle, badge: 'Live' },
     ],
   },
   {
-    label: 'Tournament Management',
+    label: 'Trust & Safety',
     items: [
-      { href: '/admin/organizers',    label: 'Organizers',    Icon: Building2 },
+      { href: '/admin/moderation',  label: 'Moderation',    Icon: ShieldAlert },
+      { href: '/admin/users',      label: 'Users',         Icon: Users },
+      { href: '/admin/audit',       label: 'Audit Log',     Icon: ClipboardList },
+    ],
+  },
+  {
+    label: 'Tournament Ops',
+    items: [
       { href: '/admin/tournaments',  label: 'Tournaments',   Icon: Trophy },
-      { href: '/admin/permissions',   label: 'Permissions',   Icon: UserCheck },
+      { href: '/admin/organizers',  label: 'Organizers',    Icon: Building2 },
+      { href: '/admin/permissions', label: 'Permissions',   Icon: UserCheck },
     ],
   },
   {
-    label: 'Content',
+    label: 'Community',
     items: [
+      { href: '/admin/community',   label: 'Community',     Icon: MessageSquare },
+      { href: '/admin/posts',        label: 'Posts',         Icon: FileText },
       { href: '/admin/announcements', label: 'Announcements', Icon: Megaphone },
-      { href: '/admin/posts',         label: 'Posts',         Icon: FileText },
-      { href: '/admin/games',         label: 'Games',         Icon: Gamepad2 },
-    ],
-  },
-  {
-    label: 'Community & Trust',
-    items: [
-      { href: '/admin/users',  label: 'Users',     Icon: Users },
-      { href: '/admin/audit',  label: 'Audit Log', Icon: ClipboardList },
+      { href: '/admin/games',        label: 'Games',         Icon: Gamepad2 },
     ],
   },
   {
@@ -157,6 +162,7 @@ export function AdminLayout(): React.ReactElement {
                 const isActive = (item as { exact?: boolean }).exact
                   ? location.pathname === item.href
                   : location.pathname.startsWith(item.href);
+                const itemBadge = (item as { badge?: string }).badge;
                 return (
                   <Link key={item.href} to={item.href} onClick={() => setMobileOpen(false)}
                     title={collapsed && !mobile ? item.label : undefined}
@@ -169,7 +175,12 @@ export function AdminLayout(): React.ReactElement {
                     {(!collapsed || mobile) && (
                       <>
                         <span className="text-sm font-medium flex-1 truncate">{item.label}</span>
-                        {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-40 flex-shrink-0" />}
+                        {itemBadge && (
+                          <Badge className="text-[10px] px-1.5 py-0 h-4 bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                            {itemBadge}
+                          </Badge>
+                        )}
+                        {isActive && !itemBadge && <ChevronRight className="w-3.5 h-3.5 opacity-40 flex-shrink-0" />}
                       </>
                     )}
                   </Link>

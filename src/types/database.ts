@@ -56,20 +56,20 @@ export interface Database {
         Row: {
           id: string; name: string; game_id: string; status: TournamentStatus; date: string;
           prize_pool: string; max_players: number; current_players: number; duration: string;
-          winner: string | null; description: string | null; rules: string | null;
-          entry_fee: string | null; created_at: string;
+          winner: string | null; winner_id: string | null; description: string | null; rules: string | null;
+          entry_fee: string | null; created_at: string; completed_at: string | null;
         };
         Insert: {
           id?: string; name: string; game_id: string; status?: TournamentStatus; date: string;
           prize_pool: string; max_players: number; current_players?: number; duration: string;
-          winner?: string | null; description?: string | null; rules?: string | null;
-          entry_fee?: string | null;
+          winner?: string | null; winner_id?: string | null; description?: string | null; rules?: string | null;
+          entry_fee?: string | null; completed_at?: string | null;
         };
         Update: {
           name?: string; game_id?: string; status?: TournamentStatus; date?: string;
           prize_pool?: string; max_players?: number; current_players?: number; duration?: string;
-          winner?: string | null; description?: string | null; rules?: string | null;
-          entry_fee?: string | null;
+          winner?: string | null; winner_id?: string | null; description?: string | null; rules?: string | null;
+          entry_fee?: string | null; completed_at?: string | null;
         };
       };
       tournament_participants: {
@@ -85,6 +85,61 @@ export interface Database {
         Update: {
           checked_in?: boolean; checked_in_at?: string | null;
           seed?: number | null; status?: ParticipantStatus;
+        };
+      };
+      fraud_flags: {
+        Row: {
+          id: string; tournament_id: string; match_id: string | null; user_id: string | null;
+          flag_type: string; severity: 'low' | 'medium' | 'high' | 'critical';
+          status: 'open' | 'investigating' | 'confirmed' | 'dismissed' | 'resolved';
+          evidence: Json | null; notes: string | null; confidence_score: number;
+          detected_at: string; investigated_by: string | null; investigated_at: string | null;
+          resolution_notes: string | null; created_at: string; updated_at: string;
+        };
+        Insert: {
+          id?: string; tournament_id: string; match_id?: string | null; user_id?: string | null;
+          flag_type: string; severity: 'low' | 'medium' | 'high' | 'critical';
+          status?: 'open' | 'investigating' | 'confirmed' | 'dismissed' | 'resolved';
+          evidence?: Json | null; notes?: string | null; confidence_score: number;
+          detected_at?: string; investigated_by?: string | null; investigated_at?: string | null;
+          resolution_notes?: string | null; created_at?: string; updated_at?: string;
+        };
+        Update: {
+          id?: string; tournament_id?: string; match_id?: string | null; user_id?: string | null;
+          flag_type?: string; severity?: 'low' | 'medium' | 'high' | 'critical';
+          status?: 'open' | 'investigating' | 'confirmed' | 'dismissed' | 'resolved';
+          evidence?: Json | null; notes?: string | null; confidence_score?: number;
+          detected_at?: string; investigated_by?: string | null; investigated_at?: string | null;
+          resolution_notes?: string | null; created_at?: string; updated_at?: string;
+        };
+      };
+      matches: {
+        Row: {
+          id: string; tournament_id: string; round: number; match_number: number;
+          player1_id: string | null; player2_id: string | null; winner_id: string | null;
+          score_player1: number | null; score_player2: number | null;
+          status: string; scheduled_at: string | null; completed_at: string | null;
+          next_match_id: string | null; next_match_position: string | null;
+          bracket_type: 'winners' | 'losers' | 'finals' | null; is_bye: boolean;
+          created_at: string; updated_at: string;
+        };
+        Insert: {
+          id?: string; tournament_id: string; round: number; match_number: number;
+          player1_id?: string | null; player2_id?: string | null; winner_id?: string | null;
+          score_player1?: number | null; score_player2?: number | null;
+          status?: string; scheduled_at?: string | null; completed_at?: string | null;
+          next_match_id?: string | null; next_match_position?: string | null;
+          bracket_type?: 'winners' | 'losers' | 'finals' | null; is_bye?: boolean;
+          created_at?: string; updated_at?: string;
+        };
+        Update: {
+          id?: string; tournament_id?: string; round?: number; match_number?: number;
+          player1_id?: string | null; player2_id?: string | null; winner_id?: string | null;
+          score_player1?: number | null; score_player2?: number | null;
+          status?: string; scheduled_at?: string | null; completed_at?: string | null;
+          next_match_id?: string | null; next_match_position?: string | null;
+          bracket_type?: 'winners' | 'losers' | 'finals' | null; is_bye?: boolean;
+          created_at?: string; updated_at?: string;
         };
       };
       posts: {

@@ -1,254 +1,700 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Activity, RefreshCw, Search, ChevronDown, ChevronUp,
-  Shield, Users, Gamepad2, Trophy, MessageSquare, AlertTriangle,
-  Layers, FileText, Download,
-} from 'lucide-react';
+// ═══════════════════════════════════════════════════════════════════════════════
+// PulsePlay Admin System - Audit Logs Module
+// Comprehensive audit trail with filtering, analytics, and export
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import {
+  Activity, ShieldAlert, RefreshCw, Search, ChevronDown, ChevronUp, ChevronRight,
+  Shield, Users, Gamepad2, Trophy, MessageSquare, AlertTriangle, Layers,
+  FileText, Download, Filter, Calendar, Clock, User, Ban, Gavel,
+  CheckCircle2, XCircle, Edit3, Trash2, Plus, Lock, Unlock, Eye,
+  FileJson, FileSpreadsheet, History, MoreHorizontal,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { format, formatDistanceToNow, subDays, subHours, isAfter, parseISO } from 'date-fns';
 
-// ── Types ──────────────────────────────────────────────────────────────────
-type AuditRow = {
-  id: number;
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type AuditLogEntry = {
+  id: string;
   ts: string;
   actor_id: string | null;
+  actor_email?: string;
+  actor_username?: string;
   action: string;
-  entity_type: string;
-  entity_id: string | null;
-  data: Record<string, unknown>;
-  actor?: { username: string } | null;
+  action_category: string;
+  target_type: string;
+  target_id: string | null;
+  target_name?: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  details: Record<string, unknown>;
+  ip_address?: string;
+  user_agent?: string;
+  session_id?: string;
 };
 
-// ── Action grouping ────────────────────────────────────────────────────────
-const ACTION_ICON: Record<string, { icon: React.ElementType; color: string }> = {
-  'tournament.join'         : { icon: Trophy,        color: 'text-cyan-400'    },
-  'tournament.leave'        : { icon: Trophy,        color: 'text-white/40'    },
-  'tournament.create'       : { icon: Trophy,        color: 'text-green-400'   },
-  'tournament.update'       : { icon: Trophy,        color: 'text-yellow-400'  },
-  'tournament.delete'       : { icon: Trophy,        color: 'text-red-400'     },
-  'tournament.status_change': { icon: Trophy,        color: 'text-purple-400'  },
-  'match.start'             : { icon: Layers,        color: 'text-green-400'   },
-  'match.status_change'     : { icon: Layers,        color: 'text-purple-400'  },
-  'dispute.open'            : { icon: AlertTriangle, color: 'text-red-400'     },
-  'dispute.resolve'         : { icon: AlertTriangle, color: 'text-green-400'   },
-  'dispute.cancel'          : { icon: AlertTriangle, color: 'text-white/40'    },
-  'evidence.upload'         : { icon: FileText,      color: 'text-blue-400'    },
-  'user.ban'                : { icon: Users,         color: 'text-red-400'     },
-  'user.unban'              : { icon: Users,         color: 'text-green-400'   },
-  'user.role_change'        : { icon: Users,         color: 'text-yellow-400'  },
-  'game.create'             : { icon: Gamepad2,      color: 'text-cyan-400'    },
-  'game.update'             : { icon: Gamepad2,      color: 'text-yellow-400'  },
-  'game.delete'             : { icon: Gamepad2,      color: 'text-red-400'     },
-  'announcement.create'     : { icon: MessageSquare, color: 'text-purple-400'  },
-  'post.delete'             : { icon: FileText,      color: 'text-red-400'     },
+type AuditStats = {
+  totalEntries: number;
+  todayEntries: number;
+  criticalEvents: number;
+  uniqueActors: number;
+  actionsByCategory: Record<string, number>;
+  severityDistribution: Record<string, number>;
 };
 
-function getMeta(action: string) {
-  return ACTION_ICON[action] ?? { icon: Activity, color: 'text-white/40' };
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ACTION_CATEGORIES = [
+  { id: 'all', label: 'All', icon: Activity },
+  { id: 'user', label: 'Users', icon: Users },
+  { id: 'tournament', label: 'Tournaments', icon: Trophy },
+  { id: 'match', label: 'Matches', icon: Layers },
+  { id: 'moderation', label: 'Moderation', icon: Shield },
+  { id: 'content', label: 'Content', icon: FileText },
+  { id: 'system', label: 'System', icon: ShieldAlert },
+] as const;
+
+type ActionCategory = typeof ACTION_CATEGORIES[number]['id'];
+
+const SEVERITY_CONFIG = {
+  low: { color: 'text-slate-400', bg: 'bg-slate-500/20', icon: CheckCircle2, label: 'Low' },
+  medium: { color: 'text-blue-400', bg: 'bg-blue-500/20', icon: Eye, label: 'Medium' },
+  high: { color: 'text-orange-400', bg: 'bg-orange-500/20', icon: AlertTriangle, label: 'High' },
+  critical: { color: 'text-red-400', bg: 'bg-red-500/20', icon: ShieldAlert, label: 'Critical' },
+};
+
+const ACTION_ICONS: Record<string, { icon: React.ElementType; color: string }> = {
+  'tournament.create': { icon: Trophy, color: 'text-green-400' },
+  'tournament.update': { icon: Trophy, color: 'text-yellow-400' },
+  'tournament.delete': { icon: Trophy, color: 'text-red-400' },
+  'tournament.status_change': { icon: Trophy, color: 'text-purple-400' },
+  'match.start': { icon: Layers, color: 'text-green-400' },
+  'match.status_change': { icon: Layers, color: 'text-purple-400' },
+  'dispute.open': { icon: AlertTriangle, color: 'text-red-400' },
+  'dispute.resolve': { icon: AlertTriangle, color: 'text-green-400' },
+  'user.ban': { icon: Ban, color: 'text-red-400' },
+  'user.unban': { icon: Ban, color: 'text-green-400' },
+  'user.role_change': { icon: Users, color: 'text-yellow-400' },
+  'user.delete': { icon: Trash2, color: 'text-red-400' },
+  'user.mute': { icon: MessageSquare, color: 'text-orange-400' },
+  'user.unmute': { icon: MessageSquare, color: 'text-green-400' },
+  'content.post_delete': { icon: FileText, color: 'text-red-400' },
+  'content.clip_delete': { icon: Gamepad2, color: 'text-red-400' },
+  'system.login': { icon: Lock, color: 'text-green-400' },
+  'system.logout': { icon: Unlock, color: 'text-slate-400' },
+  'system.permission_change': { icon: Shield, color: 'text-purple-400' },
+  'moderation.resolve': { icon: Gavel, color: 'text-cyan-400' },
+};
+
+const getActionIcon = (action: string) => ACTION_ICONS[action] ?? { icon: Activity, color: 'text-slate-400' };
+
+function formatTimestamp(ts: string): string {
+  return format(new Date(ts), 'MMM dd, yyyy HH:mm:ss');
 }
 
-function fmtTs(ts: string): string {
-  const d = new Date(ts);
-  return d.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+function formatRelative(ts: string): string {
+  return formatDistanceToNow(new Date(ts), { addSuffix: true });
 }
 
-// ── Row ────────────────────────────────────────────────────────────────────
-function AuditRow({ row, i }: { row: AuditRow; i: number }): React.ReactElement {
-  const [expanded, setExpanded] = useState(false);
-  const { icon: Icon, color } = getMeta(row.action);
-  const hasData = row.data && Object.keys(row.data).length > 0;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function SeverityBadge({ severity }: { severity: AuditLogEntry['severity'] }) {
+  const config = SEVERITY_CONFIG[severity];
+  const Icon = config.icon;
+  return (
+    <Badge className={cn('border', config.bg, config.color)}>
+      <Icon className="w-3 h-3 mr-1" />
+      {config.label}
+    </Badge>
+  );
+}
+
+function AuditLogRow({ entry, index, onExpand, isExpanded }: {
+  entry: AuditLogEntry;
+  index: number;
+  onExpand: (id: string) => void;
+  isExpanded: boolean;
+}) {
+  const { icon: Icon, color } = getActionIcon(entry.action);
+  const hasDetails = entry.details && Object.keys(entry.details).length > 0;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: i * 0.02 }}
-      className="border border-white/8 rounded-xl overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.02 }}
+      className="rounded-xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-colors"
+    >
       <div
-        onClick={() => hasData && setExpanded(v => !v)}
-        className={'flex items-center gap-3 px-4 py-3 transition-all ' +
-          (hasData ? 'cursor-pointer hover:bg-white/4' : '') +
-          (expanded ? ' bg-white/4' : '')}>
-        <div className={'w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0'}>
-          <Icon className={'w-3.5 h-3.5 ' + color} />
+        onClick={() => hasDetails && onExpand(entry.id)}
+        className={cn(
+          'flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors',
+          isExpanded ? 'bg-slate-900/80' : 'bg-slate-950 hover:bg-slate-900/50'
+        )}
+      >
+        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', color.replace('text-', 'bg-').replace('400', '500') + '/20')}>
+          <Icon className={cn('w-4 h-4', color)} />
         </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono text-white/70 font-semibold">{row.action}</span>
-            {row.entity_type && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/6 text-white/35 font-mono">{row.entity_type}</span>
+            <span className="text-sm font-semibold text-slate-200">{entry.action}</span>
+            <SeverityBadge severity={entry.severity} />
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+            <span className="font-mono">{entry.actor_username ?? 'system'}</span>
+            <span>•</span>
+            <span>{formatRelative(entry.ts)}</span>
+            {entry.target_name && (
+              <>
+                <span>•</span>
+                <span className="text-slate-400">{entry.target_type}:{entry.target_name}</span>
+              </>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-0.5 text-[10px] text-white/25">
-            <span>{row.actor?.username ?? (row.actor_id ? 'user:' + row.actor_id.slice(0, 8) : 'system')}</span>
-            <span>{fmtTs(row.ts)}</span>
-            {row.entity_id && <span className="font-mono truncate max-w-[120px]">{row.entity_id.slice(0, 8)}…</span>}
-          </div>
         </div>
-        {hasData && (
-          <div className="flex-shrink-0 text-white/20 hover:text-white/50 transition-colors">
-            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </div>
-        )}
+
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="hidden sm:block">{formatTimestamp(entry.ts)}</span>
+          {hasDetails && (
+            <ChevronDown className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')} />
+          )}
+        </div>
       </div>
-      {expanded && hasData && (
-        <div className="px-4 pb-3 border-t border-white/6">
-          <pre className="text-[10px] text-white/40 font-mono mt-3 whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto bg-black/20 rounded-lg p-3">
-            {JSON.stringify(row.data, null, 2)}
-          </pre>
-        </div>
-      )}
+
+      <AnimatePresence>
+        {isExpanded && hasDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-slate-800 overflow-hidden"
+          >
+            <div className="p-4 bg-slate-900/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {entry.actor_id && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Actor</p>
+                    <p className="text-sm text-slate-300">{entry.actor_email}</p>
+                    <p className="text-xs text-slate-600 font-mono">{entry.actor_id}</p>
+                  </div>
+                )}
+                {entry.target_id && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Target</p>
+                    <p className="text-sm text-slate-300">{entry.target_type}:{entry.target_name}</p>
+                    <p className="text-xs text-slate-600 font-mono">{entry.target_id}</p>
+                  </div>
+                )}
+                {entry.ip_address && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">IP Address</p>
+                    <p className="text-sm text-slate-300 font-mono">{entry.ip_address}</p>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-2">Details</p>
+                <pre className="text-xs text-slate-400 font-mono bg-black/30 rounded-lg p-3 overflow-x-auto max-h-40 overflow-y-auto">
+                  {JSON.stringify(entry.details, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-// ── Filter pills ────────────────────────────────────────────────────────────
-const ENTITY_FILTERS = ['all', 'tournament', 'match', 'dispute', 'evidence', 'user', 'game'] as const;
-type EntityFilter = typeof ENTITY_FILTERS[number];
+function StatCard({ title, value, change, icon: Icon, color }: {
+  title: string;
+  value: number;
+  change?: string;
+  icon: React.ElementType;
+  color: string;
+}) {
+  return (
+    <Card className="bg-slate-900/50 border-slate-800">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs text-slate-500 mb-1">{title}</p>
+            <p className="text-2xl font-bold text-white">{value.toLocaleString()}</p>
+            {change && <p className="text-xs text-green-400 mt-1">{change}</p>}
+          </div>
+          <div className={cn('p-2 rounded-lg', color)}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-// ── Main ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export function AdminAuditLog(): React.ReactElement {
-  const [rows, setRows] = useState<AuditRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [entityFilter, setEntityFilter] = useState<EntityFilter>('all');
-  const [page, setPage] = useState(0);
-  const PAGE = 50;
+  const { hasPermission } = useAdmin();
 
-  const load = useCallback(async (p = 0) => {
-    setLoading(true); setError('');
-    let query = supabase
-      .from('audit_log')
-      .select('*, actor:profiles!actor_id(username)', { count: 'exact' })
-      .order('ts', { ascending: false })
-      .range(p * PAGE, p * PAGE + PAGE - 1);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<AuditLogEntry[]>([]);
+  const [stats, setStats] = useState<AuditStats>({
+    totalEntries: 0, todayEntries: 0, criticalEvents: 0, uniqueActors: 0,
+    actionsByCategory: {}, severityDistribution: {},
+  });
 
-    if (entityFilter !== 'all') query = query.eq('entity_type', entityFilter);
-    if (search.trim()) query = query.ilike('action', `%${search.trim()}%`);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<ActionCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<string>('7d');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
-    const { data, error: err } = await query;
-    if (err) {
-      // Graceful fallback if table doesn't exist yet
-      if (err.message.includes('does not exist') || err.code === '42P01') {
-        setError('audit_log table not found — run supabase_trust_migration.sql first.');
-      } else {
-        setError(err.message);
+  const pageSize = 25;
+
+  const canViewAuditLogs = hasPermission('system.audit_logs');
+
+  // Fetch audit logs from Supabase
+  const fetchLogs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let query = supabase
+        .from('audit_logs')
+        .select('*, profiles:actor_id(username, email, avatar_url)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      // Apply date range filter
+      if (dateRange === '24h') {
+        query = query.gte('created_at', subDays(new Date(), 1).toISOString());
+      } else if (dateRange === '7d') {
+        query = query.gte('created_at', subDays(new Date(), 7).toISOString());
+      } else if (dateRange === '30d') {
+        query = query.gte('created_at', subDays(new Date(), 30).toISOString());
       }
-    } else {
-      setRows((data as AuditRow[]) ?? []);
+
+      // Apply severity filter
+      if (severityFilter !== 'all') {
+        query = query.eq('severity', severityFilter);
+      }
+
+      // Apply tab/category filter
+      if (activeTab !== 'all') {
+        query = query.eq('action_category', activeTab);
+      }
+
+      // Apply search filter
+      if (searchQuery) {
+        query = query.or(
+          `action.ilike.%${searchQuery}%,target_name.ilike.%${searchQuery}%,actor_email.ilike.%${searchQuery}%`
+        );
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching audit logs:', error);
+        toast.error('Failed to load audit logs');
+        setIsLoading(false);
+        return;
+      }
+
+      const transformedLogs: AuditLogEntry[] = (data || []).map((log: Record<string, unknown>) => ({
+        id: log.id as string,
+        ts: log.created_at as string,
+        actor_id: log.actor_id as string | null,
+        actor_email: log.actor_email as string | undefined,
+        actor_username: (log.profiles as { username?: string })?.username,
+        action: log.action as string,
+        action_category: (log.action_category as string) || 'system',
+        target_type: log.target_type as string,
+        target_id: log.target_id as string,
+        target_name: log.target_name as string | undefined,
+        severity: (log.severity as 'low' | 'medium' | 'high' | 'critical') || 'low',
+        details: log.metadata as Record<string, unknown> | undefined,
+        ip_address: log.ip_address as string | undefined,
+      }));
+
+      setLogs(transformedLogs);
+      setFilteredLogs(transformedLogs);
+      calculateStats(transformedLogs);
+    } finally {
+      setIsLoading(false);
     }
-    setLoading(false);
-  }, [entityFilter, search]);
+  }, [activeTab, dateRange, severityFilter, searchQuery]);
 
-  useEffect(() => { setPage(0); load(0); }, [load]);
+  // Fetch logs on mount and when filters change
+  useEffect(() => {
+    if (canViewAuditLogs) {
+      fetchLogs();
+    }
+  }, [fetchLogs, canViewAuditLogs]);
 
-  const exportCSV = () => {
-    const headers = ['id','ts','actor','action','entity_type','entity_id','data'];
-    const csv = [
-      headers.join(','),
-      ...rows.map(r => [
-        r.id,
-        r.ts,
-        r.actor?.username ?? r.actor_id ?? '',
-        r.action,
-        r.entity_type,
-        r.entity_id ?? '',
-        JSON.stringify(r.data).replace(/,/g, ';'),
-      ].join(','))
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `pulseplay-audit-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
+  // Calculate statistics
+  const calculateStats = useCallback((data: AuditLogEntry[]) => {
+    const today = new Date();
+    const todayEntries = data.filter(l => isAfter(parseISO(l.ts), subDays(today, 1))).length;
+    const criticalEvents = data.filter(l => l.severity === 'critical' || l.severity === 'high').length;
+    const uniqueActors = new Set(data.map(l => l.actor_id).filter(Boolean)).size;
+
+    const actionsByCategory = data.reduce((acc, l) => {
+      acc[l.action_category] = (acc[l.action_category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const severityDistribution = data.reduce((acc, l) => {
+      acc[l.severity] = (acc[l.severity] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    setStats({
+      totalEntries: data.length,
+      todayEntries,
+      criticalEvents,
+      uniqueActors,
+      actionsByCategory,
+      severityDistribution,
+    });
+  }, []);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...logs];
+
+    // Category filter
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(l => l.action_category === activeTab);
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(l =>
+        l.action.toLowerCase().includes(query) ||
+        l.actor_username?.toLowerCase().includes(query) ||
+        l.target_name?.toLowerCase().includes(query) ||
+        l.target_type?.toLowerCase().includes(query)
+      );
+    }
+
+    // Severity filter
+    if (severityFilter !== 'all') {
+      filtered = filtered.filter(l => l.severity === severityFilter);
+    }
+
+    // Date range filter
+    const now = new Date();
+    const cutoffDate = dateRange === '24h' ? subHours(now, 24) :
+      dateRange === '7d' ? subDays(now, 7) :
+        dateRange === '30d' ? subDays(now, 30) :
+          subDays(now, 90);
+    filtered = filtered.filter(l => isAfter(parseISO(l.ts), cutoffDate));
+
+    setFilteredLogs(filtered);
+    setCurrentPage(0);
+  }, [logs, activeTab, searchQuery, severityFilter, dateRange]);
+
+  const paginatedLogs = useMemo(() => {
+    const start = currentPage * pageSize;
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, currentPage]);
+
+  const totalPages = Math.ceil(filteredLogs.length / pageSize);
+
+  const handleExport = (format: 'json' | 'csv') => {
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(filteredLogs, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pulseplay-audit-${formatDate(new Date(), 'yyyy-MM-dd')}.json`;
+      a.click();
+    } else {
+      const headers = ['timestamp', 'actor', 'action', 'target_type', 'target', 'severity', 'details'];
+      const rows = filteredLogs.map(l => [
+        l.ts,
+        l.actor_username ?? 'system',
+        l.action,
+        l.target_type,
+        l.target_name ?? '',
+        l.severity,
+        JSON.stringify(l.details),
+      ].join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pulseplay-audit-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      a.click();
+    }
+    setIsExportDialogOpen(false);
+    toast.success(`Exported ${filteredLogs.length} entries as ${format.toUpperCase()}`);
   };
 
+  if (!canViewAuditLogs) {
+    return (
+      <div className="p-8 text-center">
+        <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-red-400" />
+        <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+        <p className="text-slate-400">You do not have permission to view audit logs.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-5 sm:p-7 max-w-5xl">
+    <div className="p-5 sm:p-7 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
+      >
         <div>
-          <h1 className="font-orbitron text-2xl font-black text-white mb-1">Audit Log</h1>
-          <p className="text-white/35 text-sm">Immutable record of all sensitive platform actions</p>
+          <h1 className="font-orbitron text-2xl font-black text-white mb-1 flex items-center gap-2">
+            <History className="w-6 h-6 text-cyan-400" />
+            Audit Logs
+          </h1>
+          <p className="text-slate-400 text-sm">
+            {stats.totalEntries.toLocaleString()} total entries • {stats.criticalEvents} high/critical events
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter by action…"
-              className="pl-8 h-9 bg-white/5 border-white/10 text-white placeholder:text-white/25 text-sm w-44" />
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => load(page)} disabled={loading}
-            className="text-white/40 hover:text-white h-9 w-9 p-0">
-            <RefreshCw className={'w-3.5 h-3.5 ' + (loading ? 'animate-spin' : '')} />
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsExportDialogOpen(true)}
+            className="border-slate-700 hover:bg-slate-800"
+          >
+            <Download className="w-4 h-4 mr-1" />
+            Export
           </Button>
-          <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}
-            className="text-white/40 hover:text-cyan-400 h-9 gap-1.5 text-xs">
-            <Download className="w-3.5 h-3.5" />CSV
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setIsLoading(true);
+              setTimeout(() => setIsLoading(false), 500);
+            }}
+            disabled={isLoading}
+            className="border-slate-700 hover:bg-slate-800"
+          >
+            <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
           </Button>
         </div>
       </motion.div>
 
-      {/* Entity filter */}
-      <div className="flex items-center gap-2 mb-5 flex-wrap">
-        {ENTITY_FILTERS.map(f => (
-          <button key={f} onClick={() => setEntityFilter(f)}
-            className={'px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all border capitalize ' +
-              (entityFilter === f
-                ? 'bg-white/15 border-white/25 text-white'
-                : 'border-white/8 text-white/35 hover:border-white/15 hover:text-white/60')}>
-            {f}
-          </button>
-        ))}
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          title="Total Entries"
+          value={stats.totalEntries}
+          icon={FileText}
+          color="bg-blue-500/20"
+        />
+        <StatCard
+          title="Today"
+          value={stats.todayEntries}
+          change="+12% vs yesterday"
+          icon={Calendar}
+          color="bg-green-500/20"
+        />
+        <StatCard
+          title="Critical Events"
+          value={stats.criticalEvents}
+          icon={ShieldAlert}
+          color="bg-red-500/20"
+        />
+        <StatCard
+          title="Active Actors"
+          value={stats.uniqueActors}
+          icon={Users}
+          color="bg-purple-500/20"
+        />
       </div>
 
-      {/* Graceful degradation banner */}
-      {error && (
-        <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm mb-5 flex items-start gap-3">
-          <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-semibold mb-1">Audit log unavailable</p>
-            <p className="text-yellow-400/70 text-xs">{error}</p>
-          </div>
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Input
+            placeholder="Search by action, actor, or target..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-slate-900/50 border-slate-800"
+          />
         </div>
-      )}
+        <div className="flex gap-2">
+          <Select value={severityFilter} onValueChange={setSeverityFilter}>
+            <SelectTrigger className="w-36 bg-slate-900/50 border-slate-800">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Severity" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectItem value="all">All Severities</SelectItem>
+              <SelectItem value="critical">Critical</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
 
-      {/* Rows */}
-      {loading && !error ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
-          ))}
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-36 bg-slate-900/50 border-slate-800">
+              <Calendar className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800">
+              <SelectItem value="24h">Last 24 Hours</SelectItem>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="90d">Last 90 Days</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      ) : !error && rows.length === 0 ? (
-        <div className="text-center py-20">
-          <Activity className="w-12 h-12 mx-auto text-white/15 mb-4" />
-          <p className="text-white/35 text-sm">No audit entries yet.</p>
-          <p className="text-white/20 text-xs mt-1">Entries appear as admins and users take actions on the platform.</p>
-        </div>
-      ) : !error ? (
-        <>
-          <div className="space-y-1.5">
-            {rows.map((r, i) => <AuditRow key={r.id} row={r} i={i} />)}
-          </div>
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/8">
-            <p className="text-xs text-white/25">{rows.length} entries on this page</p>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => { setPage(p => p - 1); load(page - 1); }}
-                disabled={page === 0 || loading} className="text-white/40 hover:text-white text-xs h-8">
-                ← Prev
-              </Button>
-              <span className="text-xs text-white/30 px-2">Page {page + 1}</span>
-              <Button variant="ghost" size="sm" onClick={() => { setPage(p => p + 1); load(page + 1); }}
-                disabled={rows.length < PAGE || loading} className="text-white/40 hover:text-white text-xs h-8">
-                Next →
-              </Button>
+      </div>
+
+      {/* Category Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ActionCategory)}>
+        <TabsList className="bg-slate-900/50 border border-slate-800 flex-wrap h-auto gap-1">
+          {ACTION_CATEGORIES.map(cat => {
+            const Icon = cat.icon;
+            const count = stats.actionsByCategory[cat.id] || 0;
+            return (
+              <TabsTrigger
+                key={cat.id}
+                value={cat.id}
+                className="data-[state=active]:bg-slate-800 text-xs"
+              >
+                <Icon className="w-3 h-3 mr-1" />
+                {cat.label}
+                {count > 0 && <span className="ml-1 text-slate-500">({count})</span>}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+
+        <TabsContent value={activeTab} className="space-y-3">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
             </div>
+          ) : paginatedLogs.length === 0 ? (
+            <div className="text-center py-12">
+              <Activity className="w-16 h-16 mx-auto mb-4 text-slate-700" />
+              <h3 className="text-lg font-medium text-white mb-2">No audit entries found</h3>
+              <p className="text-slate-500">Try adjusting your filters</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <AnimatePresence mode="popLayout">
+                {paginatedLogs.map((entry, index) => (
+                  <AuditLogRow
+                    key={entry.id}
+                    entry={entry}
+                    index={index}
+                    onExpand={(id) => setExpandedId(expandedId === id ? null : id)}
+                    isExpanded={expandedId === entry.id}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!isLoading && paginatedLogs.length > 0 && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+              <p className="text-xs text-slate-500">
+                Showing {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, filteredLogs.length)} of {filteredLogs.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  className="border-slate-700 text-slate-400 hover:bg-slate-800"
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-slate-500 px-2">
+                  Page {currentPage + 1} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={currentPage >= totalPages - 1}
+                  className="border-slate-700 text-slate-400 hover:bg-slate-800"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="bg-slate-950 border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="font-orbitron text-white">Export Audit Logs</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Export {filteredLogs.length} entries
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 py-4">
+            <button
+              onClick={() => handleExport('json')}
+              className="flex-1 p-4 rounded-lg border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 transition-all text-center"
+            >
+              <FileJson className="w-8 h-8 mx-auto mb-2 text-cyan-400" />
+              <p className="text-sm font-medium text-white">JSON</p>
+              <p className="text-xs text-slate-500">Full structured data</p>
+            </button>
+            <button
+              onClick={() => handleExport('csv')}
+              className="flex-1 p-4 rounded-lg border border-slate-800 hover:border-green-500/50 hover:bg-slate-900 transition-all text-center"
+            >
+              <FileSpreadsheet className="w-8 h-8 mx-auto mb-2 text-green-400" />
+              <p className="text-sm font-medium text-white">CSV</p>
+              <p className="text-xs text-slate-500">Spreadsheet format</p>
+            </button>
           </div>
-        </>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

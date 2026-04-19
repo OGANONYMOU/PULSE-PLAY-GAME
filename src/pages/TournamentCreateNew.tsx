@@ -15,7 +15,10 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHostableOrganizers } from '@/hooks/useOrganizers';
 import { toast } from 'sonner';
-import { writeAuditLog } from '@/lib/auditLog';
+import { writeAudit } from '@/lib/audit';
+import { generateSingleEliminationBracket, generateDoubleEliminationBracket, saveBracket } from '@/lib/tournament/bracketEngine';
+import { generateRoundRobin, generateGroupStage, saveFixtures } from '@/lib/tournament/fixtureGenerator';
+import { applySeeding } from '@/lib/tournament/seedingSystem';
 
 type Game = { id: string; name: string; icon: string; logo_url: string | null; category: string };
 type TournamentType = 'esports' | 'football' | 'league';
@@ -468,6 +471,50 @@ export function TournamentCreateNew() {
     if (step < STEPS.length - 1) setStep(s => s + 1);
   };
 
+  // Generate tournament structure based on type
+  const generateTournamentStructure = async (tournamentId: string, form: TournamentForm, userId: string) => {
+    try {
+      // For bracket-based tournaments (esports/shooters)
+      if (form.tournament_family === 'esports') {
+        if (form.tournament_type === 'single_elimination') {
+          // Will generate bracket when participants register
+          // For now, just mark as ready for bracket generation
+          await supabase.from('tournaments').update({ 
+            bracket_type: 'single_elimination',
+            bracket_ready: true 
+          } as any).eq('id', tournamentId);
+        } else if (form.tournament_type === 'double_elimination') {
+          await supabase.from('tournaments').update({ 
+            bracket_type: 'double_elimination',
+            bracket_ready: true 
+          } as any).eq('id', tournamentId);
+        } else if (form.tournament_type === 'round_robin') {
+          // Round robin uses fixture system
+          await supabase.from('tournaments').update({ 
+            fixture_type: 'round_robin',
+            fixtures_ready: true 
+          } as any).eq('id', tournamentId);
+        }
+      }
+      
+      // For football/league tournaments
+      if (form.tournament_family === 'football' || form.tournament_family === 'league') {
+        if (form.tournament_type === 'league' || form.tournament_type === 'group_stage') {
+          await supabase.from('tournaments').update({ 
+            fixture_type: form.tournament_type,
+            fixtures_ready: true,
+            home_and_away: form.home_and_away || false
+          } as any).eq('id', tournamentId);
+        }
+      }
+      
+      toast.success('Tournament structure prepared');
+    } catch (err) {
+      console.error('Failed to generate tournament structure:', err);
+      toast.error('Tournament created but structure generation failed');
+    }
+  };
+
   const createTournament = async () => {
     if (!user) return;
     setSaving(true);
@@ -517,13 +564,25 @@ export function TournamentCreateNew() {
     } as any);
 
     // Audit log
-    await writeAuditLog({ 
-      actor_id: user.id, 
-      action: 'tournament.create', 
-      entity_type: 'tournament', 
-      entity_id: tId, 
-      data: { name: form.name, organizer_id: form.organizer_id } 
-    });
+    await writeAudit(
+      {
+        actor_id: user.id,
+        actor_email: user.email,
+        actor_role: profile?.role || 'USER',
+      },
+      {
+        action: 'tournament.create',
+        category: 'tournament',
+        target_id: tId,
+        target_type: 'tournament',
+        target_name: form.name,
+        severity: 'info',
+        metadata: { organizer_id: form.organizer_id, game_id: form.game_id, type: form.tournament_family },
+      }
+    );
+    
+    // Generate bracket/fixtures based on tournament type
+    await generateTournamentStructure(tId, form, user.id);
 
     toast.success('Tournament created successfully! 🏆');
     navigate(`/tournaments/${tId}`);
