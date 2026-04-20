@@ -602,10 +602,10 @@ export function AdminIncidents(): JSX.Element {
         status: inc.status as IncidentStatus,
         title: inc.title as string,
         description: inc.description as string,
-        affectedEntities: (inc.incident_affected_entities as unknown[] || []).map((e: Record<string, unknown>) => ({
-          type: e.entity_type as string,
-          id: e.entity_id as string,
-          name: e.entity_name as string,
+        affectedEntities: (inc.incident_affected_entities as unknown[] || []).map((e) => ({
+          type: (e as Record<string, unknown>).entity_type as string,
+          id: (e as Record<string, unknown>).entity_id as string,
+          name: (e as Record<string, unknown>).entity_name as string,
         })),
         metrics: inc.metrics as { label: string; value: number; change?: number }[] || [],
         createdAt: inc.created_at as string,
@@ -613,13 +613,13 @@ export function AdminIncidents(): JSX.Element {
         acknowledgedBy: inc.acknowledged_by as string | undefined,
         resolvedAt: inc.resolved_at as string | undefined,
         assignedTo: inc.assigned_to as string | undefined,
-        notes: (inc.incident_notes as unknown[] || []).map((n: Record<string, unknown>) => ({
-          id: n.id as string,
-          authorId: n.author_id as string,
-          authorName: n.author_name as string,
-          content: n.content as string,
-          createdAt: n.created_at as string,
-          isSystemGenerated: n.is_system_generated as boolean,
+        notes: (inc.incident_notes as unknown[] || []).map((n) => ({
+          id: (n as Record<string, unknown>).id as string,
+          authorId: (n as Record<string, unknown>).author_id as string,
+          authorName: (n as Record<string, unknown>).author_name as string,
+          content: (n as Record<string, unknown>).content as string,
+          createdAt: (n as Record<string, unknown>).created_at as string,
+          isSystemGenerated: (n as Record<string, unknown>).is_system_generated as boolean,
         })),
         automatedResponse: inc.auto_response_triggered as boolean,
       }));
