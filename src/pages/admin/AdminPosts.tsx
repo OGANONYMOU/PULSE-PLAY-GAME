@@ -3,16 +3,15 @@
 // Comprehensive content moderation for posts, comments, clips, discussions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
   MessageSquare, Eye, Pin, Trash2, AlertCircle, Search, Filter,
   FileText, Play, MessageCircle, ThumbsUp, Flag, MoreHorizontal,
   EyeOff, Crown, Clock, CheckCircle2, RefreshCw,
-  ShieldAlert, TrendingUp, Sparkles
+  ShieldAlert, Sparkles
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';

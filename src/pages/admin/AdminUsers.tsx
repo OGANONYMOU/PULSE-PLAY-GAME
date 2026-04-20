@@ -9,20 +9,20 @@ import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { writeAudit } from '@/lib/audit';
-import { formatDistanceToNow, format, subDays, differenceInDays } from 'date-fns';
+import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import {
-  Search, Filter, Crown, Shield, ShieldAlert,
-  Ban, UserCheck, UserX, AlertTriangle, CheckCircle2,
-  Clock, Trophy, MessageSquare, Gamepad2, Flag,
-  AlertOctagon, TrendingDown, TrendingUp,
-  ChevronDown, ChevronRight, MoreHorizontal,
-  ExternalLink, RefreshCw, Download, Eye,
-  Zap, Lock, Unlock, UserMinus, UserPlus,
-  MapPin, Calendar, Activity, Hash,
-  Smartphone, Globe, Briefcase, Award,
-  FileText, History, BarChart3, X, Loader2,
-  Flame, Skull, Star, Mail, Phone, Trash2,
+  Search, Filter, Crown, Shield,
+  Ban, UserCheck, AlertTriangle, CheckCircle2,
+  Clock,
+  AlertOctagon,
+  ChevronDown, MoreHorizontal,
+  RefreshCw, Download, Eye,
+  Lock, Unlock, UserMinus, UserPlus,
+  MapPin, Calendar,
+  Smartphone, Globe,
+  FileText, History, BarChart3, Loader2,
+  Flame, Skull, Star, Mail, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,8 +43,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 

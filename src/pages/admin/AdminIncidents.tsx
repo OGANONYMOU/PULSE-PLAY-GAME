@@ -3,7 +3,7 @@
 // Real-time operations center for critical alerts and incident management
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
@@ -11,17 +11,16 @@ import { subscriptionManager } from '@/lib/realtime/subscriptionManager';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import {
-  AlertTriangle, AlertOctagon, Bell, CheckCircle2, Clock,
-  RefreshCw, Filter, Search, User,
+  AlertTriangle, AlertOctagon, CheckCircle2, Clock,
+  RefreshCw, Filter, User,
   Activity, Shield,
-  Users, Trophy, MessageSquare, Ban, Flag,
-  ChevronDown, ExternalLink, Eye,
-  Check, X, Loader2, Zap,
-  AlertCircle, BarChart3,
-  ShieldAlert,
+  Users, Trophy, MessageSquare, Flag,
+  ExternalLink, Eye,
+  Check, Zap,
+  AlertCircle,
+  ShieldAlert, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Radio, Switch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';

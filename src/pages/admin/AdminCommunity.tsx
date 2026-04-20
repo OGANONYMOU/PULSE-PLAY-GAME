@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { subscriptionManager } from '@/lib/realtime/subscriptionManager';
@@ -38,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { writeAudit } from '@/lib/audit';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

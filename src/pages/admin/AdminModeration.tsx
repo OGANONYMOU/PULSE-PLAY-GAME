@@ -3,21 +3,21 @@
 // Professional trust & safety workflow with AI-assisted moderation
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import {
   Shield, ShieldAlert, ShieldCheck, Flag, AlertTriangle, AlertOctagon,
-  RefreshCw, Search, Filter, X, CheckCircle2, XCircle, MessageSquare,
-  FileText, Video, User, Loader2, Eye, Ban, VolumeX,
-  ExternalLink, ChevronDown, MoreHorizontal, Clock,
-  Sparkles, Brain, TrendingUp, Hash,
+  RefreshCw, Search, Filter, CheckCircle2, XCircle, MessageSquare,
+  FileText, Video, User, Eye, Ban, VolumeX,
+  ExternalLink, Clock,
+  Sparkles,
   Gavel, AlertCircle,
-  MessageCircle, ThumbsUp, ThumbsDown, Archive,
+  MessageCircle, Trash2, ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

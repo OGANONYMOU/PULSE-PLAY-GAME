@@ -3,16 +3,14 @@
 // Intelligent command center with real-time metrics, alerts, and quick actions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import {
-  Users, Trophy, MessageSquare, ShieldAlert, Activity,
-  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
-  Zap, Clock, AlertTriangle,
+  Users, Trophy, ShieldAlert, Activity,
+  TrendingUp, TrendingDown,  Zap, Clock, AlertTriangle,
   Ban, Gamepad2, RefreshCw,
   ChevronRight, Flame, Terminal,
   BarChart3, PieChart,

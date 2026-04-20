@@ -16,7 +16,7 @@ import {
   ExternalLink, Lock, Unlock, Edit3, Trash2,
   Activity, Flag, DollarSign, Loader2, FileText, Gavel,
   Crown,
-  AlertCircle, CheckCircle, Skull,
+  AlertCircle, CheckCircle, Skull, XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -354,10 +354,10 @@ function HealthBadge({ health }: { health: TournamentHealth }) {
   );
 }
 
-function FraudRiskBadge({ risk }: { risk: FraudRiskLevel }) {
+function _FraudRiskBadge({ risk }: { risk: FraudRiskLevel }) {
   if (risk === 'none') return null;
   
-  const icons = { low: AlertTriangle, medium: AlertOctagon, high: Skull };
+  const icons = { low: AlertTriangle, medium: AlertOctagon, high: Skull, critical: Skull };
   const Icon = icons[risk];
   
   return (

@@ -3,14 +3,14 @@
 // Comprehensive game catalog management with analytics
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
-  Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search, X, Save, Loader2,
+  Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search, Save, Loader2,
   Star, AlertTriangle, Trophy, Users, TrendingUp, LayoutGrid,
-  Filter, ArrowUpRight, Eye, EyeOff, ChevronDown,
-  Crown,
+  Filter, EyeOff,
+  Crown, Zap,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -27,6 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { writeAudit } from '@/lib/audit';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
