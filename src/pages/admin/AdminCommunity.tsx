@@ -14,11 +14,10 @@ import { toast } from 'sonner';
 import {
   MessageSquare, Play, FileText, MessageCircle, Filter,
   Search, RefreshCw, Eye, EyeOff, Pin,
-  Trash2, Flag, CheckCircle2, XCircle, AlertTriangle,
-  Clock, User, ThumbsUp, Share2,
-  Lock, Unlock, Sparkles, Shield, ExternalLink, Loader2,
-  ChevronDown, Image as ImageIcon, Video,
-  Ban, VolumeX, Gavel, Archive,
+  Trash2, Flag, CheckCircle2, AlertTriangle,
+  Clock, ThumbsUp, Share2,
+  Sparkles, Shield, Video,
+  Gavel,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +36,7 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -511,7 +511,7 @@ function ContentDetailSheet({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function AdminCommunity(): JSX.Element {
+export function AdminCommunity(): React.JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useAdmin();
