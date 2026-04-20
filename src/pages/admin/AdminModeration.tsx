@@ -13,17 +13,16 @@ import { toast } from 'sonner';
 import {
   Shield, ShieldAlert, ShieldCheck, Flag, AlertTriangle, AlertOctagon,
   RefreshCw, Search, Filter, CheckCircle2, XCircle, MessageSquare,
-  FileText, Video, User, Eye, Ban, VolumeX,
+  FileText, Video, User, Ban, VolumeX,
   ExternalLink, Clock,
-  Sparkles,
-  Gavel, AlertCircle,
-  MessageCircle, Trash2, ChevronRight,
+  Sparkles, Bot, TrendingUp,
+  Gavel, Trash2, ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,

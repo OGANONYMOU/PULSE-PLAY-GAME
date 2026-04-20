@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Shield, ShieldAlert, Crown, Users, Trophy, Search,
   RefreshCw,
-  FileText, Settings,  CheckCircle2, Edit3, Loader2, Plus,
+  FileText, Settings,  CheckCircle2, Edit3, Loader2, XCircle,
   LayoutGrid, Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
