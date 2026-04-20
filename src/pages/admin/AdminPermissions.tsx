@@ -281,7 +281,7 @@ export function AdminPermissions(): React.ReactElement {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [tempRole, setTempRole] = useState<AdminRole>('USER');
-  const _tempPermissions: string[] = [];
+  const [tempPermissions, setTempPermissions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const canManagePermissions = hasPermission('system.admin_access' as any) || role === 'SUPER_ADMIN' || role === 'ADMIN';

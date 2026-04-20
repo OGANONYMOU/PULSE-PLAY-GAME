@@ -474,7 +474,7 @@ function ModerationCaseSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminModeration(): React.ReactElement {
-  const { hasPermission, role, user } = useAdmin();
+  const { hasPermission, role } = useAdmin();
   const navigate = useNavigate();
 
   // Data states
@@ -504,8 +504,8 @@ export function AdminModeration(): React.ReactElement {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ExtendedReport | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [selectedReports, setSelectedReports] = useState<string[]>([]);
-  const [bulkActionOpen, setBulkActionOpen] = useState(false);
+  const [_selectedReports, _setSelectedReports] = useState<string[]>([]);
+  const [_bulkActionOpen, _setBulkActionOpen] = useState(false);
 
   // Permissions
   const canView = hasPermission('moderation.view');
@@ -825,7 +825,12 @@ export function AdminModeration(): React.ReactElement {
           break;
       }
 
-      await writeAudit('unknown', `moderation_${action}`, selectedReport.id, data);
+      await writeAudit({
+        category: 'moderation',
+        action: `moderation_${action}`,
+        target_id: selectedReport.id,
+        details: data || {},
+      });
       fetchReports();
       setIsDetailOpen(false);
     } catch (err) {
