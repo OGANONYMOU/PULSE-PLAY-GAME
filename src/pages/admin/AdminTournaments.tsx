@@ -3,8 +3,9 @@
 // Professional tournament operations with health monitoring, disputes, fraud detection
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow, format, differenceInDays, isPast, isFuture } from 'date-fns';
@@ -13,15 +14,15 @@ import {
   Search, Filter, Plus, Trophy, Users, Calendar, Clock, Flame, CheckCircle2,
   AlertTriangle, AlertOctagon, ShieldAlert, RefreshCw, ChevronRight,
   ExternalLink, Lock, Unlock, Edit3, Trash2,
-  Activity, Flag, DollarSign, X, Loader2, FileText, Gavel,
-  Crown, UserCheck,
-  AlertCircle, XCircle, CheckCircle,
+  Activity, Flag, DollarSign, Loader2, FileText, Gavel,
+  Crown,
+  AlertCircle, CheckCircle, Skull,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -43,6 +44,38 @@ import { writeAudit } from '@/lib/audit';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type TournamentStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'locked';
+type TournamentHealthStatus = 'healthy' | 'warning' | 'critical' | 'suspended';
+type FraudRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+type HealthIndicator = 'participation' | 'engagement' | 'disputes' | 'fraud' | 'timing';
+
+type TournamentDispute = {
+  id: string;
+  tournament_id: string;
+  match_id?: string;
+  type: 'match_result' | 'cheating' | 'no_show' | 'rule_violation' | 'other';
+  status: 'open' | 'under_review' | 'resolved' | 'rejected';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  title: string;
+  description: string;
+  reported_by: string;
+  reported_by_username?: string;
+  against_user_id?: string;
+  against_username?: string;
+  evidence: string[];
+  resolution?: string;
+  resolved_by?: string;
+  created_at: string;
+  resolved_at?: string;
+};
+
+type TournamentHealth = {
+  tournament_id: string;
+  overall: TournamentHealthStatus;
+  indicators: Record<HealthIndicator, { status: TournamentHealthStatus; value: number }>;
+  riskFactors: string[];
+  recommendations: string[];
+  lastUpdated: string;
+};
 
 type Tournament = {
   id: string;
@@ -591,7 +624,7 @@ function TournamentDetailSheet({
   
   if (!tournament || !health) return null;
 
-  const StatusIcon = getStatusIcon(tournament.status);
+  const _StatusIcon = getStatusIcon(tournament.status);
   const fillPercentage = Math.round(health.participant_fill_rate);
   const checkInPercentage = Math.round(health.check_in_rate);
   
@@ -1074,7 +1107,7 @@ function TournamentDetailSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminTournaments(): React.ReactElement {
-  const { hasPermission, permissions, role } = useAdmin();
+  const { hasPermission, role } = useAdmin();
   const navigate = useNavigate();
   
   // Data states
@@ -1132,7 +1165,6 @@ export function AdminTournaments(): React.ReactElement {
   const canEdit = hasPermission('tournaments.edit');
   const canDelete = hasPermission('tournaments.delete') || role === 'SUPER_ADMIN' || role === 'ADMIN';
   const canModerate = hasPermission('tournaments.override_results') || role === 'SUPER_ADMIN' || role === 'ADMIN';
-  const canManageDisputes = hasPermission('moderation.resolve') || role === 'SUPER_ADMIN' || role === 'ADMIN';
 
   // Fetch tournaments
   const fetchTournaments = useCallback(async () => {
@@ -1358,21 +1390,21 @@ export function AdminTournaments(): React.ReactElement {
           break;
           
         case 'lock':
-          await supabase.from('tournaments').update({ status: 'locked' }).eq('id', selectedTournament.id);
+          await supabase.from('tournaments').update({ status: 'locked' } as never).eq('id', selectedTournament.id);
           await writeAudit('unknown', 'lock_tournament', selectedTournament.id);
           toast.success('Tournament locked');
           fetchTournaments();
           break;
           
         case 'unlock':
-          await supabase.from('tournaments').update({ status: 'ongoing' }).eq('id', selectedTournament.id);
+          await supabase.from('tournaments').update({ status: 'ongoing' } as never).eq('id', selectedTournament.id);
           await writeAudit('unknown', 'unlock_tournament', selectedTournament.id);
           toast.success('Tournament unlocked');
           fetchTournaments();
           break;
           
         case 'cancel':
-          await supabase.from('tournaments').update({ status: 'cancelled' }).eq('id', selectedTournament.id);
+          await supabase.from('tournaments').update({ status: 'cancelled' } as never).eq('id', selectedTournament.id);
           await writeAudit('unknown', 'cancel_tournament', selectedTournament.id);
           toast.success('Tournament cancelled');
           fetchTournaments();
@@ -1398,7 +1430,7 @@ export function AdminTournaments(): React.ReactElement {
         case 'dismiss_dispute':
           if (data && 'disputeId' in data) {
             await supabase.from('tournament_disputes')
-              .update({ status: 'dismissed', resolved_at: new Date().toISOString() })
+              .update({ status: 'dismissed', resolved_at: new Date().toISOString() } as never)
               .eq('id', data.disputeId as string);
             toast.success('Dispute dismissed');
             fetchTournamentDetails(selectedTournament.id);
@@ -1412,7 +1444,7 @@ export function AdminTournaments(): React.ReactElement {
                 status: 'resolved',
                 resolution: data.resolution,
                 resolved_at: new Date().toISOString(),
-              })
+              } as never)
               .eq('id', data.disputeId as string);
             await writeAudit('unknown', 'resolve_dispute', data.disputeId as string, { resolution: data.resolution });
             toast.success('Dispute resolved');
