@@ -18,19 +18,16 @@ import {
   ExternalLink, Eye,
   Check, Zap,
   AlertCircle,
-  ShieldAlert, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Radio, Switch,
+  ShieldAlert, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
@@ -296,8 +293,8 @@ function IncidentDetailSheet({
   isOpen,
   onClose,
   onAction,
-  currentUserId,
-  currentUserEmail,
+  currentUserId: _currentUserId,
+  currentUserEmail: _currentUserEmail,
 }: {
   incident: Incident | null;
   isOpen: boolean;
@@ -540,7 +537,7 @@ function IncidentDetailSheet({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function AdminIncidents(): JSX.Element {
+export function AdminIncidents(): React.ReactElement {
   const { profile } = useAdmin();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [stats, setStats] = useState<IncidentStats | null>(null);
@@ -1032,8 +1029,8 @@ export function AdminIncidents(): JSX.Element {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onAction={handleIncidentAction}
-        currentUserId={profile?.id || ''}
-        currentUserEmail={profile?.email || ''}
+        currentUserId={_currentUserId}
+        currentUserEmail={_currentUserEmail}
       />
     </div>
   );
