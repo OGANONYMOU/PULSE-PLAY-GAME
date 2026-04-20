@@ -46,7 +46,15 @@ import { writeAudit } from '@/lib/audit';
 type TournamentStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'locked';
 type TournamentHealthStatus = 'healthy' | 'warning' | 'critical' | 'suspended';
 type FraudRiskLevel = 'low' | 'medium' | 'high' | 'critical';
-type HealthIndicator = 'participation' | 'engagement' | 'disputes' | 'fraud' | 'timing';
+type HealthIndicatorType = 'participation' | 'engagement' | 'disputes' | 'fraud' | 'timing';
+type HealthStatus = 'good' | 'warning' | 'critical';
+
+type HealthIndicator = {
+  type: HealthIndicatorType;
+  status: HealthStatus;
+  message: string;
+  value: number;
+};
 
 type TournamentDispute = {
   id: string;
@@ -70,11 +78,14 @@ type TournamentDispute = {
 
 type TournamentHealth = {
   tournament_id: string;
-  overall: TournamentHealthStatus;
-  indicators: Record<HealthIndicator, { status: TournamentHealthStatus; value: number }>;
-  riskFactors: string[];
-  recommendations: string[];
-  lastUpdated: string;
+  status: TournamentHealthStatus;
+  participant_fill_rate: number;
+  check_in_rate: number;
+  dispute_count: number;
+  pending_reports: number;
+  fraud_risk: FraudRiskLevel;
+  last_assessed: string;
+  indicators: HealthIndicator[];
 };
 
 type Tournament = {
