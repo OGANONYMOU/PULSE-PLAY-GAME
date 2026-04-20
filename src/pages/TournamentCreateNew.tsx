@@ -480,18 +480,18 @@ export function TournamentCreateNew() {
           await supabase.from('tournaments').update({ 
             bracket_type: 'single_elimination',
             bracket_ready: true 
-          } as any).eq('id', tournamentId);
+          } as never).eq('id', tournamentId);
         } else if (form.tournament_type === 'double_elimination') {
           await supabase.from('tournaments').update({ 
             bracket_type: 'double_elimination',
             bracket_ready: true 
-          } as any).eq('id', tournamentId);
+          } as never).eq('id', tournamentId);
         } else if (form.tournament_type === 'round_robin') {
           // Round robin uses fixture system
           await supabase.from('tournaments').update({ 
             fixture_type: 'round_robin',
             fixtures_ready: true 
-          } as any).eq('id', tournamentId);
+          } as never).eq('id', tournamentId);
         }
       }
       
@@ -502,7 +502,7 @@ export function TournamentCreateNew() {
             fixture_type: form.tournament_type,
             fixtures_ready: true,
             home_and_away: form.home_and_away || false
-          } as any).eq('id', tournamentId);
+          } as never).eq('id', tournamentId);
         }
       }
       

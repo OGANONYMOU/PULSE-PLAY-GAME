@@ -3,33 +3,26 @@
 // Professional esports operations console layout
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import {
   LayoutDashboard, Users, Gamepad2, Trophy, MessageSquare,
-  Shield, ShieldAlert, Key, BarChart3, FileText, Settings,
-  Bell, Search, Command, Menu, X, ChevronRight, LogOut,
+  ShieldAlert, Key, BarChart3, FileText, Settings,
+  Bell, Search, Menu, X, ChevronRight, LogOut,
   Zap, Activity, AlertTriangle, CheckCircle2, Clock,
-  UserCircle, Crown, Terminal, Sparkles, Filter,
-  ArrowUpRight, ArrowDownRight, TrendingUp, Eye, Ban,
-  MoreHorizontal, ExternalLink, RefreshCw, Play
+  UserCircle, Terminal,
+  ArrowUpRight, RefreshCw, Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
 import {
   CommandDialog, CommandInput, CommandList,
   CommandEmpty, CommandGroup, CommandItem, CommandSeparator,
@@ -433,7 +426,7 @@ function Sidebar({
   navigation: NavItem[];
 }) {
   const location = useLocation();
-  const { hasPermission, activities, dismissActivity, alerts, unreadAlerts } = useAdmin();
+  const { hasPermission, activities, dismissActivity } = useAdmin();
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
 
   const filteredNav = navigation.filter(item => 
@@ -749,7 +742,6 @@ export function AdminCommandCenter() {
   const { isLoading, isInitialized } = useAdmin();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const location = useLocation();
 
   // Keyboard shortcut for search
   useEffect(() => {

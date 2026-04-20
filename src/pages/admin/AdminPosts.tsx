@@ -740,7 +740,7 @@ export function AdminPosts(): React.ReactElement {
           ) : (
             <div className="space-y-3">
               <AnimatePresence>
-                {filteredContent.map((item, index) => (
+                {filteredContent.map((item: ContentItem) => (
                   <ContentCard
                     key={item.id}
                     item={item}
@@ -761,7 +761,7 @@ export function AdminPosts(): React.ReactElement {
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
           onStatusChange={handleStatusChange}
-          onDelete={canDelete ? (id) => setDeleteTarget(selectedItem) : () => {}}
+          onDelete={canDelete ? () => setDeleteTarget(selectedItem) : () => {}}
         />
       )}
 
