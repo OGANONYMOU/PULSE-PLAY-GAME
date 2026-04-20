@@ -262,11 +262,11 @@ function PermissionMatrix({
 }
 
 export function AdminPermissions(): React.ReactElement {
-  const { hasPermission, role, user } = useAdmin();
-  const navigate = useNavigate();
+  const { hasPermission, role } = useAdmin();
+  const _navigate = null;
 
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [changeHistory, setChangeHistory] = useState<PermissionChange[]>([]);
+  const [_changeHistory, _setChangeHistory] = useState<PermissionChange[]>([]);
   const [stats, setStats] = useState<RoleStats>({
     totalUsers: 0,
     roleDistribution: { SUPER_ADMIN: 0, ADMIN: 0, MODERATOR: 0, HOST: 0, USER: 0 },
@@ -280,11 +280,11 @@ export function AdminPermissions(): React.ReactElement {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
-  const [tempPermissions, setTempPermissions] = useState<string[]>([]);
   const [tempRole, setTempRole] = useState<AdminRole>('USER');
+  const _tempPermissions: string[] = [];
   const [saving, setSaving] = useState(false);
 
-  const canManagePermissions = hasPermission('system.permissions') || role === 'SUPER_ADMIN' || role === 'ADMIN';
+  const canManagePermissions = hasPermission('system.admin_access' as any) || role === 'SUPER_ADMIN' || role === 'ADMIN';
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -350,15 +350,20 @@ export function AdminPermissions(): React.ReactElement {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: tempRole })
+        .update({ role: tempRole } as never)
         .eq('id', selectedUser.id);
 
       if (error) throw error;
 
       if (tempRole !== selectedUser.role) {
-        await writeAudit('unknown', 'role_change', selectedUser.id, {
-          old_role: selectedUser.role,
-          new_role: tempRole,
+        await writeAudit({
+          category: 'user',
+          action: 'role_change',
+          target_id: selectedUser.id,
+          details: {
+            old_role: selectedUser.role,
+            new_role: tempRole,
+          },
         });
       }
 
@@ -373,14 +378,19 @@ export function AdminPermissions(): React.ReactElement {
     }
   };
 
-  const handleBulkRoleChange = async (userIds: string[], newRole: AdminRole) => {
+  const _handleBulkRoleChange = async (userIds: string[], newRole: AdminRole) => {
     try {
       await Promise.all(
         userIds.map(id =>
-          supabase.from('profiles').update({ role: newRole }).eq('id', id)
+          supabase.from('profiles').update({ role: newRole } as never).eq('id', id)
         )
       );
-      await writeAudit('unknown', 'bulk_role_change', 'multiple', { count: userIds.length, newRole });
+      await writeAudit({
+        category: 'user',
+        action: 'bulk_role_change',
+        target_id: 'multiple',
+        details: { count: userIds.length, newRole },
+      });
       toast.success(`Updated ${userIds.length} users to ${newRole}`);
       fetchUsers();
     } catch (err) {

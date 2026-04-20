@@ -225,7 +225,7 @@ function GameModal({ game, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { user } = useAdmin();
+  const _user = null;
   const [form, setForm] = useState({ ...BLANK_GAME, ...game });
   const [saving, setSaving] = useState(false);
   const isEdit = !!game.id;
@@ -257,8 +257,8 @@ function GameModal({ game, onClose, onSaved }: {
       };
 
       const { error } = isEdit
-        ? await supabase.from('games').update(payload).eq('id', game.id!)
-        : await supabase.from('games').insert(payload);
+        ? await supabase.from('games').update(payload as never).eq('id', game.id!)
+        : await supabase.from('games').insert(payload as never);
 
       if (error) throw error;
 
