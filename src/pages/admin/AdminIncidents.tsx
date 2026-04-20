@@ -648,14 +648,15 @@ export function AdminIncidents(): JSX.Element {
 
       // Fetch real-time metrics from RPC
       const { data: metricsData } = await supabase.rpc('get_admin_metrics');
-      if (metricsData) {
+      const metrics = metricsData as Record<string, number> | null;
+      if (metrics) {
         setMetrics({
-          activeUsers: metricsData.active_users || 0,
-          reportsPerHour: metricsData.reports_per_hour || 0,
-          tournamentsLive: metricsData.tournaments_live || 0,
-          systemHealth: metricsData.system_health || 98,
-          moderationQueue: metricsData.moderation_queue || 0,
-          pendingDisputes: metricsData.pending_disputes || 0,
+          activeUsers: metrics.active_users || 0,
+          reportsPerHour: metrics.reports_per_hour || 0,
+          tournamentsLive: metrics.tournaments_live || 0,
+          systemHealth: metrics.system_health || 98,
+          moderationQueue: metrics.moderation_queue || 0,
+          pendingDisputes: metrics.pending_disputes || 0,
         });
       }
     } finally {
