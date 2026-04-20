@@ -764,28 +764,28 @@ export function AdminModeration(): React.ReactElement {
       switch (action) {
         case 'dismiss':
           await supabase.from('content_reports')
-            .update({ status: 'dismissed', resolved_at: new Date().toISOString() })
+            .update({ status: 'dismissed', resolved_at: new Date().toISOString() } as never)
             .eq('id', selectedReport.id);
           toast.success('Report dismissed');
           break;
 
         case 'warn':
           await supabase.from('content_reports')
-            .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+            .update({ status: 'resolved', resolved_at: new Date().toISOString() } as never)
             .eq('id', selectedReport.id);
           toast.success('Warning issued to user');
           break;
 
         case 'mute':
           await supabase.from('content_reports')
-            .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+            .update({ status: 'resolved', resolved_at: new Date().toISOString() } as never)
             .eq('id', selectedReport.id);
           toast.success('User muted for 24 hours');
           break;
 
         case 'delete_content':
           await supabase.from('content_reports')
-            .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+            .update({ status: 'resolved', resolved_at: new Date().toISOString() } as never)
             .eq('id', selectedReport.id);
           toast.success('Content deleted');
           break;
@@ -796,7 +796,7 @@ export function AdminModeration(): React.ReactElement {
             return;
           }
           await supabase.from('content_reports')
-            .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+            .update({ status: 'resolved', resolved_at: new Date().toISOString() } as never)
             .eq('id', selectedReport.id);
           toast.success('User banned');
           break;
@@ -807,7 +807,7 @@ export function AdminModeration(): React.ReactElement {
             return;
           }
           await supabase.from('content_reports')
-            .update({ status: 'under_review', priority: 'urgent' })
+            .update({ status: 'under_review', priority: 'urgent' } as never)
             .eq('id', selectedReport.id);
           toast.success('Escalated to admin team');
           break;
