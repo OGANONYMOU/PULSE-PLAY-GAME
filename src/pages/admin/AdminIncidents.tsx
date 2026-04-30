@@ -12,9 +12,9 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import {
   AlertTriangle, AlertOctagon, CheckCircle2, Clock,
-  RefreshCw, Filter, User,
+  RefreshCw, Filter,
   Activity, Shield,
-  Users, Trophy, MessageSquare, Flag,
+  Users, Trophy, MessageSquare,
   ExternalLink, Eye,
   Check, Zap,
   AlertCircle,
@@ -600,7 +600,7 @@ export function AdminIncidents(): React.ReactElement {
         title: inc.title as string,
         description: inc.description as string,
         affectedEntities: (inc.incident_affected_entities as unknown[] || []).map((e) => ({
-          type: (e as Record<string, unknown>).entity_type as string,
+          type: (e as Record<string, unknown>).entity_type as 'user' | 'tournament' | 'match' | 'post' | 'system',
           id: (e as Record<string, unknown>).entity_id as string,
           name: (e as Record<string, unknown>).entity_name as string,
         })),
