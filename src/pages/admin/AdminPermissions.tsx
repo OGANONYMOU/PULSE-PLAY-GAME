@@ -2,9 +2,8 @@
 // PulsePlay Admin System - Permissions & Role Management Module
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -23,13 +22,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
-import { formatDistanceToNow, format } from 'date-fns';
 
 type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR' | 'HOST' | 'USER';
 
@@ -296,11 +291,15 @@ export function AdminPermissions(): React.ReactElement {
 
       if (error) throw error;
 
-      const adminUsers: AdminUser[] = (profiles || []).map(p => ({
-        ...p,
+      const adminUsers: AdminUser[] = (profiles || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        username: p.username as string,
+        email: p.email as string,
+        avatar_url: p.avatar_url as string | null,
         role: (p.role as AdminRole) || 'USER',
         permissions: [],
-        last_active: p.updated_at,
+        created_at: p.created_at as string,
+        last_active: p.updated_at as string,
       }));
 
       setUsers(adminUsers);
