@@ -14,7 +14,7 @@ import {
   AlertTriangle, AlertOctagon, CheckCircle2, Clock,
   RefreshCw, Filter,
   Activity, Shield,
-  Users, Trophy, MessageSquare,
+  Users, Trophy, MessageSquare, Flag, User,
   ExternalLink, Eye,
   Check, Zap,
   AlertCircle,
@@ -32,6 +32,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -539,6 +540,8 @@ function IncidentDetailSheet({
 
 export function AdminIncidents(): React.ReactElement {
   const { profile } = useAdmin();
+  const _currentUserId = profile?.id ?? '';
+  const _currentUserEmail = profile?.email ?? '';
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [stats, setStats] = useState<IncidentStats | null>(null);
   const [metrics, setMetrics] = useState<RealTimeMetrics>({
@@ -786,7 +789,7 @@ export function AdminIncidents(): React.ReactElement {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-            <Radio className="w-5 h-5 text-red-400 animate-pulse" />
+            <Activity className="w-5 h-5 text-red-400 animate-pulse" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Incident Center</h1>
