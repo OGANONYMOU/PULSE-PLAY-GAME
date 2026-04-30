@@ -22,6 +22,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
@@ -190,7 +193,7 @@ function RoleBadge({ role }: { role: AdminRole }) {
   );
 }
 
-function PermissionMatrix({
+function _PermissionMatrix({
   userPermissions,
   onToggle,
   readonly = false,
