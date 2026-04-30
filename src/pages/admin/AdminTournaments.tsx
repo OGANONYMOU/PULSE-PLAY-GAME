@@ -16,12 +16,12 @@ import {
   ExternalLink, Lock, Unlock, Edit3, Trash2,
   Activity, Flag, DollarSign, Loader2, FileText, Gavel,
   Crown,
-  XCircle,
+  XCircle, Skull,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -609,7 +609,7 @@ function TournamentDetailSheet({
   health,
   participants,
   disputes,
-  matches,
+  _matches,
   isOpen,
   onClose,
   onAction,
@@ -621,7 +621,7 @@ function TournamentDetailSheet({
   health: TournamentHealth | null;
   participants: Participant[];
   disputes: ExtendedTournamentDispute[];
-  matches: TournamentMatch[];
+  _matches: TournamentMatch[];
   isOpen: boolean;
   onClose: () => void;
   onAction: (action: string, data?: object) => void;
@@ -635,7 +635,6 @@ function TournamentDetailSheet({
   
   if (!tournament || !health) return null;
 
-  const _StatusIcon = getStatusIcon(tournament.status);
   const fillPercentage = Math.round(health.participant_fill_rate);
   const checkInPercentage = Math.round(health.check_in_rate);
   
@@ -1118,7 +1117,7 @@ function TournamentDetailSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminTournaments(): React.ReactElement {
-  const { hasPermission, role } = useAdmin();
+  const { hasPermission, role, profile } = useAdmin();
   const navigate = useNavigate();
   
   // Data states
@@ -1126,7 +1125,7 @@ export function AdminTournaments(): React.ReactElement {
   const [games, setGames] = useState<Game[]>([]);
   const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [disputes, setDisputes] = useState<Record<string, ExtendedTournamentDispute[]>>({});
-  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({});
+  const [matches, setMatches] = useState<Record<string, TournamentMatch[]>>({});
   const [healthData, setHealthData] = useState<Record<string, TournamentHealth>>({});
   
   // UI states
@@ -1239,7 +1238,7 @@ export function AdminTournaments(): React.ReactElement {
 
       setParticipants(prev => ({ ...prev, [tournamentId]: participantsRes.data || [] }));
       setDisputes(prev => ({ ...prev, [tournamentId]: disputesRes.data || [] }));
-      setMatches(prev => ({ ...prev, [tournamentId]: matchesRes.data || [] }));
+      setMatches((prev: Record<string, TournamentMatch[]>) => ({ ...prev, [tournamentId]: matchesRes.data || [] }));
 
       // Calculate health
       const tournament = tournaments.find(t => t.id === tournamentId);
@@ -1402,21 +1401,30 @@ export function AdminTournaments(): React.ReactElement {
           
         case 'lock':
           await supabase.from('tournaments').update({ status: 'locked' } as never).eq('id', selectedTournament.id);
-          await writeAudit({ category: 'tournament', action: 'lock_tournament', target_id: selectedTournament.id });
+          await writeAudit(
+            { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+            { action: 'lock_tournament', category: 'tournament', target_id: selectedTournament.id }
+          );
           toast.success('Tournament locked');
           fetchTournaments();
           break;
           
         case 'unlock':
           await supabase.from('tournaments').update({ status: 'ongoing' } as never).eq('id', selectedTournament.id);
-          await writeAudit({ category: 'tournament', action: 'unlock_tournament', target_id: selectedTournament.id });
+          await writeAudit(
+            { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+            { action: 'unlock_tournament', category: 'tournament', target_id: selectedTournament.id }
+          );
           toast.success('Tournament unlocked');
           fetchTournaments();
           break;
           
         case 'cancel':
           await supabase.from('tournaments').update({ status: 'cancelled' } as never).eq('id', selectedTournament.id);
-          await writeAudit({ category: 'tournament', action: 'cancel_tournament', target_id: selectedTournament.id });
+          await writeAudit(
+            { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+            { action: 'cancel_tournament', category: 'tournament', target_id: selectedTournament.id }
+          );
           toast.success('Tournament cancelled');
           fetchTournaments();
           break;
@@ -1427,7 +1435,10 @@ export function AdminTournaments(): React.ReactElement {
           
         case 'confirm_delete':
           await supabase.from('tournaments').delete().eq('id', selectedTournament.id);
-          await writeAudit({ category: 'tournament', action: 'delete_tournament', target_id: selectedTournament.id });
+          await writeAudit(
+            { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+            { action: 'delete_tournament', category: 'tournament', target_id: selectedTournament.id }
+          );
           toast.success('Tournament deleted');
           setDeleteConfirmOpen(false);
           setIsDetailOpen(false);
@@ -1457,7 +1468,10 @@ export function AdminTournaments(): React.ReactElement {
                 resolved_at: new Date().toISOString(),
               } as never)
               .eq('id', data.disputeId as string);
-            await writeAudit({ category: 'tournament', action: 'resolve_dispute', target_id: data.disputeId as string, details: { resolution: data.resolution } });
+            await writeAudit(
+            { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+            { action: 'resolve_dispute', category: 'tournament', target_id: data.disputeId as string, metadata: { resolution: data.resolution } }
+          );
             toast.success('Dispute resolved');
             fetchTournamentDetails(selectedTournament.id);
           }
@@ -1488,7 +1502,10 @@ export function AdminTournaments(): React.ReactElement {
       
       if (error) throw error;
       
-      await writeAudit({ category: 'tournament', action: 'create_tournament', target_id: data.id, details: { name: formData.name } });
+      await writeAudit(
+        { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+        { action: 'create_tournament', category: 'tournament', target_id: data.id, metadata: { name: formData.name } }
+      );
       toast.success('Tournament created successfully');
       setCreateModalOpen(false);
       fetchTournaments();
@@ -1732,7 +1749,7 @@ export function AdminTournaments(): React.ReactElement {
         health={selectedTournament ? healthData[selectedTournament.id] || null : null}
         participants={selectedTournament ? participants[selectedTournament.id] || [] : []}
         disputes={selectedTournament ? disputes[selectedTournament.id] || [] : []}
-        matches={selectedTournament ? matches[selectedTournament.id] || [] : []}
+        _matches={selectedTournament ? matches[selectedTournament.id] || [] : []}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onAction={handleAction}

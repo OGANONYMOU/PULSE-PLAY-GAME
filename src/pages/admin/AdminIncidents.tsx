@@ -294,15 +294,11 @@ function IncidentDetailSheet({
   isOpen,
   onClose,
   onAction,
-  currentUserId: _currentUserId,
-  currentUserEmail: _currentUserEmail,
 }: {
   incident: Incident | null;
   isOpen: boolean;
   onClose: () => void;
   onAction: (action: string, data?: object) => Promise<void>;
-  currentUserId: string;
-  currentUserEmail: string;
 }) {
   const [newNote, setNewNote] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -540,8 +536,6 @@ function IncidentDetailSheet({
 
 export function AdminIncidents(): React.ReactElement {
   const { profile } = useAdmin();
-  const _currentUserId = profile?.id ?? '';
-  const _currentUserEmail = profile?.email ?? '';
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [stats, setStats] = useState<IncidentStats | null>(null);
   const [metrics, setMetrics] = useState<RealTimeMetrics>({
@@ -1032,8 +1026,6 @@ export function AdminIncidents(): React.ReactElement {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onAction={handleIncidentAction}
-        currentUserId={_currentUserId}
-        currentUserEmail={_currentUserEmail}
       />
     </div>
   );

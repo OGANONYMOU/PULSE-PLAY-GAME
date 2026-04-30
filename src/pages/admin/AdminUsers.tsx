@@ -5,7 +5,6 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { writeAudit } from '@/lib/audit';
@@ -14,36 +13,29 @@ import { toast } from 'sonner';
 import {
   Search, Filter, Crown, Shield,
   Ban, UserCheck, AlertTriangle, CheckCircle2,
-  Clock,
+  Flag,
   AlertOctagon,
-  ChevronDown, MoreHorizontal,
-  RefreshCw, Download, Eye,
+  ChevronDown,
+  RefreshCw, Download,
   Lock, Unlock, UserMinus, UserPlus,
-  MapPin, Calendar,
-  Smartphone, Globe,
-  FileText, History, BarChart3, Loader2,
-  Flame, Skull, Star, Mail, Trash2,
+  Calendar,
+  Loader2,
+  Skull, Star, Mail, Trash2, Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '@/components/ui/sheet';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 const PRIMARY_ADMIN_EMAIL = 'adegbesanadebola@outlook.com';
@@ -68,37 +60,6 @@ interface RiskFactor {
   type: string;
   severity: 'low' | 'medium' | 'high';
   description: string;
-}
-
-interface UserActivity {
-  id: string;
-  type: 'join' | 'tournament' | 'post' | 'clip' | 'report' | 'moderation';
-  title: string;
-  description: string;
-  createdAt: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface UserTournamentHistory {
-  id: string;
-  name: string;
-  game: string;
-  status: 'completed' | 'disqualified' | 'forfeited' | 'active';
-  placement: number | null;
-  prize: number;
-  date: string;
-  disputes: number;
-}
-
-interface UserModerationHistory {
-  id: string;
-  action: 'warn' | 'mute' | 'suspend' | 'ban' | 'unban' | 'reduced_cred';
-  reason: string;
-  moderator: string;
-  createdAt: string;
-  expiresAt: string | null;
-  appealed: boolean;
-  appealStatus: 'pending' | 'approved' | 'rejected' | null;
 }
 
 interface UserDevice {
@@ -232,23 +193,6 @@ function TrustScoreBadge({ score }: { score: number }) {
       <span className={cn("text-xs font-medium", getTrustScoreColor(score))}>
         {score}/100
       </span>
-    </div>
-  );
-}
-
-function StatusBadge({ status, until }: { status: ExtendedUser['status']; until: string | null }) {
-  const configs = {
-    active: { color: 'text-green-400 bg-green-500/10 border-green-500/30', icon: CheckCircle2, label: 'Active' },
-    inactive: { color: 'text-slate-400 bg-slate-500/10 border-slate-500/30', icon: Clock, label: 'Inactive' },
-    restricted: { color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30', icon: Shield, label: 'Restricted' },
-  };
-  const config = configs[status];
-  
-  return (
-    <div className={cn("inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium", config.color)}>
-      <config.icon className="w-3 h-3" />
-      {config.label}
-      {until && <span className="text-slate-400">• {formatDistanceToNow(new Date(until), { addSuffix: true })}</span>}
     </div>
   );
 }
@@ -482,7 +426,7 @@ function ActionModal({
                 <Input
                   type="number"
                   value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDuration(parseInt(e.target.value))}
                   className="bg-slate-800 border-slate-700 w-24"
                 />
                 <Select value={durationUnit} onValueChange={(v) => setDurationUnit(v as typeof durationUnit)}>
@@ -503,7 +447,7 @@ function ActionModal({
             <label className="text-sm text-slate-400">Reason {action !== 'unban' && action !== 'unmute' && action !== 'unsuspend' && <span className="text-red-400">*</span>}</label>
             <Textarea
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
               placeholder="Enter the reason for this action..."
               className="bg-slate-800 border-slate-700 min-h-[100px]"
             />
@@ -540,7 +484,6 @@ function ActionModal({
 
 export function AdminUsers(): React.ReactElement {
   const { profile: self, hasPermission } = useAdmin();
-  const navigate = useNavigate();
   
   const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -563,8 +506,6 @@ export function AdminUsers(): React.ReactElement {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionModal, setActionModal] = useState<{ open: boolean; action: string; user: ExtendedUser | null }>({ open: false, action: '', user: null });
   const [actionLoading, setActionLoading] = useState(false);
-  const [banTarget, setBanTarget] = useState<ExtendedUser | null>(null);
-  const [banReason, setBanReason] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ExtendedUser | null>(null);
 
   const isSuper = self?.role === 'ADMIN' || self?.role === 'SUPER_ADMIN';
@@ -773,7 +714,7 @@ export function AdminUsers(): React.ReactElement {
 
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(updates as never)
         .eq('id', user.id);
 
       if (error) throw error;
@@ -787,15 +728,13 @@ export function AdminUsers(): React.ReactElement {
     } finally {
       setActionLoading(false);
       setActionModal({ open: false, action: '', user: null });
-      setBanTarget(null);
-      setBanReason('');
     }
   };
 
   const changeRole = async (user: ExtendedUser, role: Role) => {
     if (user.email === PRIMARY_ADMIN_EMAIL) { toast.error('Cannot change primary admin.'); return; }
     if (!isSuper) { toast.error('Only super-admins can change roles.'); return; }
-    const { error } = await supabase.from('profiles').update({ role }).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ role } as never).eq('id', user.id);
     if (error) { toast.error('Failed: ' + error.message); return; }
     await writeAudit({ actor_id: self?.id || '', actor_role: self?.role || 'admin' }, { action: 'change_role', category: 'user', target_id: user.id, target_type: 'user', metadata: { from: user.role, to: role, username: user.username } });
     toast.success(`${user.username} → ${role}`);
@@ -886,7 +825,7 @@ export function AdminUsers(): React.ReactElement {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               placeholder="Search by username, email, or name..."
               className="pl-10 bg-white/5 border-white/10"
             />
@@ -1008,7 +947,7 @@ export function AdminUsers(): React.ReactElement {
                           </div>
                         )}
 
-                        {hasPermission('users.mute') && !isSelf && (
+                        {hasPermission('users.mute' as any) && !isSelf && (
                           <Button
                             size="sm"
                             className={cn(

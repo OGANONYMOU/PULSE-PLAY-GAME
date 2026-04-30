@@ -418,7 +418,7 @@ function DeleteConfirm({ content, onClose, onConfirm }: {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminPosts(): React.ReactElement {
-  const { hasPermission } = useAdmin();
+  const { hasPermission, profile, role } = useAdmin();
   const canManageContent = hasPermission('content.manage') || hasPermission('system.admin_access');
   const canDelete = hasPermission('content.delete') || hasPermission('system.admin_access');
 
@@ -602,7 +602,10 @@ export function AdminPosts(): React.ReactElement {
 
     setContent(prev => prev.filter(item => item.id !== id));
 
-    await writeAudit('unknown', 'content_delete', id, {});
+    await writeAudit(
+      { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+      { action: 'content_delete', category: 'community', target_id: id }
+    );
     toast.success('Content deleted');
     setDeleteTarget(null);
   };

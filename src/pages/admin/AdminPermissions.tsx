@@ -260,10 +260,9 @@ function _PermissionMatrix({
 }
 
 export function AdminPermissions(): React.ReactElement {
-  const { hasPermission, role } = useAdmin();
+  const { hasPermission, role, profile } = useAdmin();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [_changeHistory, _setChangeHistory] = useState<PermissionChange[]>([]);
   const [stats, setStats] = useState<RoleStats>({
     totalUsers: 0,
     roleDistribution: { SUPER_ADMIN: 0, ADMIN: 0, MODERATOR: 0, HOST: 0, USER: 0 },
@@ -357,15 +356,10 @@ export function AdminPermissions(): React.ReactElement {
       if (error) throw error;
 
       if (tempRole !== selectedUser.role) {
-        await writeAudit({
-          category: 'user',
-          action: 'role_change',
-          target_id: selectedUser.id,
-          details: {
-            old_role: selectedUser.role,
-            new_role: tempRole,
-          },
-        });
+        await writeAudit(
+          { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+          { action: 'role_change', category: 'user', target_id: selectedUser.id, metadata: { old_role: selectedUser.role, new_role: tempRole } }
+        );
       }
 
       toast.success('User permissions updated');
@@ -379,19 +373,17 @@ export function AdminPermissions(): React.ReactElement {
     }
   };
 
-  const _handleBulkRoleChange = async (userIds: string[], newRole: AdminRole) => {
+  const handleBulkRoleChange = async (userIds: string[], newRole: AdminRole) => {
     try {
       await Promise.all(
         userIds.map(id =>
           supabase.from('profiles').update({ role: newRole } as never).eq('id', id)
         )
       );
-      await writeAudit({
-        category: 'user',
-        action: 'bulk_role_change',
-        target_id: 'multiple',
-        details: { count: userIds.length, newRole },
-      });
+      await writeAudit(
+        { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+        { action: 'bulk_role_change', category: 'user', target_id: 'multiple', metadata: { count: userIds.length, newRole } }
+      );
       toast.success(`Updated ${userIds.length} users to ${newRole}`);
       fetchUsers();
     } catch (err) {

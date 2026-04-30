@@ -10,7 +10,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Users, Trophy, ShieldAlert, Activity,
-  TrendingUp, TrendingDown,  Zap, Clock, AlertTriangle,
+  TrendingUp, TrendingDown, Zap, Clock, AlertTriangle,
   Ban, Gamepad2, RefreshCw,
   ChevronRight, Flame, Terminal,
   BarChart3, PieChart,

@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
+import type { AdminContextState } from '@/contexts/AdminContext';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -261,7 +262,10 @@ function GameModal({ game, onClose, onSaved }: {
 
       if (error) throw error;
 
-      await writeAudit({ category: 'games', action: isEdit ? 'game_update' : 'game_create', target_id: game.id || 'new', details: { name: form.name } });
+      await writeAudit(
+        { actor_id: 'system', actor_email: 'system@pulseplay.gg', actor_role: 'system' },
+        { action: isEdit ? 'game_update' : 'game_create', category: 'game', target_id: game.id || 'new', target_type: 'game', metadata: { name: form.name } }
+      );
 
       toast.success(isEdit ? 'Game updated' : 'Game added');
       onSaved();
@@ -456,7 +460,10 @@ function DeleteConfirm({ game, onClose, onDeleted }: {
       const { error } = await supabase.from('games').delete().eq('id', game.id);
       if (error) throw error;
 
-      await writeAudit({ category: 'games', action: 'game_delete', target_id: game.id, details: { name: game.name } });
+      await writeAudit(
+        { actor_id: 'system', actor_email: 'system@pulseplay.gg', actor_role: 'system' },
+        { action: 'game_delete', category: 'game', target_id: game.id, target_type: 'game', metadata: { name: game.name } }
+      );
 
       toast.success('Game deleted');
       onDeleted();

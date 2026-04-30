@@ -474,7 +474,7 @@ function ModerationCaseSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminModeration(): React.ReactElement {
-  const { hasPermission, role } = useAdmin();
+  const { hasPermission, role, profile } = useAdmin();
   const navigate = useNavigate();
 
   // Data states
@@ -834,12 +834,10 @@ export function AdminModeration(): React.ReactElement {
           break;
       }
 
-      await writeAudit({
-        category: 'moderation',
-        action: `moderation_${action}`,
-        target_id: selectedReport.id,
-        details: data || {},
-      });
+      await writeAudit(
+        { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'moderator' },
+        { action: `moderation_${action}`, category: 'moderation', target_id: selectedReport.id, metadata: data || {} }
+      );
       fetchReports();
       setIsDetailOpen(false);
     } catch (err) {

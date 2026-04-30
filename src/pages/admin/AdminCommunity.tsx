@@ -5,14 +5,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { subscriptionManager } from '@/lib/realtime/subscriptionManager';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import {
-  MessageSquare, Play, FileText, MessageCircle, Filter,
+  MessageSquare, Play, FileText, MessageCircle,
   Search, RefreshCw, Eye, EyeOff, Pin,
   Trash2, Flag, CheckCircle2, AlertTriangle,
   Clock, ThumbsUp, Share2,
@@ -29,14 +28,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
-import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
 
@@ -105,12 +100,6 @@ interface ContentStats {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// IMPORTS (additional)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import { writeAudit } from '@/lib/audit';
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -143,11 +132,9 @@ function getToxicityColor(score: number): string {
 function ContentCard({
   item,
   onSelect,
-  onAction,
 }: {
   item: ContentItem;
   onSelect: () => void;
-  onAction: (action: string, data?: object) => void;
 }) {
   const TypeConfig = CONTENT_TYPE_CONFIG[item.type];
   const StatusConfig = STATUS_CONFIG[item.status];
@@ -285,13 +272,11 @@ function ContentDetailSheet({
   isOpen,
   onClose,
   onAction,
-  currentUserId: _currentUserId,
 }: {
   item: ContentItem | null;
   isOpen: boolean;
   onClose: () => void;
   onAction: (action: string, data?: object) => Promise<void>;
-  currentUserId: string;
 }) {
   const [moderatorNote, setModeratorNote] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -513,13 +498,11 @@ function ContentDetailSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminCommunity(): React.JSX.Element {
-  const _navigate = useNavigate();
-  const [_searchParams] = useSearchParams();
   const { profile } = useAdmin();
 
   const [content, setContent] = useState<ContentItem[]>([]);
   const [page, setPage] = useState(1);
-  const [_totalPages, _setTotalPages] = useState(1);
+  const [, setTotalPages] = useState(1);
   const [stats, setStats] = useState<ContentStats | null>(null);
   const [filters, setFilters] = useState<ContentFilters>({
     type: 'all',
@@ -532,7 +515,7 @@ export function AdminCommunity(): React.JSX.Element {
     authorRole: 'all',
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedItem, _setSelectedItem] = useState<ContentItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Fetch content from Supabase
@@ -580,9 +563,10 @@ export function AdminCommunity(): React.JSX.Element {
       // Transform posts to ContentItem format
       const transformedContent: ContentItem[] = (postsData || []).map((p: Record<string, unknown>) => {
         const reportCount = (p.post_reports as unknown[])?.length ?? 0;
+        const contentType = (p.type as string) || 'post';
         return {
           id: p.id as string,
-          type: (p.type as string) || 'post',
+          type: contentType as ContentType,
           author: {
             id: p.user_id as string,
             username: (p.profiles as { username: string })?.username || 'Unknown',
@@ -621,7 +605,7 @@ export function AdminCommunity(): React.JSX.Element {
       }
 
       setContent(filtered);
-      setTotalPages(Math.ceil((totalCount || filtered.length) / pageSize));
+      setTotalPages(Math.ceil((totalCount || filtered.length) / 50));
 
       // Fetch stats separately
       const { data: statsData } = await supabase.rpc('get_community_stats');
@@ -697,13 +681,13 @@ export function AdminCommunity(): React.JSX.Element {
             updates.status = 'deleted';
             break;
           case 'feature':
-            updates.status = item.status === 'featured' ? 'active' : 'featured';
+            updates.status = selectedItem.status === 'featured' ? 'active' : 'featured';
             updates.featured_until = updates.status === 'featured'
               ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
               : undefined;
             break;
           case 'pin':
-            updates.status = item.status === 'pinned' ? 'active' : 'pinned';
+            updates.status = selectedItem.status === 'pinned' ? 'active' : 'pinned';
             updates.pinned_at = updates.status === 'pinned' ? new Date().toISOString() : undefined;
             break;
         }
@@ -712,7 +696,10 @@ export function AdminCommunity(): React.JSX.Element {
       }));
 
       // Write audit log
-      await writeAudit(profile.id, `content.${action}`, selectedItem.id, { note: (data as { note?: string })?.note });
+      await writeAudit(
+        { actor_id: profile.id, actor_email: profile.email || '', actor_role: profile.role || 'admin' },
+        { action: `content.${action}`, category: 'community', target_id: selectedItem.id, metadata: { note: (data as { note?: string })?.note } }
+      );
 
       toast.success(`Content ${action.replace('_', ' ')} successful`);
       setIsDetailOpen(false);
@@ -867,40 +854,27 @@ export function AdminCommunity(): React.JSX.Element {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {content.map((item) => (
-            <Card key={item.id} className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                    {item.author?.username?.charAt(0).toUpperCase() || '?'}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">{item.author?.username || 'Unknown'}</p>
-                    <p className="text-xs text-slate-500">{item.type}</p>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-300 line-clamp-2">{item.content}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
-                  <span>{formatDistanceToNow(new Date(item.created_at))} ago</span>
-                  {item.moderation?.report_count > 0 && (
-                    <span className="text-red-400">{item.moderation.report_count} reports</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <ContentCard
+              key={item.id}
+              item={item}
+              onSelect={() => {
+                setSelectedItem(item);
+                setIsDetailOpen(true);
+              }}
+            />
           ))}
         </div>
       )}
 
       {/* Detail Sheet */}
-    <ContentDetailSheet
-      item={selectedItem}
-      isOpen={isDetailOpen}
-      onClose={() => setIsDetailOpen(false)}
-      onAction={handleContentAction}
-      currentUserId={profile?.id || ''}
-    />
-  </div>
-);
+      <ContentDetailSheet
+        item={selectedItem}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onAction={handleContentAction}
+      />
+    </div>
+  );
 }
 
 export default AdminCommunity;
