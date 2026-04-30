@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { subscriptionManager } from '@/lib/realtime/subscriptionManager';
@@ -285,7 +285,7 @@ function ContentDetailSheet({
   isOpen,
   onClose,
   onAction,
-  currentUserId,
+  currentUserId: _currentUserId,
 }: {
   item: ContentItem | null;
   isOpen: boolean;
@@ -513,13 +513,13 @@ function ContentDetailSheet({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function AdminCommunity(): React.JSX.Element {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const _navigate = useNavigate();
+  const [_searchParams] = useSearchParams();
   const { profile } = useAdmin();
 
   const [content, setContent] = useState<ContentItem[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [_totalPages, _setTotalPages] = useState(1);
   const [stats, setStats] = useState<ContentStats | null>(null);
   const [filters, setFilters] = useState<ContentFilters>({
     type: 'all',
@@ -532,7 +532,7 @@ export function AdminCommunity(): React.JSX.Element {
     authorRole: 'all',
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
+  const [selectedItem, _setSelectedItem] = useState<ContentItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Fetch content from Supabase
