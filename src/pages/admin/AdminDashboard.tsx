@@ -3,7 +3,7 @@
 // Intelligent command center with real-time metrics, alerts, and quick actions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '@/contexts/AdminContext';
