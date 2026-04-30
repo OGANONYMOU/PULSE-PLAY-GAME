@@ -16,12 +16,12 @@ import {
   ExternalLink, Lock, Unlock, Edit3, Trash2,
   Activity, Flag, DollarSign, Loader2, FileText, Gavel,
   Crown,
-  AlertCircle, CheckCircle, Skull, XCircle,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -45,7 +45,7 @@ import { writeAudit } from '@/lib/audit';
 
 type TournamentStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'locked';
 type TournamentHealthStatus = 'healthy' | 'warning' | 'critical' | 'suspended';
-type FraudRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+type FraudRiskLevel = 'none' | 'low' | 'medium' | 'high' | 'critical';
 type HealthIndicatorType = 'participation' | 'engagement' | 'disputes' | 'fraud' | 'timing';
 type HealthStatus = 'good' | 'warning' | 'critical';
 
@@ -186,7 +186,7 @@ function calculateTournamentHealth(
   const checkInRate = registered > 0 ? (checkedIn / registered) * 100 : 0;
   
   // Calculate dispute metrics
-  const activeDisputes = disputes.filter(d => d.status === 'pending' || d.status === 'under_review').length;
+  const activeDisputes = disputes.filter(d => d.status === 'open' || d.status === 'under_review').length;
   const disputeRate = registered > 0 ? (disputes.length / registered) * 100 : 0;
   
   // Calculate match completion rate
@@ -201,7 +201,7 @@ function calculateTournamentHealth(
   const noShowRate = registered > 0 ? (noShows / registered) * 100 : 0;
   
   // Fraud risk assessment
-  let fraudRisk: FraudRiskLevel = 'none';
+  let fraudRisk: FraudRiskLevel = 'none' as FraudRiskLevel;
   let fraudFactors: string[] = [];
   
   if (disputeRate > 20) {
@@ -270,7 +270,7 @@ function calculateTournamentHealth(
     participant_fill_rate: fillRate,
     check_in_rate: checkInRate,
     dispute_count: activeDisputes,
-    pending_reports: disputes.filter(d => d.status === 'pending').length,
+    pending_reports: disputes.filter(d => d.status === 'open').length,
     fraud_risk: fraudRisk,
     last_assessed: new Date().toISOString(),
     indicators,
@@ -680,7 +680,7 @@ function TournamentDetailSheet({
             </div>
             <div className="p-2 rounded-lg bg-slate-900/50 border border-slate-800 text-center">
               <Flag className="w-4 h-4 mx-auto mb-1 text-orange-400" />
-              <p className="text-lg font-bold text-white">{disputes.filter(d => d.status === 'pending' || d.status === 'under_review').length}</p>
+              <p className="text-lg font-bold text-white">{disputes.filter(d => d.status === 'open' || d.status === 'under_review').length}</p>
               <p className="text-[10px] text-slate-500">Disputes</p>
             </div>
           </div>
@@ -968,7 +968,7 @@ function TournamentDetailSheet({
                     key={dispute.id}
                     className={cn(
                       "p-4 rounded-lg border",
-                      dispute.status === 'pending' ? 'bg-red-500/5 border-red-500/20' :
+                      dispute.status === 'open' ? 'bg-red-500/5 border-red-500/20' :
                       dispute.status === 'under_review' ? 'bg-yellow-500/5 border-yellow-500/20' :
                       dispute.status === 'resolved' ? 'bg-green-500/5 border-green-500/20' :
                       'bg-slate-900/50 border-slate-800'
@@ -988,7 +988,7 @@ function TournamentDetailSheet({
                           </Badge>
                           <Badge className={cn(
                             "text-[10px]",
-                            dispute.status === 'pending' ? 'bg-red-500/20 text-red-400' :
+                            dispute.status === 'open' ? 'bg-red-500/20 text-red-400' :
                             dispute.status === 'under_review' ? 'bg-yellow-500/20 text-yellow-400' :
                             dispute.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
                             'bg-slate-500/20 text-slate-400'
@@ -998,7 +998,7 @@ function TournamentDetailSheet({
                         </div>
                         <p className="text-sm font-medium text-white">{dispute.type.replace('_', ' ')}</p>
                         <p className="text-xs text-slate-500">
-                          Reported by {dispute.reporter_name} • {formatDistanceToNow(new Date(dispute.created_at), { addSuffix: true })}
+                          Reported by {dispute.reported_by_username || dispute.reported_by} • {formatDistanceToNow(new Date(dispute.created_at), { addSuffix: true })}
                         </p>
                       </div>
                       {dispute.match_details && (
@@ -1015,7 +1015,7 @@ function TournamentDetailSheet({
                     
                     {dispute.evidence.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {dispute.evidence.map((evidence, i) => (
+                        {dispute.evidence.map((_evidence, i) => (
                           <Badge key={i} variant="outline" className="text-[10px] border-slate-700">
                             Evidence {i + 1}
                           </Badge>
@@ -1023,7 +1023,7 @@ function TournamentDetailSheet({
                       </div>
                     )}
                     
-                    {canModerate && dispute.status !== 'resolved' && dispute.status !== 'dismissed' && (
+                    {canModerate && dispute.status !== 'resolved' && dispute.status !== 'rejected' && (
                       <div className="flex gap-2 mt-3 pt-3 border-t border-slate-800">
                         <Button
                           size="sm"
@@ -1126,7 +1126,7 @@ export function AdminTournaments(): React.ReactElement {
   const [games, setGames] = useState<Game[]>([]);
   const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [disputes, setDisputes] = useState<Record<string, ExtendedTournamentDispute[]>>({});
-  const [matches, setMatches] = useState<Record<string, TournamentMatch[]>>({});
+  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({});
   const [healthData, setHealthData] = useState<Record<string, TournamentHealth>>({});
   
   // UI states
@@ -1402,21 +1402,21 @@ export function AdminTournaments(): React.ReactElement {
           
         case 'lock':
           await supabase.from('tournaments').update({ status: 'locked' } as never).eq('id', selectedTournament.id);
-          await writeAudit('unknown', 'lock_tournament', selectedTournament.id);
+          await writeAudit({ category: 'tournament', action: 'lock_tournament', target_id: selectedTournament.id });
           toast.success('Tournament locked');
           fetchTournaments();
           break;
           
         case 'unlock':
           await supabase.from('tournaments').update({ status: 'ongoing' } as never).eq('id', selectedTournament.id);
-          await writeAudit('unknown', 'unlock_tournament', selectedTournament.id);
+          await writeAudit({ category: 'tournament', action: 'unlock_tournament', target_id: selectedTournament.id });
           toast.success('Tournament unlocked');
           fetchTournaments();
           break;
           
         case 'cancel':
           await supabase.from('tournaments').update({ status: 'cancelled' } as never).eq('id', selectedTournament.id);
-          await writeAudit('unknown', 'cancel_tournament', selectedTournament.id);
+          await writeAudit({ category: 'tournament', action: 'cancel_tournament', target_id: selectedTournament.id });
           toast.success('Tournament cancelled');
           fetchTournaments();
           break;
@@ -1427,7 +1427,7 @@ export function AdminTournaments(): React.ReactElement {
           
         case 'confirm_delete':
           await supabase.from('tournaments').delete().eq('id', selectedTournament.id);
-          await writeAudit('unknown', 'delete_tournament', selectedTournament.id);
+          await writeAudit({ category: 'tournament', action: 'delete_tournament', target_id: selectedTournament.id });
           toast.success('Tournament deleted');
           setDeleteConfirmOpen(false);
           setIsDetailOpen(false);
@@ -1441,7 +1441,7 @@ export function AdminTournaments(): React.ReactElement {
         case 'dismiss_dispute':
           if (data && 'disputeId' in data) {
             await supabase.from('tournament_disputes')
-              .update({ status: 'dismissed', resolved_at: new Date().toISOString() } as never)
+              .update({ status: 'rejected', resolved_at: new Date().toISOString() } as never)
               .eq('id', data.disputeId as string);
             toast.success('Dispute dismissed');
             fetchTournamentDetails(selectedTournament.id);
@@ -1457,7 +1457,7 @@ export function AdminTournaments(): React.ReactElement {
                 resolved_at: new Date().toISOString(),
               } as never)
               .eq('id', data.disputeId as string);
-            await writeAudit('unknown', 'resolve_dispute', data.disputeId as string, { resolution: data.resolution });
+            await writeAudit({ category: 'tournament', action: 'resolve_dispute', target_id: data.disputeId as string, details: { resolution: data.resolution } });
             toast.success('Dispute resolved');
             fetchTournamentDetails(selectedTournament.id);
           }
@@ -1484,11 +1484,11 @@ export function AdminTournaments(): React.ReactElement {
         ...formData,
         created_at: new Date().toISOString(),
         current_players: 0,
-      }).select().single();
+      } as never).select().single();
       
       if (error) throw error;
       
-      await writeAudit('unknown', 'create_tournament', data.id, { name: formData.name });
+      await writeAudit({ category: 'tournament', action: 'create_tournament', target_id: data.id, details: { name: formData.name } });
       toast.success('Tournament created successfully');
       setCreateModalOpen(false);
       fetchTournaments();
