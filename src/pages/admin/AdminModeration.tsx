@@ -522,7 +522,7 @@ export function AdminModeration(): React.ReactElement {
       const mockReports: ExtendedReport[] = [
         {
           id: '1',
-          type: 'post',
+          type: 'content',
           reason: 'harassment',
           status: 'pending',
           priority: 'high',
@@ -537,7 +537,7 @@ export function AdminModeration(): React.ReactElement {
           },
           target: {
             id: 'post1',
-            type: 'post',
+            type: 'content',
             title: 'Toxic Post',
             content: 'Example toxic content',
             author: {
@@ -568,6 +568,9 @@ export function AdminModeration(): React.ReactElement {
           },
           prior_reports_count: 3,
           is_repeat_offender: true,
+          evidence: [],
+          assigned_to: null,
+          resolution: null,
         },
         {
           id: '2',
@@ -615,6 +618,9 @@ export function AdminModeration(): React.ReactElement {
           },
           prior_reports_count: 0,
           is_repeat_offender: false,
+          evidence: [],
+          assigned_to: null,
+          resolution: null,
         },
         {
           id: '3',
@@ -662,6 +668,9 @@ export function AdminModeration(): React.ReactElement {
           },
           prior_reports_count: 5,
           is_repeat_offender: true,
+          evidence: [],
+          assigned_to: null,
+          resolution: null,
         },
       ];
 
@@ -1038,7 +1047,7 @@ export function AdminModeration(): React.ReactElement {
       {/* Reports List */}
       {isLoading ? (
         <div className="space-y-2">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(4)].map((_: unknown, i: number) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
@@ -1051,7 +1060,7 @@ export function AdminModeration(): React.ReactElement {
       ) : (
         <div className="space-y-2">
           <AnimatePresence>
-            {filteredReports.map((report, index) => {
+            {filteredReports.map((report: ExtendedReport, index: number) => {
               const ContentIcon = CONTENT_ICONS[report.type as ContentType] || FileText;
               const isUrgent = report.priority === 'urgent' || report.priority === 'high';
 
