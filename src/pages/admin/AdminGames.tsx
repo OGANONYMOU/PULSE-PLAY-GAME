@@ -9,8 +9,8 @@ import { useAdmin } from '@/contexts/AdminContext';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search, Save, Loader2,
   Star, AlertTriangle, Trophy, Users, TrendingUp, LayoutGrid,
-  Filter, EyeOff, X,
-  Crown,
+  Filter, EyeOff,
+  Crown, Zap,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';

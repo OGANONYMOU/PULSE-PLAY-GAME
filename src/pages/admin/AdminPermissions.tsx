@@ -2,7 +2,7 @@
 // PulsePlay Admin System - Permissions & Role Management Module
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/lib/supabase';
@@ -258,7 +258,6 @@ function PermissionMatrix({
 
 export function AdminPermissions(): React.ReactElement {
   const { hasPermission, role } = useAdmin();
-  const _navigate = null;
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [_changeHistory, _setChangeHistory] = useState<PermissionChange[]>([]);
@@ -276,7 +275,7 @@ export function AdminPermissions(): React.ReactElement {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [tempRole, setTempRole] = useState<AdminRole>('USER');
-  const [tempPermissions, setTempPermissions] = useState<string[]>([]);
+  const [_tempPermissions, _setTempPermissions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const canManagePermissions = hasPermission('system.admin_access' as any) || role === 'SUPER_ADMIN' || role === 'ADMIN';
