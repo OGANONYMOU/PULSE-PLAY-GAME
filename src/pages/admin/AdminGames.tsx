@@ -3,14 +3,14 @@
 // Comprehensive game catalog management with analytics
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
   Gamepad2, Plus, Pencil, Trash2, RefreshCw, Search, Save, Loader2,
   Star, AlertTriangle, Trophy, Users, TrendingUp, LayoutGrid,
-  Filter, EyeOff,
-  Crown, Zap,
+  Filter, EyeOff, X,
+  Crown,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -225,7 +225,6 @@ function GameModal({ game, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const _user = null;
   const [form, setForm] = useState({ ...BLANK_GAME, ...game });
   const [saving, setSaving] = useState(false);
   const isEdit = !!game.id;
@@ -262,7 +261,7 @@ function GameModal({ game, onClose, onSaved }: {
 
       if (error) throw error;
 
-      await writeAudit('unknown', isEdit ? 'game_update' : 'game_create', game.id || 'new', { name: form.name });
+      await writeAudit({ category: 'games', action: isEdit ? 'game_update' : 'game_create', target_id: game.id || 'new', details: { name: form.name } });
 
       toast.success(isEdit ? 'Game updated' : 'Game added');
       onSaved();
@@ -457,7 +456,7 @@ function DeleteConfirm({ game, onClose, onDeleted }: {
       const { error } = await supabase.from('games').delete().eq('id', game.id);
       if (error) throw error;
 
-      await writeAudit('unknown', 'game_delete', game.id, { name: game.name });
+      await writeAudit({ category: 'games', action: 'game_delete', target_id: game.id, details: { name: game.name } });
 
       toast.success('Game deleted');
       onDeleted();
@@ -528,7 +527,7 @@ export function AdminGames(): React.ReactElement {
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
 
-  const canManageGames = hasPermission('games.manage') || hasPermission('system.admin_access');
+  const canManageGames = hasPermission('games.manage' as any) || hasPermission('system.admin_access' as any);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -818,7 +817,7 @@ export function AdminGames(): React.ReactElement {
           ) : (
             <div className="space-y-3">
               <AnimatePresence>
-                {filteredGames.map((game, index) => (
+                {filteredGames.map((game: Game, index: number) => (
                   <GameCard
                     key={game.id}
                     game={game}
