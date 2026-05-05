@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Gamepad2, Users, Trophy, Star, Sparkles, RefreshCw, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -106,15 +106,15 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
   );
 }
 
-function GameCard(p: { game: Game; index: number }): React.ReactElement {
+const GameCard = memo(function GameCard(p: { game: Game; index: number }): React.ReactElement {
   const g = p.game;
   const badgeColor = g.badge ? (BADGE_COLORS[g.badge] ?? 'bg-purple-500') : '';
   const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
-    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: p.index * 0.07 }}>
-      <div className="gaming-card p-6 h-full flex flex-col">
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: Math.min(p.index * 0.05, 0.3) }}>
+      <div className="gaming-card p-4 sm:p-6 h-full flex flex-col">
         <div className="flex items-start justify-between mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 overflow-hidden">
             {g.image_url
               ? <img src={g.image_url} alt={g.name} className="w-full h-full object-cover" />
               : g.icon}
@@ -125,19 +125,19 @@ function GameCard(p: { game: Game; index: number }): React.ReactElement {
             </Badge>
           ) : null}
         </div>
-        <h3 className="font-orbitron text-lg font-bold mb-2 leading-snug">{g.name}</h3>
+        <h3 className="font-orbitron text-base sm:text-lg font-bold mb-2 leading-snug">{g.name}</h3>
         <p className="text-muted-foreground text-sm mb-4 flex-1 leading-relaxed line-clamp-3">{g.description}</p>
         <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-cyan-400" /><span>{players}</span></div>
           <div className="flex items-center gap-1.5"><Trophy className="w-4 h-4 text-purple-400" /><span>{g.tournament_count} events</span></div>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline" className="flex-1 border-purple-500/40 hover:bg-purple-500/10 text-sm">
+          <Button asChild variant="outline" className="flex-1 border-purple-500/40 hover:bg-purple-500/10 text-sm h-10 sm:h-9 min-h-[40px]">
             <Link to={`/games/${g.id}`}>
               <Gamepad2 className="mr-2 w-4 h-4" />Details
             </Link>
           </Button>
-          <Button asChild className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm">
+          <Button asChild className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm h-10 sm:h-9 min-h-[40px]">
             <Link to={`/tournaments?game=${g.id}`}>
               <Trophy className="mr-2 w-4 h-4" />Play
             </Link>
@@ -146,7 +146,7 @@ function GameCard(p: { game: Game; index: number }): React.ReactElement {
       </div>
     </motion.div>
   );
-}
+});
 
 function EmptyGames(p: { isFiltered: boolean; onClear: () => void }): React.ReactElement {
   return (
@@ -203,7 +203,7 @@ export function Games(): React.ReactElement {
   });
 
   return (
-    <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
+    <div className="min-h-screen pt-16 sm:pt-20 lg:pt-24 px-3 sm:px-4 lg:px-6 pb-16 sm:pb-20">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto text-center mb-10">
         <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-4">
           Trending <span className="gradient-text">Mobile Games</span>

@@ -69,7 +69,7 @@ export function Navbar(): React.ReactElement {
               </span>
             </Link>
 
-            {/* Desktop nav links */}
+            {/* Desktop nav links - hidden on mobile (use bottom nav) */}
             <div className="hidden lg:flex items-center gap-5 xl:gap-7">
               {navLinks.map((link) => (
                 <Link
@@ -81,6 +81,13 @@ export function Navbar(): React.ReactElement {
                   {link.label}
                 </Link>
               ))}
+            </div>
+
+            {/* Mobile - just show page title instead of nav links */}
+            <div className="flex-1 lg:hidden px-3">
+              <span className="font-orbitron text-sm font-bold text-white/80 truncate">
+                {navLinks.find(n => location.pathname === n.href)?.label || 'PulsePlay'}
+              </span>
             </div>
 
             {/* Right actions */}

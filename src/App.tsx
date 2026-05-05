@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { ParticleBackground } from '@/components/ui-custom/ParticleBackground';
 import { ScrollToTop } from '@/components/ScrollToTop';
 import { AppLoader } from '@/components/AppLoader';
@@ -19,6 +20,7 @@ const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ defau
 const TournamentCreate = lazy(() => import('@/pages/TournamentCreateNew').then(m => ({ default: m.TournamentCreateNew })));
 const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
 const Clips        = lazy(() => import('@/pages/Clips').then(m => ({ default: m.Clips })));
+const Clubs        = lazy(() => import('@/pages/Clubs').then(m => ({ default: m.Clubs })));
 const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
 const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
 const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
@@ -51,6 +53,7 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/tournaments': () => import('@/pages/Tournaments'),
   '/community':   () => import('@/pages/Community'),
   '/clips':       () => import('@/pages/Clips'),
+  '/clubs':       () => import('@/pages/Clubs'),
   '/about':       () => import('@/pages/About'),
   '/signin':      () => import('@/pages/SignIn'),
   '/register':    () => import('@/pages/Register'),
@@ -136,6 +139,7 @@ function AppContent(): React.ReactElement {
               <Route path="/tournaments/create"  element={<TournamentCreate />} />
               <Route path="/community"         element={<Community />} />
               <Route path="/clips"             element={<Clips />} />
+              <Route path="/clubs"             element={<Clubs />} />
               <Route path="/about"             element={<About />} />
               <Route path="/signin"            element={<SignIn />} />
               <Route path="/register"          element={<Register />} />
@@ -168,6 +172,7 @@ function AppContent(): React.ReactElement {
         </PageTransition>
       </main>
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 }
