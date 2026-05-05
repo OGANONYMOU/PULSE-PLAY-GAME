@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Swords, Star, Zap, Loader2 } from 'lucide-react';
+import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Star, Zap, Loader2, Share2, Award } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -214,10 +214,14 @@ function TabTournaments(p: { active: boolean; userId: string }): React.ReactElem
         if (!t) return null;
         const statusCls = e.status === 'winner' ? 'text-yellow-400' : e.status === 'eliminated' ? 'text-red-400' : e.status === 'checked_in' ? 'text-green-400' : 'text-cyan-400';
         return (
-          <div key={e.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8">
+          <Link 
+            key={e.id} 
+            to={`/tournaments?id=${t.id}`}
+            className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8 hover:border-cyan-500/30 hover:bg-white/8 transition-all group"
+          >
             <span className="text-xl flex-shrink-0">{t.games?.icon ?? '🎮'}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-white truncate">{t.name}</div>
+              <div className="text-sm font-bold text-white truncate group-hover:text-cyan-400 transition-colors">{t.name}</div>
               <div className="text-xs text-white/35 flex items-center gap-2">
                 <span>{t.games?.name}</span>
                 <span>·</span>
@@ -228,7 +232,7 @@ function TabTournaments(p: { active: boolean; userId: string }): React.ReactElem
               <div className={`text-xs font-bold capitalize ${statusCls}`}>{e.status.replace('_', ' ')}</div>
               <div className="text-[10px] text-white/30">{format(new Date(t.date), 'MMM d, yyyy')}</div>
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>
@@ -237,7 +241,7 @@ function TabTournaments(p: { active: boolean; userId: string }): React.ReactElem
 function TabAchievements(p: { active: boolean; joinedAt: string | null; postCount: number; tournamentCount: number; wonCount: number }): React.ReactElement {
   if (!p.active) return <span />;
   const items = [
-    { icon: Star,   label: 'First Blood',    desc: 'Joined PulsePay',       color: 'from-yellow-500 to-orange-500', unlocked: true },
+    { icon: Star,   label: 'First Blood',    desc: 'Joined PulsePlay',       color: 'from-yellow-500 to-orange-500', unlocked: true },
     { icon: MessageSquare, label: 'Conversationalist', desc: 'Posted 1+ time', color: 'from-blue-500 to-cyan-500',   unlocked: p.postCount >= 1 },
     { icon: Flame,  label: 'On Fire',        desc: 'Posted 10+ times',       color: 'from-orange-500 to-red-500',   unlocked: p.postCount >= 10 },
     { icon: Trophy, label: 'Contender',      desc: 'Joined a tournament',    color: 'from-purple-500 to-pink-500',  unlocked: p.tournamentCount >= 1 },
@@ -434,6 +438,12 @@ export function Profile(): React.ReactElement {
                 <span className={'text-xs px-2.5 py-1 rounded-full font-bold border flex items-center ' + badge}>
                   <AdminBadge show={profile.role === 'ADMIN'} />{profile.role}
                 </span>
+                {/* Win badge if user has won tournaments */}
+                {tourneyEntries.some(e => e.status === 'winner') && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center">
+                    <Award className="w-3 h-3 mr-1" />Champion
+                  </span>
+                )}
               </div>
               {fullName ? <p className="text-white/60 text-sm mb-1">{fullName}</p> : null}
               <PrivateInfo show={isOwnProfile} label="Email" value={profile.email} />
@@ -444,7 +454,21 @@ export function Profile(): React.ReactElement {
               <BioText show={!isEditing} bio={profile.bio} isOwn={isOwnProfile} />
               <SocialRow show={!isEditing} twitter={profile.twitter_username} discord={profile.discord_username} />
             </div>
-            <EditBtn show={isOwnProfile && !isEditing} onClick={() => setIsEditing(true)} />
+            <div className="flex flex-col gap-2">
+              <EditBtn show={isOwnProfile && !isEditing} onClick={() => setIsEditing(true)} />
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  const url = `${window.location.origin}/profile/${profile.username}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success('Profile link copied!');
+                }}
+                className="h-8 text-xs border-white/20 text-white hover:bg-white/10"
+              >
+                <Share2 className="w-3.5 h-3.5 mr-1.5" />Share
+              </Button>
+            </div>
           </div>
           <EditPanel show={isEditing} form={editForm} saving={isSaving} onChange={setEditForm} onSave={handleSave} onCancel={() => setIsEditing(false)} />
         </div>
@@ -453,8 +477,8 @@ export function Profile(): React.ReactElement {
           {[
             { icon: MessageSquare, label: 'Posts', value: posts.length, color: 'text-cyan-400' },
             { icon: Flame, label: 'Likes', value: totalLikes, color: 'text-orange-400' },
-            { icon: Trophy, label: 'Tournaments', value: 0, color: 'text-yellow-400' },
-            { icon: Swords, label: 'Matches', value: 0, color: 'text-purple-400' },
+            { icon: Trophy, label: 'Tournaments', value: tourneyEntries.length, color: 'text-yellow-400' },
+            { icon: Award, label: 'Wins', value: tourneyEntries.filter(e => e.status === 'winner').length, color: 'text-green-400' },
           ].map((s) => (
             <div key={s.label} className="p-4 rounded-xl bg-white/5 border border-white/10 text-center hover:border-white/20 transition-all">
               <s.icon className={'w-5 h-5 mx-auto mb-1.5 ' + s.color} />

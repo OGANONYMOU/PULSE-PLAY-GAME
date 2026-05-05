@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   Trophy, Calendar, Users, DollarSign, Clock, ArrowRight,
   Filter, Flame, CheckCircle, RefreshCw, Loader2, X, Info,
-  UserCheck, Shield,
+  UserCheck, Shield, Share2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +89,7 @@ function TournamentSkeleton() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function Tournaments(): React.ReactElement {
   const { user, isAuthenticated } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tournaments, setTournaments]     = useState<Tournament[]>([]);
   const [loading, setLoading]             = useState(true);
   const [fetchError, setFetchError]       = useState('');
@@ -98,6 +100,76 @@ export function Tournaments(): React.ReactElement {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [registering, setRegistering]     = useState(false);
   const [myRegistrations, setMyRegistrations] = useState<Set<string>>(new Set());
+
+  // Share tournament link
+  const handleShare = async (t: Tournament, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const url = `${window.location.origin}/tournaments?id=${t.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${t.name} on PulsePlay`,
+          text: `Join ${t.name} - Prize pool: ${t.prize_pool}`,
+          url,
+        });
+      } catch {
+        // User cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success('Tournament link copied to clipboard');
+    }
+  };
+
+  // Handle dialog close with URL update
+  const handleCloseDetail = () => {
+    setDetail(null);
+    // Remove id from URL
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('id');
+    setSearchParams(newParams, { replace: true });
+  };
+
+  // Open detail and update URL
+  const openDetailWithUrl = async (t: Tournament) => {
+    setDetail(t);
+    // Add id to URL
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('id', t.id);
+    setSearchParams(newParams, { replace: true });
+    
+    // Load participants and updates
+    setLoadingDetail(true);
+    const [partRes, liveRes] = await Promise.all([
+      supabase
+        .from('tournament_participants')
+        .select('*, profiles(username, avatar_url)')
+        .eq('tournament_id', t.id)
+        .neq('status', 'withdrawn')
+        .order('registered_at', { ascending: true }),
+      supabase
+        .from('live_updates')
+        .select('*')
+        .eq('tournament_id', t.id)
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ]);
+    setParticipants((partRes.data as Participant[]) ?? []);
+    setLiveUpdates((liveRes.data as LiveUpdate[]) ?? []);
+    setLoadingDetail(false);
+  };
+
+  // Auto-open tournament from URL on load
+  useEffect(() => {
+    const tournamentId = searchParams.get('id');
+    if (tournamentId && tournaments.length > 0) {
+      const t = tournaments.find(t => t.id === tournamentId);
+      if (t && !detail) {
+        openDetailWithUrl(t);
+      }
+    }
+  }, [searchParams, tournaments]);
 
   const load = useCallback(async () => {
     setLoading(true); setFetchError('');
@@ -130,28 +202,6 @@ export function Tournaments(): React.ReactElement {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
-
-  const openDetail = async (t: Tournament) => {
-    setDetail(t);
-    setLoadingDetail(true);
-    const [partRes, liveRes] = await Promise.all([
-      supabase
-        .from('tournament_participants')
-        .select('*, profiles(username, avatar_url)')
-        .eq('tournament_id', t.id)
-        .neq('status', 'withdrawn')
-        .order('registered_at', { ascending: true }),
-      supabase
-        .from('live_updates')
-        .select('*')
-        .eq('tournament_id', t.id)
-        .order('created_at', { ascending: false })
-        .limit(20),
-    ]);
-    setParticipants((partRes.data as Participant[]) ?? []);
-    setLiveUpdates((liveRes.data as LiveUpdate[]) ?? []);
-    setLoadingDetail(false);
-  };
 
   const handleRegister = async (t: Tournament) => {
     if (!isAuthenticated || !user) { toast.error('Please sign in to register.'); return; }
@@ -297,7 +347,13 @@ export function Tournaments(): React.ReactElement {
                       <div className="gaming-card overflow-hidden h-full flex flex-col">
                         {/* Banner */}
                         <div className={`relative h-28 bg-gradient-to-br ${gameColor(gameName)} cursor-pointer`}
-                          onClick={() => openDetail(t)}>
+                          onClick={() => openDetailWithUrl(t)}>
+                          <button
+                            onClick={(e) => handleShare(t, e)}
+                            className="absolute top-3 right-3 p-1.5 rounded-lg bg-black/30 hover:bg-black/50 text-white/80 hover:text-white transition-colors"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
                           <div className="absolute inset-0 bg-black/20" />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-5xl">{gameIcon}</span>
@@ -314,7 +370,7 @@ export function Tournaments(): React.ReactElement {
 
                         {/* Body */}
                         <div className="p-5 flex-1 flex flex-col">
-                          <button className="text-left mb-3" onClick={() => openDetail(t)}>
+                          <button className="text-left mb-3" onClick={() => openDetailWithUrl(t)}>
                             <h3 className="font-orbitron text-base font-bold mb-1 hover:text-cyan-400 transition-colors">
                               {t.name}
                             </h3>
@@ -348,7 +404,7 @@ export function Tournaments(): React.ReactElement {
                           <div className="flex gap-2 mt-auto">
                             <Button size="sm" variant="outline"
                               className="flex-1 border-white/15 text-white/60 hover:bg-white/8 text-xs h-8"
-                              onClick={() => openDetail(t)}>
+                              onClick={() => openDetailWithUrl(t)}>
                               <Info className="w-3.5 h-3.5 mr-1" />Details
                             </Button>
 
@@ -372,7 +428,7 @@ export function Tournaments(): React.ReactElement {
                             {t.status === 'ongoing' && (
                               <Button size="sm"
                                 className="flex-1 border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs h-8"
-                                onClick={() => openDetail(t)}>
+                                onClick={() => openDetailWithUrl(t)}>
                                 <Flame className="w-3.5 h-3.5 mr-1 animate-pulse" />View Live
                               </Button>
                             )}
@@ -389,19 +445,24 @@ export function Tournaments(): React.ReactElement {
       )}
 
       {/* Detail Dialog */}
-      <Dialog open={!!detail} onOpenChange={v => { if (!v) setDetail(null); }}>
+      <Dialog open={!!detail} onOpenChange={v => { if (!v) handleCloseDetail(); }}>
         <DialogContent className="max-w-2xl glass border-border/40 max-h-[90vh] overflow-y-auto">
           {detail && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-orbitron flex items-center gap-2">
-                  <span className="text-2xl">{detail.games?.icon ?? '🎮'}</span>
-                  <div>
-                    <div className="text-base">{detail.name}</div>
-                    <div className="text-xs text-muted-foreground font-normal mt-0.5">
-                      {detail.games?.name} · {fmtDate(detail.date)}
+                <DialogTitle className="font-orbitron flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{detail.games?.icon ?? '🎮'}</span>
+                    <div>
+                      <div className="text-base">{detail.name}</div>
+                      <div className="text-xs text-muted-foreground font-normal mt-0.5">
+                        {detail.games?.name} · {fmtDate(detail.date)}
+                      </div>
                     </div>
                   </div>
+                  <Button size="sm" variant="ghost" onClick={() => handleShare(detail)} className="text-white/60 hover:text-white">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
                 </DialogTitle>
               </DialogHeader>
 

@@ -11,8 +11,8 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 if (!url || !key || url === 'undefined' || key === 'undefined') {
   const isProduction = import.meta.env.PROD;
   const msg = isProduction
-    ? '⚠️ PulsePay: Missing Supabase credentials. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel project environment variables (Settings → Environment Variables).'
-    : '⚠️ PulsePay: Missing Supabase credentials. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env.local file.';
+    ? '⚠️ PulsePlay: Missing Supabase credentials. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel project environment variables (Settings → Environment Variables).'
+    : '⚠️ PulsePlay: Missing Supabase credentials. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env.local file.';
 
   console.error(msg);
 
@@ -42,7 +42,7 @@ export const supabase = createClient<Database>(
       // Required for OAuth PKCE flow — reads the ?code= param on the callback URL
       detectSessionInUrl: true,
       // Stable storage key — must not change between deploys
-      storageKey:         'pulsepay-auth',
+      storageKey:         'pulseplay-auth',
       // flowType pkce is the secure default for SPAs
       flowType:           'pkce',
     },

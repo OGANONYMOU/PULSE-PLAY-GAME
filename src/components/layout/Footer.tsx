@@ -50,7 +50,7 @@ export function Footer() {
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                 <Gamepad2 className="w-5 h-5 text-white" />
               </div>
-              <span className="font-orbitron text-lg font-bold gradient-text">PulsePay</span>
+              <span className="font-orbitron text-lg font-bold gradient-text">PulsePlay</span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs mb-5 leading-relaxed">
               Nigeria's ultimate mobile gaming community. Compete in tournaments, connect with players, and win real prizes.
@@ -96,7 +96,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-10 sm:mt-12 pt-6 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-muted-foreground text-xs sm:text-sm text-center sm:text-left">
-            © {new Date().getFullYear()} PulsePay. All rights reserved.
+            © {new Date().getFullYear()} PulsePlay. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-muted-foreground text-xs sm:text-sm">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />

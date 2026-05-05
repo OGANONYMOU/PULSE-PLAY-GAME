@@ -83,7 +83,7 @@ export function logPerformanceStats(): void {
     setTimeout(() => {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
       if (!nav) return;
-      console.group('📊 PulsePay Performance');
+      console.group('📊 PulsePlay Performance');
       console.table({
         TTFB:               `${(nav.responseStart - nav.fetchStart).toFixed(0)}ms`,
         'DOM Interactive':  `${(nav.domInteractive - nav.fetchStart).toFixed(0)}ms`,

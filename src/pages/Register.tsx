@@ -163,7 +163,7 @@ export function Register(): React.ReactElement {
             <Gamepad2 className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-orbitron text-2xl font-bold mb-1">
-            Join <span className="gradient-text">PulsePay</span>
+            Join <span className="gradient-text">PulsePlay</span>
           </h1>
           <p className="text-muted-foreground text-sm">Create your free gaming account</p>
         </div>

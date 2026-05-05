@@ -1,10 +1,12 @@
-import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Flame, MessageSquare, Heart, TrendingUp,
-  Trophy, X, Hash, Lock, ChevronDown, ChevronUp, Loader2, Trash2,
+  Trophy, X, Hash, Lock, Loader2,
+  Share2, Clock, Star
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -37,139 +39,95 @@ function AvatarBlock({ url, username }: { url: string | null; username: string }
   );
 }
 
-// ── Comments section for a single post ───────────────────────────────────────
-function CommentsSection({
-  postId, commentCount,
-  fetchComments, addComment, deleteComment,
-}: {
-  postId: string;
-  commentCount: number;
-  fetchComments: (id: string) => Promise<PostCommentWithAuthor[]>;
-  addComment: (postId: string, authorId: string, content: string) => Promise<{ error: Error | null }>;
-  deleteComment: (commentId: string, postId: string) => Promise<{ error: Error | null }>;
-}) {
-  const { user, profile } = useAuth();
-  const [open, setOpen]         = useState(false);
-  const [comments, setComments] = useState<PostCommentWithAuthor[]>([]);
-  const [loading, setLoading]   = useState(false);
-  const [text, setText]         = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const load = async () => {
-    setLoading(true);
-    const data = await fetchComments(postId);
-    setComments(data);
-    setLoading(false);
-  };
-
-  const toggle = () => {
-    if (!open) load();
-    setOpen(p => !p);
-  };
-
-  const submit = async () => {
-    if (!text.trim() || !user) return;
-    setSubmitting(true);
-    const { error } = await addComment(postId, user.id, text.trim());
-    if (error) { toast.error('Failed to post comment.'); }
-    else {
-      setText('');
-      load();
-    }
-    setSubmitting(false);
-  };
-
-  const remove = async (commentId: string) => {
-    const { error } = await deleteComment(commentId, postId);
-    if (error) { toast.error('Failed to delete comment.'); }
-    else { setComments(prev => prev.filter(c => c.id !== commentId)); }
-  };
-
-  return (
-    <div className="border-t border-border/30 mt-3 pt-3">
-      <button
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white transition-colors"
-        onClick={toggle}>
-        <MessageSquare className="w-3.5 h-3.5" />
-        {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
-        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }}
-            exit={{ opacity:0, height:0 }} transition={{ duration:0.2 }} className="overflow-hidden">
-            <div className="mt-3 space-y-2">
-              {loading && <div className="text-xs text-muted-foreground">Loading…</div>}
-              {!loading && comments.length === 0 && (
-                <div className="text-xs text-muted-foreground">No comments yet. Be the first!</div>
-              )}
-              {comments.map(c => (
-                <div key={c.id} className="flex gap-2 group">
-                  <AvatarBlock url={c.profiles?.avatar_url ?? null} username={c.profiles?.username ?? '?'} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xs font-bold">{c.profiles?.username ?? 'Unknown'}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-white/80 leading-relaxed break-words">{c.content}</p>
-                  </div>
-                  {(c.author_id === user?.id) && (
-                    <button onClick={() => remove(c.id)}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all flex-shrink-0 p-1">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {user && (
-                <div className="flex gap-2 mt-2">
-                  <AvatarBlock url={profile?.avatar_url ?? null} username={profile?.username ?? '?'} />
-                  <div className="flex-1">
-                    <Textarea
-                      ref={inputRef}
-                      value={text}
-                      onChange={e => setText(e.target.value)}
-                      placeholder="Write a comment…"
-                      className="text-sm min-h-[60px] resize-none bg-muted/50 border-border/40"
-                      maxLength={500}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
-                    />
-                    <div className="flex justify-end mt-1.5">
-                      <Button size="sm" disabled={!text.trim() || submitting}
-                        className="h-7 text-xs bg-gradient-to-r from-cyan-500 to-purple-600"
-                        onClick={submit}>
-                        {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3 mr-1" />}
-                        Post
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 // ── Main ──────────────────────────────────────────────────────────────────────
+type SortOption = 'hot' | 'new' | 'top';
+
 export function Community() {
   const { user, profile, isAuthenticated } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedTag, setSelectedTag]       = useState<PostTag>('general');
   const [activeFilter, setActiveFilter]     = useState<PostTag | 'all'>('all');
+  const [sortBy, setSortBy]                 = useState<SortOption>('hot');
   const [isSubmitting, setIsSubmitting]     = useState(false);
+  const [selectedPost, setSelectedPost]     = useState<typeof posts[0] | null>(null);
+  const [postComments, setPostComments]     = useState<PostCommentWithAuthor[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
   const {
     posts, isLoading: postsLoading, error: postsError,
-    createPost, likePost, fetchComments, addComment, deleteComment,
+    createPost, likePost, fetchComments, addComment,
   } = usePosts(activeFilter === 'all' ? undefined : activeFilter);
+
+  // Sort posts based on selected option
+  const sortedPosts = useCallback(() => {
+    const sorted = [...posts];
+    switch (sortBy) {
+      case 'new':
+        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'top':
+        return sorted.sort((a, b) => b.likes - a.likes);
+      case 'hot':
+      default:
+        // Hot = combination of likes and recency
+        return sorted.sort((a, b) => {
+          const aScore = a.likes + (new Date().getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60);
+          const bScore = b.likes + (new Date().getTime() - new Date(b.created_at).getTime()) / (1000 * 60 * 60);
+          return bScore - aScore;
+        });
+    }
+  }, [posts, sortBy]);
+
+  // Share post
+  const handleSharePost = async (post: typeof posts[0]) => {
+    const url = `${window.location.origin}/community?post=${post.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title || 'PulsePlay Community Post',
+          text: post.content.slice(0, 100),
+          url,
+        });
+      } catch {
+        // User cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success('Post link copied to clipboard');
+    }
+  };
+
+  // Open post detail
+  const openPostDetail = async (post: typeof posts[0]) => {
+    setSelectedPost(post);
+    setSearchParams({ post: post.id }, { replace: true });
+    
+    setLoadingComments(true);
+    const comments = await fetchComments(post.id);
+    setPostComments(comments);
+    setLoadingComments(false);
+  };
+
+  // Close post detail
+  const closePostDetail = () => {
+    setSelectedPost(null);
+    setPostComments([]);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('post');
+    setSearchParams(newParams, { replace: true });
+  };
+
+  // Auto-open post from URL
+  useEffect(() => {
+    const postId = searchParams.get('post');
+    if (postId && posts.length > 0 && !selectedPost) {
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        openPostDetail(post);
+      }
+    }
+  }, [searchParams, posts]);
 
   const { tournaments } = useTournaments();
   const live = tournaments.filter(t => t.status === 'ongoing');
@@ -198,7 +156,7 @@ export function Community() {
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10" />
           <div className="relative z-10">
             <h1 className="font-orbitron text-2xl sm:text-3xl md:text-4xl font-bold mb-3">
-              The <span className="gradient-text">PulsePay</span> Community
+              The <span className="gradient-text">PulsePlay</span> Community
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto mb-5">
               Share updates, discuss tactics, celebrate victories.
@@ -267,18 +225,42 @@ export function Community() {
               )}
             </div>
 
-            {/* Filter */}
-            <div className="flex gap-1.5 flex-wrap">
-              <button onClick={() => setActiveFilter('all')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === 'all' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
-                All Posts
-              </button>
-              {tags.map(tag => (
-                <button key={tag.value} onClick={() => setActiveFilter(tag.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === tag.value ? tag.color + ' ring-1 ring-current' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
-                  {tag.label}
+            {/* Filter & Sort */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex gap-1.5 flex-wrap">
+                <button onClick={() => setActiveFilter('all')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === 'all' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
+                  All Posts
                 </button>
-              ))}
+                {tags.map(tag => (
+                  <button key={tag.value} onClick={() => setActiveFilter(tag.value)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${activeFilter === tag.value ? tag.color + ' ring-1 ring-current' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
+                    {tag.label}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Sort options */}
+              <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
+                {([
+                  { value: 'hot', icon: Flame, label: 'Hot' },
+                  { value: 'new', icon: Clock, label: 'New' },
+                  { value: 'top', icon: Star, label: 'Top' },
+                ] as { value: SortOption; icon: typeof Flame; label: string }[]).map(({ value, icon: Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSortBy(value)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      sortBy === value 
+                        ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white' 
+                        : 'text-white/50 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {value.charAt(0).toUpperCase() + value.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Posts */}
@@ -303,10 +285,10 @@ export function Community() {
               </div>
             ) : (
               <AnimatePresence>
-                {posts.map((post, i) => (
+                {sortedPosts().map((post, i) => (
                   <motion.div key={post.id} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
                     transition={{ delay: i * 0.04 }} layout>
-                    <div className="gaming-card p-5">
+                    <div className="gaming-card p-5 hover:border-cyan-500/30 transition-colors">
                       <div className="flex items-start gap-3 mb-3">
                         <AvatarBlock url={post.profiles?.avatar_url ?? null} username={post.profiles?.username ?? '?'} />
                         <div className="flex-1 min-w-0">
@@ -322,15 +304,20 @@ export function Community() {
                         </div>
                       </div>
 
-                      {post.title && post.title !== post.content.slice(0, 80) && (
-                        <h4 className="font-bold text-sm mb-1">{post.title}</h4>
-                      )}
-                      <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap break-words mb-3">
-                        {post.content}
-                      </p>
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => openPostDetail(post)}
+                      >
+                        {post.title && post.title !== post.content.slice(0, 80) && (
+                          <h4 className="font-bold text-sm mb-1 hover:text-cyan-400 transition-colors">{post.title}</h4>
+                        )}
+                        <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap break-words mb-3 hover:text-white/90 transition-colors">
+                          {post.content}
+                        </p>
+                      </div>
 
-                      {/* Like button */}
-                      <div className="flex items-center gap-3">
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-4">
                         <button
                           onClick={() => handleLike(post.id)}
                           className={`flex items-center gap-1.5 text-xs transition-all hover:scale-110 ${
@@ -339,16 +326,23 @@ export function Community() {
                           <Heart className={`w-4 h-4 ${post.liked_by_me ? 'fill-current' : ''}`} />
                           {post.likes}
                         </button>
+                        
+                        <button
+                          onClick={() => openPostDetail(post)}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          {post.comments || 'Comment'}
+                        </button>
+                        
+                        <button
+                          onClick={() => handleSharePost(post)}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-cyan-400 transition-colors"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          Share
+                        </button>
                       </div>
-
-                      {/* Comments */}
-                      <CommentsSection
-                        postId={post.id}
-                        commentCount={post.comments}
-                        fetchComments={fetchComments}
-                        addComment={addComment}
-                        deleteComment={deleteComment}
-                      />
                     </div>
                   </motion.div>
                 ))}
@@ -412,6 +406,116 @@ export function Community() {
           </div>
         </div>
       </div>
+
+      {/* Post Detail Dialog */}
+      <Dialog open={!!selectedPost} onOpenChange={v => { if (!v) closePostDetail(); }}>
+        <DialogContent className="max-w-2xl glass border-border/40 max-h-[90vh] overflow-y-auto">
+          {selectedPost && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-orbitron flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AvatarBlock url={selectedPost.profiles?.avatar_url ?? null} username={selectedPost.profiles?.username ?? '?'} />
+                    <div>
+                      <div className="text-base">{selectedPost.profiles?.username ?? 'Unknown'}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(selectedPost.created_at), { addSuffix: true })}
+                      </div>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => handleSharePost(selectedPost)} className="text-white/60 hover:text-white">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full border ${tagClass(selectedPost.tag)}`}>
+                  {tags.find(t => t.value === selectedPost.tag)?.label ?? selectedPost.tag}
+                </span>
+
+                {selectedPost.title && selectedPost.title !== selectedPost.content.slice(0, 80) && (
+                  <h3 className="font-bold text-lg">{selectedPost.title}</h3>
+                )}
+                <p className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
+                  {selectedPost.content}
+                </p>
+
+                <div className="flex items-center gap-4 py-3 border-y border-white/10">
+                  <button
+                    onClick={() => handleLike(selectedPost.id)}
+                    className={`flex items-center gap-1.5 text-sm transition-all hover:scale-110 ${
+                      selectedPost.liked_by_me ? 'text-red-400' : 'text-muted-foreground hover:text-red-400'
+                    }`}>
+                    <Heart className={`w-5 h-5 ${selectedPost.liked_by_me ? 'fill-current' : ''}`} />
+                    {selectedPost.likes} likes
+                  </button>
+                  
+                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MessageSquare className="w-5 h-5" />
+                    {selectedPost.comments || 0} comments
+                  </span>
+                </div>
+
+                {/* Comments Section */}
+                <div>
+                  <h4 className="font-bold text-sm mb-3">Comments</h4>
+                  {loadingComments ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : postComments.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-4">No comments yet. Be the first!</p>
+                  ) : (
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                      {postComments.map((comment) => (
+                        <div key={comment.id} className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-border/30">
+                          <AvatarBlock url={comment.profiles?.avatar_url ?? null} username={comment.profiles?.username ?? '?'} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm">{comment.profiles?.username ?? 'Unknown'}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <p className="text-sm text-white/80">{comment.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add comment */}
+                  {isAuthenticated && (
+                    <div className="mt-4 flex gap-3">
+                      <div className="flex-1">
+                        <Textarea
+                          placeholder="Add a comment..."
+                          className="min-h-[60px] bg-muted/50 border-border/40 resize-none text-sm"
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              const target = e.target as HTMLTextAreaElement;
+                              const content = target.value.trim();
+                              if (content && user) {
+                                await addComment(selectedPost.id, user.id, content);
+                                target.value = '';
+                                // Refresh comments
+                                const comments = await fetchComments(selectedPost.id);
+                                setPostComments(comments);
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

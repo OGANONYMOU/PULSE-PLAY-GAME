@@ -65,7 +65,7 @@ export function Navbar(): React.ReactElement {
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 blur-lg opacity-40 group-hover:opacity-70 transition-opacity" />
               </div>
               <span className="font-orbitron text-base sm:text-lg font-bold gradient-text hidden sm:block select-none">
-                PulsePay
+                PulsePlay
               </span>
             </Link>
 

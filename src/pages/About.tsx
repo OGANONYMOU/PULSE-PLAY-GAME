@@ -35,10 +35,10 @@ const values = [
 ];
 
 const timeline = [
-  { year: '2024',      title: 'PulsePay Founded',         description: 'A small team of mobile gaming enthusiasts launched PulsePay with a single goal: make competitive mobile gaming accessible to everyone.', current: false },
+  { year: '2024',      title: 'PulsePlay Founded',         description: 'A small team of mobile gaming enthusiasts launched PulsePlay with a single goal: make competitive mobile gaming accessible to everyone.', current: false },
   { year: 'Early 2025', title: 'First 1,000 Players',     description: 'We hit our first milestone — 1,000 registered players and our inaugural tournament series across CODM and eFootball.', current: false },
-  { year: 'Mid 2025',  title: '₦1M in Prizes Distributed', description: 'Players earned real cash through PulsePay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.', current: false },
-  { year: 'Now',       title: '10K+ Gamers & Growing',    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePay is just getting started.', current: true },
+  { year: 'Mid 2025',  title: '₦1M in Prizes Distributed', description: 'Players earned real cash through PulsePlay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.', current: false },
+  { year: 'Now',       title: '10K+ Gamers & Growing',    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePlay is just getting started.', current: true },
 ];
 
 export function About() {
@@ -66,13 +66,13 @@ export function About() {
               <span className="gradient-text">Breathe Gaming</span>
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl sm:max-w-2xl mx-auto mb-8 px-2">
-              PulsePay is the home of competitive mobile gaming in Nigeria and beyond.
+              PulsePlay is the home of competitive mobile gaming in Nigeria and beyond.
               We build community-first experiences for players who are hungry to compete, connect, and win.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 sm:px-0">
               <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold h-12 px-6">
                 <Link to="/register">
-                  Join PulsePay<ArrowRight className="ml-2 w-4 h-4" />
+                  Join PulsePlay<ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-purple-500/50 hover:bg-purple-500/10 h-12 px-6">
@@ -114,7 +114,7 @@ export function About() {
                 Built for Players,<br />By Players
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base mb-5 leading-relaxed">
-                PulsePay was founded by mobile gamers who were frustrated with the lack of structured competition and community on mobile platforms. We set out to change that.
+                PulsePlay was founded by mobile gamers who were frustrated with the lack of structured competition and community on mobile platforms. We set out to change that.
               </p>
               <p className="text-muted-foreground text-sm sm:text-base mb-7 leading-relaxed">
                 Today we organize high-stakes tournaments, surface player highlights, and create real opportunities for players of all skill levels to compete, grow, and earn recognition.
@@ -271,7 +271,7 @@ export function About() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold gap-2 h-11 px-6">
-                  <a href="mailto:hello@pulsepay.gg">
+                  <a href="mailto:hello@pulseplay.gg">
                     <Mail className="w-4 h-4" />Email Us
                   </a>
                 </Button>

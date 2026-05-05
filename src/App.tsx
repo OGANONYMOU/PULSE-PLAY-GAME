@@ -14,9 +14,11 @@ import { useAuth } from '@/contexts/AuthContext';
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const Home         = lazy(() => import('@/pages/Home'));
 const Games        = lazy(() => import('@/pages/Games').then(m => ({ default: m.Games })));
+const GameDetail   = lazy(() => import('@/pages/GameDetail').then(m => ({ default: m.GameDetail })));
 const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ default: m.Tournaments })));
 const TournamentCreate = lazy(() => import('@/pages/TournamentCreateNew').then(m => ({ default: m.TournamentCreateNew })));
 const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
+const Clips        = lazy(() => import('@/pages/Clips').then(m => ({ default: m.Clips })));
 const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
 const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
 const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
@@ -48,6 +50,7 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/games':       () => import('@/pages/Games'),
   '/tournaments': () => import('@/pages/Tournaments'),
   '/community':   () => import('@/pages/Community'),
+  '/clips':       () => import('@/pages/Clips'),
   '/about':       () => import('@/pages/About'),
   '/signin':      () => import('@/pages/SignIn'),
   '/register':    () => import('@/pages/Register'),
@@ -128,9 +131,11 @@ function AppContent(): React.ReactElement {
               {/* Public */}
               <Route path="/"                  element={<Home />} />
               <Route path="/games"             element={<Games />} />
+              <Route path="/games/:id"         element={<GameDetail />} />
               <Route path="/tournaments"         element={<Tournaments />} />
               <Route path="/tournaments/create"  element={<TournamentCreate />} />
               <Route path="/community"         element={<Community />} />
+              <Route path="/clips"             element={<Clips />} />
               <Route path="/about"             element={<About />} />
               <Route path="/signin"            element={<SignIn />} />
               <Route path="/register"          element={<Register />} />

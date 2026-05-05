@@ -131,11 +131,18 @@ function GameCard(p: { game: Game; index: number }): React.ReactElement {
           <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-cyan-400" /><span>{players}</span></div>
           <div className="flex items-center gap-1.5"><Trophy className="w-4 h-4 text-purple-400" /><span>{g.tournament_count} events</span></div>
         </div>
-        <Button asChild variant="outline" className="w-full border-purple-500/40 hover:bg-purple-500/10 text-sm">
-          <Link to="/tournaments">
-            <Gamepad2 className="mr-2 w-4 h-4" />View Tournaments
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" className="flex-1 border-purple-500/40 hover:bg-purple-500/10 text-sm">
+            <Link to={`/games/${g.id}`}>
+              <Gamepad2 className="mr-2 w-4 h-4" />Details
+            </Link>
+          </Button>
+          <Button asChild className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm">
+            <Link to={`/tournaments?game=${g.id}`}>
+              <Trophy className="mr-2 w-4 h-4" />Play
+            </Link>
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
