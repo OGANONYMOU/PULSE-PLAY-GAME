@@ -3,14 +3,14 @@
 // Comprehensive content moderation for posts, comments, clips, discussions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
   MessageSquare, Eye, Pin, Trash2, AlertCircle, Search, Filter,
   FileText, Play, MessageCircle, ThumbsUp, Flag, MoreHorizontal,
   EyeOff, Crown, Clock, CheckCircle2, RefreshCw,
-  ShieldAlert, Sparkles
+  ShieldAlert, Sparkles, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -155,7 +155,7 @@ function ContentCard({ item, onStatusChange, onDelete, onView }: {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className="text-sm font-medium text-cyan-400">{item.author.username}</span>
-              <Badge className={cn('border', statusConfig.bg, statusConfig.color)}>
+              <Badge className={cn('border', statusConfig.color.replace('text-', 'bg-').replace('400', '500/20'), statusConfig.color)}>
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {statusConfig.label}
               </Badge>
@@ -419,8 +419,8 @@ function DeleteConfirm({ content, onClose, onConfirm }: {
 
 export function AdminPosts(): React.ReactElement {
   const { hasPermission, profile, role } = useAdmin();
-  const canManageContent = hasPermission('content.manage') || hasPermission('system.admin_access');
-  const canDelete = hasPermission('content.delete') || hasPermission('system.admin_access');
+  const canManageContent = hasPermission('content.manage' as any) || hasPermission('system.admin_access' as any);
+  const canDelete = hasPermission('content.delete' as any) || hasPermission('system.admin_access' as any);
 
   const [content, setContent] = useState<ContentItem[]>([]);
   const [stats, setStats] = useState<ContentStats>({
@@ -590,7 +590,10 @@ export function AdminPosts(): React.ReactElement {
       item.id === id ? { ...item, status } : item
     ));
 
-    await writeAudit('unknown', 'content_status_change', id, { newStatus: status });
+    await writeAudit(
+      { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+      { action: 'content_status_change', category: 'community', target_id: id, metadata: { newStatus: status } }
+    );
     toast.success(`Content ${status}`);
   };
 

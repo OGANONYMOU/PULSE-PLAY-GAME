@@ -16,7 +16,7 @@ import {
   ExternalLink, Lock, Unlock, Edit3, Trash2,
   Activity, Flag, DollarSign, Loader2, FileText, Gavel,
   Crown,
-  XCircle, Skull,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -365,25 +365,6 @@ function HealthBadge({ health }: { health: TournamentHealth }) {
   );
 }
 
-function _FraudRiskBadge({ risk }: { risk: FraudRiskLevel }) {
-  if (risk === 'none') return null;
-  
-  const icons = { low: AlertTriangle, medium: AlertOctagon, high: Skull, critical: Skull };
-  const Icon = icons[risk];
-  
-  return (
-    <Badge className={cn(
-      "border",
-      risk === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-      risk === 'medium' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-      'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-    )}>
-      <Icon className="w-3 h-3 mr-1" />
-      {risk} risk
-    </Badge>
-  );
-}
-
 function DisputeBadge({ count }: { count: number }) {
   if (count === 0) return null;
   
@@ -609,7 +590,6 @@ function TournamentDetailSheet({
   health,
   participants,
   disputes,
-  _matches,
   isOpen,
   onClose,
   onAction,
@@ -621,7 +601,6 @@ function TournamentDetailSheet({
   health: TournamentHealth | null;
   participants: Participant[];
   disputes: ExtendedTournamentDispute[];
-  _matches: TournamentMatch[];
   isOpen: boolean;
   onClose: () => void;
   onAction: (action: string, data?: object) => void;
@@ -1125,7 +1104,7 @@ export function AdminTournaments(): React.ReactElement {
   const [games, setGames] = useState<Game[]>([]);
   const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [disputes, setDisputes] = useState<Record<string, ExtendedTournamentDispute[]>>({});
-  const [matches, setMatches] = useState<Record<string, TournamentMatch[]>>({});
+  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({});
   const [healthData, setHealthData] = useState<Record<string, TournamentHealth>>({});
   
   // UI states
@@ -1238,7 +1217,7 @@ export function AdminTournaments(): React.ReactElement {
 
       setParticipants(prev => ({ ...prev, [tournamentId]: participantsRes.data || [] }));
       setDisputes(prev => ({ ...prev, [tournamentId]: disputesRes.data || [] }));
-      setMatches((prev: Record<string, TournamentMatch[]>) => ({ ...prev, [tournamentId]: matchesRes.data || [] }));
+      _setMatches((prev: Record<string, TournamentMatch[]>) => ({ ...prev, [tournamentId]: matchesRes.data || [] }));
 
       // Calculate health
       const tournament = tournaments.find(t => t.id === tournamentId);
@@ -1504,7 +1483,7 @@ export function AdminTournaments(): React.ReactElement {
       
       await writeAudit(
         { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
-        { action: 'create_tournament', category: 'tournament', target_id: data.id, metadata: { name: formData.name } }
+        { action: 'create_tournament', category: 'tournament', target_id: (data as { id: string }).id, metadata: { name: formData.name } }
       );
       toast.success('Tournament created successfully');
       setCreateModalOpen(false);
@@ -1749,7 +1728,6 @@ export function AdminTournaments(): React.ReactElement {
         health={selectedTournament ? healthData[selectedTournament.id] || null : null}
         participants={selectedTournament ? participants[selectedTournament.id] || [] : []}
         disputes={selectedTournament ? disputes[selectedTournament.id] || [] : []}
-        _matches={selectedTournament ? matches[selectedTournament.id] || [] : []}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onAction={handleAction}
@@ -1869,7 +1847,7 @@ export function AdminTournaments(): React.ReactElement {
             <div className="space-y-2">
               <label className="text-sm text-slate-400">Region</label>
               <Select
-                value={formData.region}
+                value={formData.region || undefined}
                 onValueChange={(v) => setFormData({ ...formData, region: v })}
               >
                 <SelectTrigger className="bg-slate-900 border-slate-800">
@@ -1889,7 +1867,7 @@ export function AdminTournaments(): React.ReactElement {
             <div className="col-span-2 space-y-2">
               <label className="text-sm text-slate-400">Description</label>
               <Textarea
-                value={formData.description}
+                value={formData.description || undefined}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe the tournament..."
                 className="bg-slate-900 border-slate-800 min-h-[80px]"
@@ -1899,7 +1877,7 @@ export function AdminTournaments(): React.ReactElement {
             <div className="col-span-2 space-y-2">
               <label className="text-sm text-slate-400">Rules</label>
               <Textarea
-                value={formData.rules}
+                value={formData.rules || undefined}
                 onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
                 placeholder="Tournament rules and regulations..."
                 className="bg-slate-900 border-slate-800 min-h-[80px]"

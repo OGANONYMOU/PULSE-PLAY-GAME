@@ -28,7 +28,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
-import type { AdminContextState } from '@/contexts/AdminContext';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES

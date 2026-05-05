@@ -62,7 +62,7 @@ interface Incident {
   metrics: {
     label: string;
     value: number;
-    change: number;
+    change?: number;
     unit?: string;
   }[];
   createdAt: string;
@@ -248,7 +248,7 @@ function IncidentCard({
             <div key={i} className="flex items-center gap-1.5">
               <span className="text-sm font-medium text-white">{metric.value}{metric.unit}</span>
               <span className="text-xs text-slate-500">{metric.label}</span>
-              {metric.change !== 0 && (
+              {metric.change !== undefined && metric.change !== 0 && (
                 <span className={cn(
                   "text-xs flex items-center",
                   metric.change > 0 ? "text-red-400" : "text-green-400"
@@ -389,7 +389,7 @@ function IncidentDetailSheet({
                   <div key={i} className="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
                     <p className="text-lg font-semibold text-white">{metric.value}{metric.unit}</p>
                     <p className="text-xs text-slate-500">{metric.label}</p>
-                    {metric.change !== 0 && (
+                    {metric.change !== undefined && metric.change !== 0 && (
                       <p className={cn(
                         "text-xs mt-1 flex items-center gap-1",
                         metric.change > 0 ? "text-red-400" : "text-green-400"

@@ -16,17 +16,17 @@ import {
   Trash2, Flag, CheckCircle2, AlertTriangle,
   Clock, ThumbsUp, Share2,
   Sparkles, Shield, Video,
-  Gavel,
+  Gavel, Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
@@ -811,14 +811,14 @@ export function AdminCommunity(): React.JSX.Element {
             <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
               <Switch
                 checked={filters.flaggedOnly}
-                onCheckedChange={(v) => setFilters(f => ({ ...f, flaggedOnly: v }))}
+                onCheckedChange={(v: boolean) => setFilters(f => ({ ...f, flaggedOnly: v }))}
               />
               Flagged Only
             </label>
             <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
               <Switch
                 checked={filters.featuredOnly}
-                onCheckedChange={(v) => setFilters(f => ({ ...f, featuredOnly: v }))}
+                onCheckedChange={(v: boolean) => setFilters(f => ({ ...f, featuredOnly: v }))}
               />
               Featured Only
             </label>

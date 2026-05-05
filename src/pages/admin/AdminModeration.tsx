@@ -23,13 +23,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
@@ -836,7 +832,7 @@ export function AdminModeration(): React.ReactElement {
 
       await writeAudit(
         { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'moderator' },
-        { action: `moderation_${action}`, category: 'moderation', target_id: selectedReport.id, metadata: data || {} }
+        { action: `moderation_${action}`, category: 'moderation', target_id: selectedReport.id, metadata: (data || {}) as Record<string, unknown> }
       );
       fetchReports();
       setIsDetailOpen(false);

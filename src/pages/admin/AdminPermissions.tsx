@@ -23,7 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -41,20 +41,6 @@ type AdminUser = {
   created_at: string;
   last_active?: string;
   two_factor_enabled?: boolean;
-};
-
-type PermissionChange = {
-  id: string;
-  user_id: string;
-  user_name: string;
-  changed_by: string;
-  changed_by_name: string;
-  action: 'granted' | 'revoked' | 'role_changed';
-  permission?: string;
-  old_role?: string;
-  new_role?: string;
-  reason?: string;
-  created_at: string;
 };
 
 type RoleStats = {
@@ -193,72 +179,6 @@ function RoleBadge({ role }: { role: AdminRole }) {
   );
 }
 
-function _PermissionMatrix({
-  userPermissions,
-  onToggle,
-  readonly = false,
-}: {
-  userPermissions: string[];
-  onToggle: (permissionId: string, granted: boolean) => void;
-  readonly?: boolean;
-}) {
-  return (
-    <div className="space-y-6">
-      {PERMISSION_CATEGORIES.map((category) => {
-        const Icon = category.icon;
-        const grantedCount = category.permissions.filter(p => userPermissions.includes(p.id)).length;
-        return (
-          <div key={category.id} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Icon className="w-4 h-4 text-cyan-400" />
-                <h4 className="font-medium text-white">{category.label}</h4>
-              </div>
-              <Badge variant="outline" className="text-xs text-slate-400">
-                {grantedCount}/{category.permissions.length}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              {category.permissions.map((perm) => {
-                const isGranted = userPermissions.includes(perm.id);
-                return (
-                  <button
-                    key={perm.id}
-                    disabled={readonly}
-                    onClick={() => onToggle(perm.id, !isGranted)}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-lg border text-left transition-all",
-                      isGranted
-                        ? 'bg-cyan-500/10 border-cyan-500/30'
-                        : 'bg-slate-900/50 border-slate-800 hover:border-slate-700',
-                      readonly && "cursor-default"
-                    )}
-                  >
-                    <div>
-                      <p className={cn(
-                        "text-sm font-medium",
-                        isGranted ? 'text-cyan-400' : 'text-slate-400'
-                      )}>
-                        {perm.label}
-                      </p>
-                      <p className="text-xs text-slate-500">{perm.description}</p>
-                    </div>
-                    {isGranted ? (
-                      <CheckCircle2 className="w-5 h-5 text-cyan-400" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-slate-600" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function AdminPermissions(): React.ReactElement {
   const { hasPermission, role, profile } = useAdmin();
 
@@ -340,7 +260,7 @@ export function AdminPermissions(): React.ReactElement {
   const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user);
     setTempRole(user.role);
-    setTempPermissions(user.permissions);
+    _setTempPermissions(user.permissions);
     setIsEditDialogOpen(true);
   };
 
@@ -370,25 +290,6 @@ export function AdminPermissions(): React.ReactElement {
       toast.error('Failed to update permissions');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleBulkRoleChange = async (userIds: string[], newRole: AdminRole) => {
-    try {
-      await Promise.all(
-        userIds.map(id =>
-          supabase.from('profiles').update({ role: newRole } as never).eq('id', id)
-        )
-      );
-      await writeAudit(
-        { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
-        { action: 'bulk_role_change', category: 'user', target_id: 'multiple', metadata: { count: userIds.length, newRole } }
-      );
-      toast.success(`Updated ${userIds.length} users to ${newRole}`);
-      fetchUsers();
-    } catch (err) {
-      console.error('Bulk update failed:', err);
-      toast.error('Bulk update failed');
     }
   };
 
@@ -601,7 +502,7 @@ export function AdminPermissions(): React.ReactElement {
         <TabsContent value="templates" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ROLE_TEMPLATES.map(template => {
-              const config = ROLE_CONFIG[template.role];
+              const config = ROLE_CONFIG[template.role as AdminRole];
               return (
                 <Card key={template.id} className="bg-slate-900/50 border-slate-800">
                   <CardHeader className="pb-3">
