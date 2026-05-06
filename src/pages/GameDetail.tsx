@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { GameDetailSEO } from '@/components/SEO';
 
 // Types
 interface Game {
@@ -331,6 +332,7 @@ export function GameDetail(): React.ReactElement {
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
+      <GameDetailSEO name={game.name} url={`/games/${game.id}`} />
       <div className="max-w-7xl mx-auto">
         {/* Back button */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-6">

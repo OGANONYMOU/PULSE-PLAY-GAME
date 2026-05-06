@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ClipsSEO } from '@/components/SEO';
 
 // Types
 interface Clip {
@@ -442,6 +443,7 @@ export function Clips(): React.ReactElement {
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
+      <ClipsSEO />
       {/* Hero */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 

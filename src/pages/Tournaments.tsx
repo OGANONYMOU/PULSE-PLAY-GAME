@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
+import { TournamentsSEO } from '@/components/SEO';
 
 type TStatus = 'upcoming' | 'ongoing' | 'completed';
 
@@ -264,6 +265,7 @@ export function Tournaments(): React.ReactElement {
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
+      <TournamentsSEO />
       {/* Hero */}
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
         className="max-w-7xl mx-auto text-center mb-10">

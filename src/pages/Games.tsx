@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
+import { GamesSEO } from '@/components/SEO';
 
 type Game = {
   id: string;
@@ -204,6 +205,7 @@ export function Games(): React.ReactElement {
 
   return (
     <div className="min-h-screen pt-16 sm:pt-20 lg:pt-24 px-3 sm:px-4 lg:px-6 pb-16 sm:pb-20">
+      <GamesSEO />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto text-center mb-10">
         <h1 className="font-orbitron text-4xl md:text-5xl font-bold mb-4">
           Trending <span className="gradient-text">Mobile Games</span>

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
+import { ProfileSEO } from '@/components/SEO';
 
 type TabId = 'posts' | 'tournaments' | 'achievements';
 type PostItem = { id: string; title: string; content: string; tag: string; likes: number; comments: number; created_at: string };
@@ -415,6 +416,7 @@ export function Profile(): React.ReactElement {
 
   return (
     <div className="min-h-screen pt-20 pb-16">
+      <ProfileSEO username={profile.username} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className={'relative h-44 sm:h-56 rounded-2xl overflow-hidden mb-0 bg-gradient-to-r ' + grad}>
           <BannerBg url={profile.banner_url} />

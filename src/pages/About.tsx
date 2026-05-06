@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trophy, DollarSign, Gamepad2, Users, Check, ArrowRight, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AboutSEO } from '@/components/SEO';
 
 const stats = [
   { value: '10K+', label: 'Active Gamers',      icon: Users },
@@ -44,6 +45,7 @@ const timeline = [
 export function About() {
   return (
     <div className="min-h-screen pt-20 sm:pt-24 overflow-x-hidden">
+      <AboutSEO />
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section className="relative px-4 sm:px-6 py-14 sm:py-20 overflow-hidden">

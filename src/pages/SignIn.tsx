@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { AuthSEO } from '@/components/SEO';
 
 const OAUTH_PROVIDERS = [
   {
@@ -81,6 +82,7 @@ export function SignIn(): React.ReactElement {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-10 overflow-x-hidden">
+      <AuthSEO mode="signin" />
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center">

@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { HomeSEO } from '@/components/SEO';
 import { 
   Trophy, Users, ArrowRight, Sparkles, Shield, 
   Zap, Video, Crown, Play, ChevronRight,
@@ -102,6 +103,7 @@ export default function Home() {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background overflow-x-hidden">
+      <HomeSEO />
       {/* ═══════════════════════════════════════════════════════════════════════════════
           HERO SECTION - Premium Visual Centerpiece
           No fake stats. Strong headline. Clear CTAs. 3D floating elements.
@@ -384,8 +386,8 @@ export default function Home() {
                     size="lg"
                     className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white font-semibold h-12 rounded-lg"
                   >
-                    <Link to="/hosting/apply">
-                      Apply as Organizer
+                    <Link to="/about">
+                      Learn About Hosting
                       <ChevronRight className="ml-2 w-4 h-4" />
                     </Link>
                   </Button>

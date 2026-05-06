@@ -21,16 +21,16 @@ const footerLinks = [
     title: 'Company',
     links: [
       { label: 'About Us', href: '/about' },
-      { label: 'Careers',  href: '#' },
-      { label: 'Contact',  href: '#' },
+      { label: 'Clips',    href: '/clips' },
+      { label: 'Clubs',    href: '/clubs' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Terms of Service', href: '#' },
-      { label: 'Privacy Policy',   href: '#' },
-      { label: 'Cookie Policy',    href: '#' },
+      { label: 'Terms of Service', href: '/about' },
+      { label: 'Privacy Policy',   href: '/about' },
+      { label: 'Contact Us',       href: '/about' },
     ],
   },
 ];

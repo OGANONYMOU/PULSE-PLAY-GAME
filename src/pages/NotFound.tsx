@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Frown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotFoundSEO } from '@/components/SEO';
 
 export function NotFound(): React.ReactElement {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 pt-24">
+      <NotFoundSEO />
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}

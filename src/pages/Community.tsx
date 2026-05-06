@@ -16,6 +16,7 @@ import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { CommunitySEO } from '@/components/SEO';
 
 const tags: { value: PostTag; label: string; color: string }[] = [
   { value: 'general',    label: '💬 General',    color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
@@ -151,6 +152,7 @@ export function Community() {
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 pb-16">
+      <CommunitySEO />
       {/* Hero */}
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
         className="max-w-7xl mx-auto mb-10">

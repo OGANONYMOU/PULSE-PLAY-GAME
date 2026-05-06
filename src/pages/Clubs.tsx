@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { writeAuditLog } from '@/lib/auditLog';
+import { ClubsSEO } from '@/components/SEO';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Club = {
@@ -316,6 +317,7 @@ export function Clubs(): React.ReactElement {
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-16">
+      <ClubsSEO />
       <div className="page-shell max-w-6xl">
 
         {/* Hero */}
