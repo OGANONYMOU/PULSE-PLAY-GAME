@@ -1,9 +1,8 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trophy, Film, Users, ArrowLeft } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Plus, Trophy, Users, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ActionButton {
   icon: React.ElementType;
@@ -26,8 +25,6 @@ export function MobileStickyActions({
   backLabel = 'Back'
 }: MobileStickyActionsProps): React.ReactElement | null {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated } = useAuth();
 
   // Filter visible actions
   const visibleActions = actions.filter(a => a.show !== false);
@@ -135,11 +132,9 @@ export function TournamentActions({
 }
 
 export function ClipActions({
-  onVote,
   onSubmit,
   isAuthenticated = false,
 }: {
-  onVote?: () => void;
   onSubmit?: () => void;
   isAuthenticated?: boolean;
 }): React.ReactElement {
