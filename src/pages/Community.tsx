@@ -134,6 +134,7 @@ export function Community() {
 
   const handleSubmitPost = async () => {
     if (!newPostContent.trim() || !user) return;
+    if (profile?.is_banned) { toast.error('Your account is restricted. Contact support for assistance.'); return; }
     setIsSubmitting(true);
     const title = newPostContent.split('\n')[0].slice(0, 80);
     const { error } = await createPost(user.id, title, newPostContent, selectedTag);
@@ -144,6 +145,7 @@ export function Community() {
 
   const handleLike = async (postId: string) => {
     if (!isAuthenticated) { toast.error('Sign in to like posts.'); return; }
+    if (profile?.is_banned) { toast.error('Your account is restricted.'); return; }
     await likePost(postId);
   };
 
@@ -495,6 +497,7 @@ export function Community() {
                           onKeyDown={async (e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
+                              if (profile?.is_banned) { toast.error('Your account is restricted.'); return; }
                               const target = e.target as HTMLTextAreaElement;
                               const content = target.value.trim();
                               if (content && user) {

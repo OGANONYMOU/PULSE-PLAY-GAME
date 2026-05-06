@@ -393,7 +393,7 @@ export function Clips(): React.ReactElement {
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [activeTab, setActiveTab] = useState<ClipTab>('this-week');
   const [isLoading] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
 
   // Filter clips based on active tab
   const filteredClips = useCallback(() => {
@@ -412,6 +412,10 @@ export function Clips(): React.ReactElement {
   const handleVote = (clipId: string) => {
     if (!isAuthenticated) {
       toast.error('Please sign in to vote');
+      return;
+    }
+    if (profile?.is_banned) {
+      toast.error('Your account is restricted.');
       return;
     }
     

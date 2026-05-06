@@ -37,6 +37,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
+  isBanned: boolean;
+  canParticipate: boolean;
+  isModerator: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -203,7 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       isLoading,
       isAuthenticated: !!user,
-      isAdmin: profile?.role === 'ADMIN' || profile?.role === 'MODERATOR',
+      isAdmin: profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN' || profile?.role === 'MODERATOR',
+  isBanned: profile?.is_banned ?? false,
+  canParticipate: !!user && !profile?.is_banned,
+  isModerator: profile?.role === 'MODERATOR' || profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN',
       signIn,
       signUp,
       signInWithOAuth,

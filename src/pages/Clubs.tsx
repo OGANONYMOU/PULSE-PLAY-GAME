@@ -254,7 +254,7 @@ function ClubLeaderboard({ clubs }: { clubs: Club[] }): React.ReactElement {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 export function Clubs(): React.ReactElement {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, user, profile } = useAuth();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -287,6 +287,7 @@ export function Clubs(): React.ReactElement {
 
   const handleJoin = async (c: Club) => {
     if (!isAuthenticated || !user) { toast.error('Sign in to join clubs'); return; }
+    if (profile?.is_banned) { toast.error('Your account is restricted.'); return; }
     if (!c.is_public) { toast.error('This club is invite-only'); return; }
     setJoining(c.id);
     const { error } = await supabase.from('club_members').insert({ club_id: c.id, user_id: user.id, role: 'member' } as never);
@@ -357,11 +358,16 @@ export function Clubs(): React.ReactElement {
                   className="pl-8 h-9 bg-white/5 border-white/10 text-white placeholder:text-white/25 text-sm w-full sm:w-48" />
               </div>
             )}
-            {isAuthenticated && (
+            {isAuthenticated && !profile?.is_banned && (
               <Button size="sm" onClick={() => setShowCreate(true)}
                 className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold h-9 gap-1.5 flex-shrink-0 sm:w-auto">
                 <Plus className="w-3.5 h-3.5" />New Club
               </Button>
+            )}
+            {profile?.is_banned && (
+              <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">
+                Account restricted
+              </div>
             )}
           </div>
         </div>
