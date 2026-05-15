@@ -439,24 +439,20 @@ BEGIN
 END;
 $$;
 
--- Drop triggers before recreating (CREATE OR REPLACE not supported for triggers)
-DROP TRIGGER IF EXISTS update_moderation_cases_updated_at ON public.moderation_cases;
-CREATE TRIGGER update_moderation_cases_updated_at
+-- CREATE OR REPLACE TRIGGER is supported in PostgreSQL 14+ (Supabase uses PG15)
+CREATE OR REPLACE TRIGGER update_moderation_cases_updated_at
   BEFORE UPDATE ON public.moderation_cases
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_incidents_updated_at ON public.incidents;
-CREATE TRIGGER update_incidents_updated_at
+CREATE OR REPLACE TRIGGER update_incidents_updated_at
   BEFORE UPDATE ON public.incidents
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_disputes_updated_at ON public.disputes;
-CREATE TRIGGER update_disputes_updated_at
+CREATE OR REPLACE TRIGGER update_disputes_updated_at
   BEFORE UPDATE ON public.disputes
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_fraud_flags_updated_at ON public.fraud_flags;
-CREATE TRIGGER update_fraud_flags_updated_at
+CREATE OR REPLACE TRIGGER update_fraud_flags_updated_at
   BEFORE UPDATE ON public.fraud_flags
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
