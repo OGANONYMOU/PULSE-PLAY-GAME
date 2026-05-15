@@ -20,6 +20,7 @@ const Tournaments  = lazy(() => import('@/pages/Tournaments').then(m => ({ defau
 const TournamentCreate = lazy(() => import('@/pages/TournamentCreateNew').then(m => ({ default: m.TournamentCreateNew })));
 const Community    = lazy(() => import('@/pages/Community').then(m => ({ default: m.Community })));
 const Clips        = lazy(() => import('@/pages/Clips').then(m => ({ default: m.Clips })));
+const ClipUpload   = lazy(() => import('@/pages/ClipUpload').then(m => ({ default: m.ClipUpload })));
 const Clubs        = lazy(() => import('@/pages/Clubs').then(m => ({ default: m.Clubs })));
 const About        = lazy(() => import('@/pages/About').then(m => ({ default: m.About })));
 const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m.SignIn })));
@@ -139,6 +140,7 @@ function AppContent(): React.ReactElement {
               <Route path="/tournaments/create"  element={<TournamentCreate />} />
               <Route path="/community"         element={<Community />} />
               <Route path="/clips"             element={<Clips />} />
+              <Route path="/clips/upload"      element={<ClipUpload />} />
               <Route path="/clubs"             element={<Clubs />} />
               <Route path="/about"             element={<About />} />
               <Route path="/signin"            element={<SignIn />} />

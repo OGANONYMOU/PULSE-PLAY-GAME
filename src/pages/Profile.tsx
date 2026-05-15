@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Star, Zap, Loader2, Share2, Award } from 'lucide-react';
+import { useGamerCred } from '@/hooks/useGamerCred';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -413,6 +414,7 @@ export function Profile(): React.ReactElement {
   const postsLabel = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
   const grad = roleGradient(profile.role);
   const badge = roleBadge(profile.role);
+  const { score: credScore, tier: credTier } = useGamerCred(profile.id);
 
   return (
     <div className="min-h-screen pt-20 pb-16">
@@ -439,6 +441,10 @@ export function Profile(): React.ReactElement {
                 <h1 className="font-orbitron text-xl sm:text-2xl font-bold text-white truncate">{profile.username}</h1>
                 <span className={'text-xs px-2.5 py-1 rounded-full font-bold border flex items-center ' + badge}>
                   <AdminBadge show={profile.role === 'ADMIN'} />{profile.role}
+                </span>
+                {/* GamerCred tier badge */}
+                <span className={`text-xs px-2.5 py-1 rounded-full font-bold border border-white/10 bg-white/5 flex items-center gap-1 ${credTier.color}`}>
+                  <Zap className="w-3 h-3" />{credTier.icon} {credTier.label}
                 </span>
                 {/* Win badge if user has won tournaments */}
                 {tourneyEntries.some(e => e.status === 'winner') && (
@@ -475,7 +481,7 @@ export function Profile(): React.ReactElement {
           <EditPanel show={isEditing} form={editForm} saving={isSaving} onChange={setEditForm} onSave={handleSave} onCancel={() => setIsEditing(false)} />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
           {[
             { icon: MessageSquare, label: 'Posts', value: posts.length, color: 'text-cyan-400' },
             { icon: Flame, label: 'Likes', value: totalLikes, color: 'text-orange-400' },
@@ -488,6 +494,12 @@ export function Profile(): React.ReactElement {
               <div className="text-xs text-white/40 mt-0.5">{s.label}</div>
             </div>
           ))}
+          {/* GamerCred score card */}
+          <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 text-center col-span-2 sm:col-span-1">
+            <Zap className={`w-5 h-5 mx-auto mb-1.5 ${credTier.color}`} />
+            <div className={`font-orbitron text-xl font-bold ${credTier.color}`}>{credScore}</div>
+            <div className="text-xs text-white/40 mt-0.5">GamerCred</div>
+          </div>
         </div>
 
         <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
