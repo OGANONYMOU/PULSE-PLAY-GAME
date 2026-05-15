@@ -51,7 +51,7 @@ export function AdminAnnouncements() {
     }
     setIsSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('announcements') as never).insert({
+    const { error } = await (supabase.from('announcements') as any).insert({
       ...form,
       created_by: user?.id,
     });
@@ -68,7 +68,7 @@ export function AdminAnnouncements() {
 
   const handleToggleActive = async (id: string, current: boolean) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('announcements') as never).update({ is_active: !current }).eq('id', id);
+    await (supabase.from('announcements') as any).update({ is_active: !current }).eq('id', id);
     setAnnouncements((prev) =>
       prev.map((a) => a.id === id ? { ...a, is_active: !current } : a)
     );
@@ -77,7 +77,7 @@ export function AdminAnnouncements() {
 
   const handleDelete = async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('announcements') as never).delete().eq('id', id);
+    const { error } = await (supabase.from('announcements') as any).delete().eq('id', id);
     if (error) {
       toast.error('Failed to delete.');
     } else {

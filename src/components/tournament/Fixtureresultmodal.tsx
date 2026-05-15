@@ -7,10 +7,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, Upload, Trophy, AlertTriangle, CheckCircle2,
-  Loader2, FileImage, Trash2, Clock, RefreshCw,
-  Flag, Shield, Edit3, Eye, EyeOff, ChevronDown,
-  AlertCircle, RotateCcw,
+  X, Upload, AlertTriangle, CheckCircle2,
+  Loader2, FileImage, Trash2, Clock,
+  Flag, Shield, Edit3,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -299,7 +299,6 @@ export function FixtureResultModal({
   const [newDate, setNewDate]           = useState('');
   const [forfeitSide, setForfeitSide]   = useState<'home' | 'away' | null>(null);
   const [saving, setSaving]             = useState(false);
-  const [showExisting, setShowExisting] = useState(false);
 
   const homePlayer = fixture.home_participant;
   const awayPlayer = fixture.away_participant;

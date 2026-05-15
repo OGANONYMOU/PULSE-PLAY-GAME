@@ -699,7 +699,7 @@ export function AdminModeration(): React.ReactElement {
 
   // Filter reports
   const filteredReports = useMemo(() => {
-    const filtered = [...reports];
+    let filtered = [...reports];
 
     // Queue filter
     if (filters.queue !== 'all') {

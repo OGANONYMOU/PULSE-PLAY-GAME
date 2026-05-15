@@ -8,12 +8,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Swords, Trophy, AlertTriangle, CheckCircle2,
-  Clock, Play, Square, Trash2, Plus, ChevronDown,
+  Play, Square, Trash2, Plus,
   Loader2, Shield, UserCheck, UserX, Crown, MoreHorizontal,
   Flag, RefreshCw, Search, XCircle, Zap, Settings2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,7 +25,7 @@ import { writeAuditLog } from '@/lib/auditLog';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { FixtureResultModal, type Fixture, type StaffRole } from './FixtureResultModal';
+import { FixtureResultModal, type Fixture, type StaffRole } from './Fixtureresultmodal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -873,7 +872,7 @@ export function TournamentOrganizerPanel({
           isAdmin={isAdmin}
           open={!!selectedFixture}
           onClose={() => setSelectedFixture(null)}
-          onSaved={updated => {
+          onSaved={() => {
             setSelectedFixture(null);
             onFixturesUpdated();
           }}

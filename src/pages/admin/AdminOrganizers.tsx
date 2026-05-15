@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Building2, Plus, Search, Users, Trophy,
+  Building2, Plus, Search, Users, Trophy, Crown,
   Globe, Lock, EyeOff, CheckCircle, AlertCircle,
   MoreHorizontal, Edit2
 } from 'lucide-react';
@@ -132,11 +132,16 @@ function CreateOrganizerDialog({
   onClose: () => void;
   onCreate: (data: { name: string; slug: string; description: string; visibility: 'public' | 'private' | 'unlisted' }) => Promise<void>;
 }) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    name: string;
+    slug: string;
+    description: string;
+    visibility: 'public' | 'private' | 'unlisted';
+  }>({
     name: '',
     slug: '',
     description: '',
-    visibility: 'public' as const,
+    visibility: 'public',
   });
   const [loading, setLoading] = useState(false);
 
@@ -262,6 +267,7 @@ export function AdminOrganizers() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [, setSelectedOrganizer] = useState<OrganizerWithMembership | null>(null);
 
   const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
 

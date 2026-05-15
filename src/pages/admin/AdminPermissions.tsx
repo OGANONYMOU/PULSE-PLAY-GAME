@@ -259,7 +259,6 @@ export function AdminPermissions(): React.ReactElement {
   const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user);
     setTempRole(user.role);
-    _setTempPermissions(user.permissions);
     setIsEditDialogOpen(true);
   };
 

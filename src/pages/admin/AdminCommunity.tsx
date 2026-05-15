@@ -599,7 +599,7 @@ export function AdminCommunity(): React.JSX.Element {
       });
 
       // Apply local filters (author role, date range)
-      const filtered = transformedContent;
+      let filtered = transformedContent;
       if (filters.authorRole !== 'all') {
         filtered = filtered.filter(c => c.author.role === filters.authorRole);
       }

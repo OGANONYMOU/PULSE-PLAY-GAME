@@ -25,7 +25,18 @@ export type AuditAction =
   | 'game.update'
   | 'game.delete'
   | 'announcement.create'
-  | 'post.delete';
+  | 'post.delete'
+  | 'fixture.result_recorded'
+  | 'fixture.result_edited'
+  | 'fixture.disputed'
+  | 'fixture.postponed'
+  | 'fixture.forfeit_recorded'
+  | 'tournament.participant_dropped'
+  | 'tournament.staff_added'
+  | 'tournament.staff_removed'
+  | 'tournament.started'
+  | 'tournament.completed'
+  | 'tournament.cancelled';
 
 export interface AuditEntry {
   actor_id?: string | null;

@@ -645,7 +645,7 @@ export function AdminGames(): React.ReactElement {
   };
 
   const filteredGames = useMemo(() => {
-    const filtered = [...games];
+    let filtered = [...games];
 
     if (activeTab === 'featured') {
       filtered = filtered.filter(g => g.featured);

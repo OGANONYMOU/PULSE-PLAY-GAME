@@ -6,13 +6,13 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   Gamepad2, Trophy, Users, ArrowLeft, Share2,
-  Target, Shield, Flame, Calendar, ChevronRight,
-  Star, TrendingUp, MessageSquare, Play, Crown,
+  Target, Shield, Calendar, ChevronRight,
+  Star, MessageSquare, Play, Crown,
   Swords, Bell, BellOff, Plus, Heart,
-  BarChart3, Medal, Globe, Loader2, Zap,
+  BarChart3, Medal, Loader2, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -467,7 +467,6 @@ function GameHubSkeleton() {
 
 export function GameDetail(): React.ReactElement {
   const { id: gameId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
   // Core data
@@ -498,7 +497,7 @@ export function GameDetail(): React.ReactElement {
     setError(null);
 
     const [gRes, tRes, clipRes, clubRes, postRes] = await Promise.all([
-      supabase.from('games').select('*').eq('id', gameId).single(),
+      (supabase as any).from('games').select('*').eq('id', gameId).single(),
 
       supabase.from('tournaments')
         .select('id, name, status, date, prize_pool, max_players, current_players, entry_fee, tournament_family, tournament_type')
@@ -713,7 +712,7 @@ export function GameDetail(): React.ReactElement {
 
   return (
     <div className="min-h-screen pb-24">
-      <GameDetailSEO game={game} />
+      <GameDetailSEO name={game.name} />
 
       {/* ═══ CINEMATIC HERO ═══════════════════════════════════════════════════ */}
       <div className="relative pt-16 sm:pt-20 overflow-hidden">

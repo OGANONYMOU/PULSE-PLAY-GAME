@@ -550,7 +550,7 @@ export function AdminPosts(): React.ReactElement {
   }, []);
 
   const filteredContent = useMemo(() => {
-    const filtered = [...content];
+    let filtered = [...content];
 
     // Filter by tab
     if (activeTab === 'reported') {

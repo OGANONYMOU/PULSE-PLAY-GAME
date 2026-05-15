@@ -1,4 +1,3 @@
-import { TournamentOrganizerPanel } from '@/components/tournament/TournamentOrganizerPanel';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';

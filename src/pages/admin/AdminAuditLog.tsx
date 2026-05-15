@@ -388,7 +388,7 @@ export function AdminAuditLog(): React.ReactElement {
 
   // Apply filters
   useEffect(() => {
-    const filtered = [...logs];
+    let filtered = [...logs];
 
     // Category filter
     if (activeTab !== 'all') {

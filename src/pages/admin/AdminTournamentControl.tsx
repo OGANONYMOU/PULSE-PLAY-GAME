@@ -60,7 +60,7 @@ export function AdminTournamentControl() {
         .eq('tournament_id', id).order('match_number'),
       supabase.from('disputes')
         .select('*, opened_by_profile:profiles!opened_by(username)')
-        .in('match_id', (await supabase.from('matches').select('id').eq('tournament_id', id)).data?.map((m: never) => m.id) ?? [])
+        .in('match_id', (await supabase.from('matches').select('id').eq('tournament_id', id)).data?.map((m: { id: string }) => m.id) ?? [])
         .order('created_at', { ascending: false }),
     ]);
     if (!tRes.error) setTournament(tRes.data as Tournament);
@@ -76,7 +76,7 @@ export function AdminTournamentControl() {
   const generateBracket = async () => {
     if (!id || !user) return;
     setGeneratingBracket(true);
-    const { error } = await (supabase as never).rpc('generate_bracket', { p_tournament_id: id });
+    const { error } = await (supabase as any).rpc('generate_bracket', { p_tournament_id: id });
     if (error) toast.error(error.message);
     else { toast.success('Bracket generated! 🏆'); load(); }
     setGeneratingBracket(false);
@@ -84,7 +84,7 @@ export function AdminTournamentControl() {
 
   const forceAdvance = async (matchId: string, winnerId: string) => {
     setAdvancingMatch(matchId);
-    const { error } = await (supabase as never).rpc('advance_match_winner', {
+    const { error } = await (supabase as any).rpc('advance_match_winner', {
       p_match_id: matchId, p_winner_id: winnerId,
     });
     if (error) toast.error(error.message);
@@ -116,7 +116,7 @@ export function AdminTournamentControl() {
       state: 'resolved', resolved_by: user?.id, resolved_at: new Date().toISOString(),
       resolution: 'Admin forced result',
     } as never).eq('id', disputeId);
-    await (supabase as never).rpc('advance_match_winner', { p_match_id: matchId, p_winner_id: winnerId });
+    await (supabase as any).rpc('advance_match_winner', { p_match_id: matchId, p_winner_id: winnerId });
     await writeAuditLog({ actor_id: user?.id, action: 'dispute.resolve', entity_type: 'dispute', entity_id: disputeId, data: { forced_winner: winnerId, match_id: matchId } });
     toast.success('Dispute resolved. Winner advanced.');
     load();
