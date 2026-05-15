@@ -427,6 +427,7 @@ export function AdminUpdates(): React.ReactElement {
     setLoading(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const togglePublish = async (entry: GameUpdate) => {

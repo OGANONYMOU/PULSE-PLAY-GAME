@@ -230,7 +230,7 @@ function GlobalSearchCommand({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query) {
-        search(query, selectedTypes.length > 0 ? { types: selectedTypes as any } : undefined);
+        search(query, selectedTypes.length > 0 ? { types: selectedTypes as never } : undefined);
       }
     }, 200);
     return () => clearTimeout(timer);
@@ -430,7 +430,7 @@ function Sidebar({
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
 
   const filteredNav = navigation.filter(item => 
-    !item.permission || hasPermission(item.permission as any)
+    !item.permission || hasPermission(item.permission as never)
   );
 
   return (

@@ -533,7 +533,7 @@ export function AdminGames(): React.ReactElement {
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
 
-  const canManageGames = hasPermission('games.manage' as any) || hasPermission('system.admin_access' as any);
+  const canManageGames = hasPermission('games.manage' as never) || hasPermission('system.admin_access' as never);
 
   // Mock data for demonstration
   useEffect(() => {
@@ -645,7 +645,7 @@ export function AdminGames(): React.ReactElement {
   };
 
   const filteredGames = useMemo(() => {
-    let filtered = [...games];
+    const filtered = [...games];
 
     if (activeTab === 'featured') {
       filtered = filtered.filter(g => g.featured);

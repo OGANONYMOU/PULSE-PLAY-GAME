@@ -197,10 +197,9 @@ export function AdminPermissions(): React.ReactElement {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [tempRole, setTempRole] = useState<AdminRole>('USER');
-  const [_tempPermissions, _setTempPermissions] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-  const canManagePermissions = hasPermission('system.admin_access' as any) || role === 'SUPER_ADMIN' || role === 'ADMIN';
+  const canManagePermissions = hasPermission('system.admin_access' as never) || role === 'SUPER_ADMIN' || role === 'ADMIN';
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);

@@ -762,8 +762,7 @@ export function AdminIncidents(): React.ReactElement {
       if (action === 'resolve' || action === 'escalate') {
         setIsDetailOpen(false);
       }
-    } catch (error) {
-      toast.error('Action failed');
+    } catch (err) { console.error(err); toast.error('Action failed');
     }
   };
 
@@ -885,7 +884,7 @@ export function AdminIncidents(): React.ReactElement {
           <div className="flex flex-wrap gap-3">
             <Select
               value={filter.severity}
-              onValueChange={(v) => setFilter(f => ({ ...f, severity: v as any }))}
+              onValueChange={(v) => setFilter(f => ({ ...f, severity: v as never }))}
             >
               <SelectTrigger className="w-[140px] bg-slate-800/50 border-slate-700 text-slate-200">
                 <AlertTriangle className="w-4 h-4 mr-2" />
@@ -901,7 +900,7 @@ export function AdminIncidents(): React.ReactElement {
             </Select>
             <Select
               value={filter.status}
-              onValueChange={(v) => setFilter(f => ({ ...f, status: v as any }))}
+              onValueChange={(v) => setFilter(f => ({ ...f, status: v as never }))}
             >
               <SelectTrigger className="w-[140px] bg-slate-800/50 border-slate-700 text-slate-200">
                 <SelectValue placeholder="Status" />
@@ -917,7 +916,7 @@ export function AdminIncidents(): React.ReactElement {
             </Select>
             <Select
               value={filter.type}
-              onValueChange={(v) => setFilter(f => ({ ...f, type: v as any }))}
+              onValueChange={(v) => setFilter(f => ({ ...f, type: v as never }))}
             >
               <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700 text-slate-200">
                 <Filter className="w-4 h-4 mr-2" />

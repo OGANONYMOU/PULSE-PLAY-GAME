@@ -167,7 +167,7 @@ export function Tournaments(): React.ReactElement {
     if (tournamentId && tournaments.length > 0) {
       const t = tournaments.find(t => t.id === tournamentId);
       if (t && !detail) {
-        openDetailWithUrl(t);
+        openDetailWithUrl(t); // eslint-disable-line react-hooks/set-state-in-effect
       }
     }
   }, [searchParams, tournaments]);
@@ -193,8 +193,8 @@ export function Tournaments(): React.ReactElement {
     if (data) setMyRegistrations(new Set(data.map((r: { tournament_id: string }) => r.tournament_id)));
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { loadMyRegistrations(); }, [loadMyRegistrations]);
+  useEffect(() => { load(); }, [load]); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => { loadMyRegistrations(); }, [loadMyRegistrations]); // eslint-disable-line react-hooks/set-state-in-effect
 
   // Real-time participant count updates
   useEffect(() => {

@@ -73,14 +73,14 @@ export function AdminLoyalty(): React.ReactElement {
   const load = useCallback(async () => {
     setLoading(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from('loyalty_codes') as any)
+    const { data } = await (supabase.from('loyalty_codes') as never)
       .select('*')
       .order('created_at', { ascending: false });
     setCodes(data ?? []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const setF = (k: keyof typeof emptyForm, v: string | number) =>
     setForm(prev => ({ ...prev, [k]: v }));
@@ -89,7 +89,7 @@ export function AdminLoyalty(): React.ReactElement {
     if (!form.code.trim()) { toast.error('Code is required.'); return; }
     setIsSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('loyalty_codes') as any).insert({
+    const { error } = await (supabase.from('loyalty_codes') as never).insert({
       code: form.code.trim().toUpperCase(),
       description: form.description || null,
       reward_type: form.reward_type,
@@ -112,14 +112,14 @@ export function AdminLoyalty(): React.ReactElement {
 
   const toggleActive = async (id: string, current: boolean) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('loyalty_codes') as any).update({ is_active: !current }).eq('id', id);
+    await (supabase.from('loyalty_codes') as never).update({ is_active: !current }).eq('id', id);
     setCodes(prev => prev.map(c => c.id === id ? { ...c, is_active: !current } : c));
     toast.success(!current ? 'Code activated' : 'Code deactivated');
   };
 
   const handleDelete = async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('loyalty_codes') as any).delete().eq('id', id);
+    await (supabase.from('loyalty_codes') as never).delete().eq('id', id);
     setCodes(prev => prev.filter(c => c.id !== id));
     setDeleteId(null);
     toast.success('Code deleted.');

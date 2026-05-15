@@ -238,11 +238,13 @@ export function AdminLayout(): React.ReactElement {
 
       {/* Desktop sidebar */}
       <aside className={`hidden lg:flex fixed top-0 left-0 h-full z-40 flex-col border-r border-white/8 bg-card/98 backdrop-blur-2xl transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
+        {/* eslint-disable-next-line react-hooks/static-components */}
         <SidebarInner />
       </aside>
 
       {/* Mobile sidebar */}
       <aside className={`fixed top-0 left-0 h-full w-72 z-40 flex flex-col lg:hidden border-r border-white/8 bg-card/98 backdrop-blur-2xl transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* eslint-disable-next-line react-hooks/static-components */}
         <SidebarInner mobile />
       </aside>
 

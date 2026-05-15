@@ -1,4 +1,4 @@
-// @ts-nocheck
+// 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -151,7 +151,7 @@ function CreateOrganizerDialog({
       await onCreate(form);
       setForm({ name: '', slug: '', description: '', visibility: 'public' });
       onClose();
-    } catch (err) {
+    } catch (err) { console.error(err);
       // Error handled by parent
     } finally {
       setLoading(false);

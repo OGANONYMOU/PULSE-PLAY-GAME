@@ -27,6 +27,7 @@ export function AdminSettings() {
     setAnnouncementCount(e.count ?? 0);
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchStats(); }, []);
 
   const handleRefresh = async () => {

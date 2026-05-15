@@ -599,7 +599,7 @@ export function AdminCommunity(): React.JSX.Element {
       });
 
       // Apply local filters (author role, date range)
-      let filtered = transformedContent;
+      const filtered = transformedContent;
       if (filters.authorRole !== 'all') {
         filtered = filtered.filter(c => c.author.role === filters.authorRole);
       }
@@ -703,8 +703,7 @@ export function AdminCommunity(): React.JSX.Element {
 
       toast.success(`Content ${action.replace('_', ' ')} successful`);
       setIsDetailOpen(false);
-    } catch (error) {
-      toast.error('Action failed');
+    } catch (err) { console.error(err); toast.error('Action failed');
     }
   };
 
@@ -768,7 +767,7 @@ export function AdminCommunity(): React.JSX.Element {
                 />
               </div>
             </div>
-            <Select value={filters.type} onValueChange={(v) => setFilters(f => ({ ...f, type: v as any }))}>
+            <Select value={filters.type} onValueChange={(v) => setFilters(f => ({ ...f, type: v as never }))}>
               <SelectTrigger className="w-[140px] bg-slate-800/50 border-slate-700 text-slate-200">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Type" />
@@ -781,7 +780,7 @@ export function AdminCommunity(): React.JSX.Element {
                 <SelectItem value="discussion">Discussions</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v as any }))}>
+            <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v as never }))}>
               <SelectTrigger className="w-[140px] bg-slate-800/50 border-slate-700 text-slate-200">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -794,7 +793,7 @@ export function AdminCommunity(): React.JSX.Element {
                 <SelectItem value="deleted">Deleted</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.sortBy} onValueChange={(v) => setFilters(f => ({ ...f, sortBy: v as any }))}>
+            <Select value={filters.sortBy} onValueChange={(v) => setFilters(f => ({ ...f, sortBy: v as never }))}>
               <SelectTrigger className="w-[160px] bg-slate-800/50 border-slate-700 text-slate-200">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>

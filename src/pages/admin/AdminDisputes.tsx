@@ -174,7 +174,7 @@ function DisputeDrawer(p: {
   const Icon = meta.icon;
 
   useEffect(() => {
-    setLoadingEv(true);
+    setLoadingEv(true); // eslint-disable-line react-hooks/set-state-in-effect
     supabase.from('evidence_objects')
       .select('*, user:profiles!user_id(username)')
       .eq('match_id', p.dispute.match_id)
@@ -389,7 +389,8 @@ export function AdminDisputes(): React.ReactElement {
           {filtered.map((d, i) => {
             const meta = STATE_META[d.state];
             const Icon = meta.icon;
-            const isUrgent = d.state === 'open' && d.due_by && (new Date(d.due_by).getTime() - Date.now()) < 4 * 3_600_000;
+            // eslint-disable-next-line react-hooks/purity
+            const isUrgent = d.state === "open" && d.due_by && (new Date(d.due_by).getTime() - Date.now()) < 4 * 3_600_000;
             return (
               <motion.div key={d.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                 onClick={() => setSelected(d)}

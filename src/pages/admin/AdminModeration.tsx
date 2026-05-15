@@ -500,9 +500,7 @@ export function AdminModeration(): React.ReactElement {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ExtendedReport | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [_selectedReports, _setSelectedReports] = useState<string[]>([]);
-  const [_bulkActionOpen, _setBulkActionOpen] = useState(false);
-
+    
   // Permissions
   const canView = hasPermission('moderation.view');
   const canResolve = hasPermission('moderation.resolve');
@@ -701,7 +699,7 @@ export function AdminModeration(): React.ReactElement {
 
   // Filter reports
   const filteredReports = useMemo(() => {
-    let filtered = [...reports];
+    const filtered = [...reports];
 
     // Queue filter
     if (filters.queue !== 'all') {

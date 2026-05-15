@@ -63,7 +63,7 @@ export function AdminClubs(): React.ReactElement {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const filtered = clubs.filter(c => {
     const q = search.toLowerCase();

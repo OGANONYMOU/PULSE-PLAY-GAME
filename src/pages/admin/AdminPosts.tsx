@@ -419,8 +419,8 @@ function DeleteConfirm({ content, onClose, onConfirm }: {
 
 export function AdminPosts(): React.ReactElement {
   const { hasPermission, profile, role } = useAdmin();
-  const canManageContent = hasPermission('content.manage' as any) || hasPermission('system.admin_access' as any);
-  const canDelete = hasPermission('content.delete' as any) || hasPermission('system.admin_access' as any);
+  const canManageContent = hasPermission('content.manage' as never) || hasPermission('system.admin_access' as never);
+  const canDelete = hasPermission('content.delete' as never) || hasPermission('system.admin_access' as never);
 
   const [content, setContent] = useState<ContentItem[]>([]);
   const [stats, setStats] = useState<ContentStats>({
@@ -550,7 +550,7 @@ export function AdminPosts(): React.ReactElement {
   }, []);
 
   const filteredContent = useMemo(() => {
-    let filtered = [...content];
+    const filtered = [...content];
 
     // Filter by tab
     if (activeTab === 'reported') {

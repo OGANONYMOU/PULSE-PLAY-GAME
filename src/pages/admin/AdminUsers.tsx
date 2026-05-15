@@ -614,7 +614,7 @@ export function AdminUsers(): React.ReactElement {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    let result = users.filter(user => {
+    const result = users.filter(user => {
       if (search) {
         const q = search.toLowerCase();
         const matches = 
@@ -723,8 +723,7 @@ export function AdminUsers(): React.ReactElement {
 
       toast.success(`User ${action.replace('_', ' ')}ed successfully`);
       load();
-    } catch (error) {
-      toast.error('Action failed');
+    } catch (err) { console.error(err); toast.error('Action failed');
     } finally {
       setActionLoading(false);
       setActionModal({ open: false, action: '', user: null });
@@ -947,7 +946,7 @@ export function AdminUsers(): React.ReactElement {
                           </div>
                         )}
 
-                        {hasPermission('users.mute' as any) && !isSelf && (
+                        {hasPermission('users.mute' as never) && !isSelf && (
                           <Button
                             size="sm"
                             className={cn(

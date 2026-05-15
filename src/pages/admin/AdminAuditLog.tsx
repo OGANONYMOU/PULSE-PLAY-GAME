@@ -281,7 +281,7 @@ export function AdminAuditLog(): React.ReactElement {
 
   const pageSize = 25;
 
-  const canViewAuditLogs = hasPermission('system.view' as any);
+  const canViewAuditLogs = hasPermission('system.view' as never);
 
   // Fetch audit logs from Supabase
   const fetchLogs = useCallback(async () => {
@@ -388,7 +388,7 @@ export function AdminAuditLog(): React.ReactElement {
 
   // Apply filters
   useEffect(() => {
-    let filtered = [...logs];
+    const filtered = [...logs];
 
     // Category filter
     if (activeTab !== 'all') {

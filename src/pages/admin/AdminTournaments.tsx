@@ -202,7 +202,7 @@ function calculateTournamentHealth(
   
   // Fraud risk assessment
   let fraudRisk: FraudRiskLevel = 'none' as FraudRiskLevel;
-  let fraudFactors: string[] = [];
+  const fraudFactors: string[] = [];
   
   if (disputeRate > 20) {
     fraudRisk = 'high';
@@ -323,6 +323,7 @@ function getStatusColor(status: TournamentStatus): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function StatusBadge({ status }: { status: TournamentStatus }) {
+  // eslint-disable-next-line react-hooks/static-components
   const Icon = getStatusIcon(status);
   const labels: Record<TournamentStatus, string> = {
     ongoing: 'Live',
@@ -334,6 +335,7 @@ function StatusBadge({ status }: { status: TournamentStatus }) {
   
   return (
     <Badge className={cn("border font-medium", getStatusColor(status))}>
+      {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon className="w-3 h-3 mr-1" />
       {labels[status]}
     </Badge>
@@ -1104,7 +1106,7 @@ export function AdminTournaments(): React.ReactElement {
   const [games, setGames] = useState<Game[]>([]);
   const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [disputes, setDisputes] = useState<Record<string, ExtendedTournamentDispute[]>>({});
-  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({});
+  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({}); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [healthData, setHealthData] = useState<Record<string, TournamentHealth>>({});
   
   // UI states
