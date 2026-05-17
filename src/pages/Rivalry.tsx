@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ShareModal } from '@/components/community/ShareModal';
 import { AnimatePresence } from 'framer-motion';
 
-type RivalProfile = { id: string; username: string; avatar_url: string | null; matches_played: number; matches_won: number; gamercred_scores: { score: number } | null };
+type RivalProfile = { id: string; username: string; avatar_url: string | null; matches_played: number; matches_won: number; gamercred_score: number | null };
 type Rivalry = { id: string; player_a: string; player_b: string; wins_a: number; wins_b: number; matches: number; game_id: string | null; last_match: string | null; games: { name: string; icon: string } | null };
 
 export function RivalryPage() {
@@ -22,8 +22,8 @@ export function RivalryPage() {
     const load = async () => {
       setLoading(true);
       const [ra, rb] = await Promise.all([
-        (supabase as any).from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_scores(score)').eq('username', playerA as string).maybeSingle(),
-        (supabase as any).from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_scores(score)').eq('username', playerB as string).maybeSingle(),
+        (supabase as any).from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_score').eq('username', playerA as string).maybeSingle(),
+        (supabase as any).from('profiles').select('id, username, avatar_url, matches_played, matches_won, gamercred_score').eq('username', playerB as string).maybeSingle(),
       ]);
       if (ra.data) setProfA(ra.data as unknown as RivalProfile);
       if (rb.data) setProfB(rb.data as unknown as RivalProfile);
@@ -97,8 +97,8 @@ export function RivalryPage() {
                   </AvatarFallback>
                 </Avatar>
                 <Link to={`/profile/${profA.username}`} className="font-orbitron font-black text-lg text-white hover:text-cyan-400 transition-colors block">{profA.username}</Link>
-                {(profA.gamercred_scores as { score: number } | null)?.score && (
-                  <p className="text-xs text-cyan-400 font-mono mt-1">⚡ {(profA.gamercred_scores as { score: number }).score.toLocaleString()} GC</p>
+                {profA.gamercred_score != null && profA.gamercred_score > 0 && (
+                  <p className="text-xs text-cyan-400 font-mono mt-1">⚡ {profA.gamercred_score.toLocaleString()} GC</p>
                 )}
               </div>
 
@@ -126,8 +126,8 @@ export function RivalryPage() {
                   </AvatarFallback>
                 </Avatar>
                 <Link to={`/profile/${profB.username}`} className="font-orbitron font-black text-lg text-white hover:text-pink-400 transition-colors block">{profB.username}</Link>
-                {(profB.gamercred_scores as { score: number } | null)?.score && (
-                  <p className="text-xs text-pink-400 font-mono mt-1">⚡ {(profB.gamercred_scores as { score: number }).score.toLocaleString()} GC</p>
+                {profB.gamercred_score != null && profB.gamercred_score > 0 && (
+                  <p className="text-xs text-pink-400 font-mono mt-1">⚡ {profB.gamercred_score.toLocaleString()} GC</p>
                 )}
               </div>
             </div>

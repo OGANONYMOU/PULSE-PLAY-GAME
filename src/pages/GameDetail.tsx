@@ -290,7 +290,7 @@ function LbRow({ entry }: { entry: LeaderboardEntry }) {
       </div>
       <div className="text-right flex-shrink-0">
         <div className="text-sm font-bold text-cyan-400 tabular-nums">
-          {(entry.gamercred ?? 1000).toLocaleString()}
+          {(entry.gamercred ?? 0).toLocaleString()}
         </div>
         <div className="text-[9px] text-white/30 uppercase tracking-wider">GamerCred</div>
       </div>
@@ -505,19 +505,19 @@ export function GameDetail(): React.ReactElement {
         .order('date', { ascending: true })
         .limit(24),
 
-      supabase.from('clips')
+      (supabase as any).from('clips')
         .select('id, title, object_key, thumbnail_key, likes_count, views_count, created_at, profiles(username, avatar_url)')
         .eq('game_id', gameId)
         .order('likes_count', { ascending: false })
         .limit(12),
 
-      supabase.from('clubs')
+      (supabase as any).from('clubs')
         .select('id, name, tag, description, logo_url, member_count, wins, points, is_public, game_id, games(name, icon)')
         .eq('game_id', gameId)
         .order('member_count', { ascending: false })
         .limit(12),
 
-      supabase.from('posts')
+      (supabase as any).from('posts')
         .select('id, title, content, tag, likes, comments, created_at, author:profiles(username, avatar_url)')
         .order('created_at', { ascending: false })
         .limit(15),
@@ -551,7 +551,7 @@ export function GameDetail(): React.ReactElement {
 
     // Follow status
     if (user) {
-      const { data: fData } = await supabase
+      const { data: fData } = await (supabase as any)
         .from('game_follows')
         .select('id')
         .eq('game_id', gameId)
@@ -570,9 +570,9 @@ export function GameDetail(): React.ReactElement {
 
       if (tIds && tIds.length > 0) {
         const ids = tIds.map((t: { id: string }) => t.id);
-        const { data: participants } = await supabase
+        const { data: participants } = await (supabase as any)
           .from('tournament_participants')
-          .select('user_id, final_placement, profiles(username, avatar_url, gamercred, pulse_points)')
+          .select('user_id, final_placement, profiles(username, avatar_url, gamercred_score, pulse_points)')
           .in('tournament_id', ids)
           .limit(200);
 
@@ -580,7 +580,7 @@ export function GameDetail(): React.ReactElement {
           type RawParticipant = {
             user_id: string;
             final_placement: number | null;
-            profiles: { username: string; avatar_url: string | null; gamercred: number | null; pulse_points: number | null } | null;
+            profiles: { username: string; avatar_url: string | null; gamercred_score: number | null; pulse_points: number | null } | null;
           };
 
           const map = new Map<string, LeaderboardEntry>();
@@ -594,7 +594,7 @@ export function GameDetail(): React.ReactElement {
                 user_id: p.user_id,
                 username: prof.username,
                 avatar_url: prof.avatar_url,
-                gamercred: prof.gamercred ?? 1000,
+                gamercred: prof.gamercred_score ?? 0,
                 pulse_points: prof.pulse_points ?? 0,
                 tournament_wins: p.final_placement === 1 ? 1 : 0,
                 tournaments_played: 1,
@@ -621,7 +621,7 @@ export function GameDetail(): React.ReactElement {
     }
 
     // Game news
-    const { data: newsData } = await supabase
+    const { data: newsData } = await (supabase as any)
       .from('game_news')
       .select('*, profiles(username, avatar_url)')
       .eq('game_id', gameId)
@@ -647,11 +647,11 @@ export function GameDetail(): React.ReactElement {
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        await supabase.from('game_follows').delete().eq('game_id', gameId!).eq('user_id', user.id);
+        await (supabase as any).from('game_follows').delete().eq('game_id', gameId!).eq('user_id', user.id);
         setIsFollowing(false);
         setGame(prev => prev ? { ...prev, follower_count: Math.max(0, (prev.follower_count || 0) - 1) } : prev);
       } else {
-        await supabase.from('game_follows').insert({ game_id: gameId!, user_id: user.id } as never);
+        await (supabase as any).from('game_follows').insert({ game_id: gameId!, user_id: user.id });
         setIsFollowing(true);
         setGame(prev => prev ? { ...prev, follower_count: (prev.follower_count || 0) + 1 } : prev);
         toast.success(`Following ${game?.name}! 🎮`);
@@ -1060,7 +1060,7 @@ export function GameDetail(): React.ReactElement {
                     <p className="text-xs text-white/35 mt-0.5">Best moments from the community</p>
                   </div>
                   <Button asChild size="sm" className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white h-8 px-3 text-xs gap-1.5">
-                    <Link to="/community"><Plus className="w-3.5 h-3.5" />Submit Clip</Link>
+                    <Link to="/clips/upload"><Plus className="w-3.5 h-3.5" />Submit Clip</Link>
                   </Button>
                 </div>
 
@@ -1073,7 +1073,7 @@ export function GameDetail(): React.ReactElement {
                     icon={<Play className="w-12 h-12" />}
                     title="No clips yet"
                     description={`Be the first to share a ${game.name} clip with the community!`}
-                    action={{ label: 'Submit a Clip', href: '/community' }}
+                    action={{ label: 'Submit a Clip', href: '/clips/upload' }}
                   />
                 )}
               </div>

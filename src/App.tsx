@@ -28,6 +28,7 @@ const Register     = lazy(() => import('@/pages/Register').then(m => ({ default:
 const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
 const Profile      = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
 const NotFound     = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
+const RivalryPage  = lazy(() => import('@/pages/Rivalry').then(m => ({ default: m.RivalryPage })));
 
 // ── Admin chunk ───────────────────────────────────────────────────────────────
 const AdminLayout        = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
@@ -148,6 +149,7 @@ function AppContent(): React.ReactElement {
               <Route path="/auth/callback"     element={<AuthCallback />} />
               <Route path="/profile"           element={<Profile />} />
               <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/rivalry/:playerA/:playerB" element={<RivalryPage />} />
 
               {/* Admin — nested layout */}
               <Route path="/admin" element={<AdminLayout />}>

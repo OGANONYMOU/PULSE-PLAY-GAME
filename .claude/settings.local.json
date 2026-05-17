@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(powershell -Command \"Get-PSDrive C | Select-Object Used,Free\")",
+      "Bash(powershell -Command \"Get-ChildItem C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE -Directory | Select-Object Name\")",
+      "Bash(Get-PSDrive C)",
+      "Bash(Select-Object Used, Free)",
+      "PowerShell(\\(Get-PSDrive C\\).Free / 1GB)",
+      "PowerShell($disk = Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='C:'\"; \"Free: $\\([math]::Round\\($disk.FreeSpace/1GB, 2\\)\\) GB\")",
+      "Bash(cat /dev/null > /mnt/c/Users/Anonimous/PULSE-PLAY-CLONE/supabase/migrations/20260515000001_clips_gamercred.sql && echo \"created\")",
+      "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\lib\\\\clips\\\\clipsService.ts\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\hooks\\\\useClips.ts\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\lib\\\\gamercred\\\\scoring.ts\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\hooks\\\\useGamerCred.ts\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\pages\\\\ClipUpload.tsx\" -Force)",
+      "PowerShell(\"ok\")"
+    ],
+    "additionalDirectories": [
+      "\\mnt\\c\\Users\\Anonimous\\PULSE-PLAY-CLONE\\supabase\\migrations"
+    ]
+  }
+}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Search, Trophy, Sword, Star, Crown,
   Lock, Globe, X, Loader2, Copy, CheckCircle, TrendingUp,
+  Shield, User, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,12 @@ type Club = {
 };
 
 type Game = { id: string; name: string; icon: string };
+
+type ClubMember = {
+  role: 'owner' | 'admin' | 'member';
+  user_id: string;
+  profiles: { username: string; avatar_url: string | null; gamercred_score: number } | null;
+};
 
 // ── Create club modal ──────────────────────────────────────────────────────
 function CreateClubModal(p: { games: Game[]; onClose: () => void; onCreated: (id: string) => void }) {
@@ -132,14 +139,33 @@ function CreateClubModal(p: { games: Game[]; onClose: () => void; onCreated: (id
 }
 
 // ── Club card ──────────────────────────────────────────────────────────────
+const ROLE_ICON: Record<string, React.ElementType> = { owner: Crown, admin: Shield, member: User };
+const ROLE_COLOR: Record<string, string> = { owner: 'text-yellow-400', admin: 'text-cyan-400', member: 'text-white/40' };
+
 function ClubCard({ club, index, onJoin, joining }: {
   club: Club; index: number;
   onJoin: (c: Club) => void;
   joining: string | null;
 }): React.ReactElement {
   const [copied, setCopied] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [members, setMembers] = useState<ClubMember[]>([]);
+  const [membersLoaded, setMembersLoaded] = useState(false);
   const isMember = !!club.my_membership;
   const winRate = club.wins + club.losses > 0 ? Math.round(club.wins / (club.wins + club.losses) * 100) : 0;
+
+  const toggleMembers = async () => {
+    if (!membersLoaded) {
+      const { data } = await (supabase as any)
+        .from('club_members')
+        .select('role, user_id, profiles(username, avatar_url, gamercred_score)')
+        .eq('club_id', club.id)
+        .order('role');
+      setMembers((data ?? []) as ClubMember[]);
+      setMembersLoaded(true);
+    }
+    setShowMembers(v => !v);
+  };
 
   const copyInvite = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -210,6 +236,40 @@ function ClubCard({ club, index, onJoin, joining }: {
           </Button>
         )}
       </div>
+
+      {/* Member roster toggle */}
+      <button onClick={toggleMembers}
+        className="mt-3 w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/4 border border-white/8 hover:border-white/15 text-white/40 hover:text-white/70 text-xs font-semibold transition-all">
+        <span><Users className="w-3 h-3 inline mr-1.5" />Members ({club.member_count})</span>
+        <ChevronDown className={'w-3.5 h-3.5 transition-transform duration-200 ' + (showMembers ? 'rotate-180' : '')} />
+      </button>
+
+      <AnimatePresence>
+        {showMembers && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.18 }}
+            className="overflow-hidden mt-2">
+            {members.length === 0 ? (
+              <p className="text-center text-xs text-white/25 py-3">No members found</p>
+            ) : (
+              <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                {members.map(m => {
+                  const RoleIcon = ROLE_ICON[m.role] ?? User;
+                  return (
+                    <div key={m.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/3">
+                      <RoleIcon className={'w-3 h-3 flex-shrink-0 ' + (ROLE_COLOR[m.role] ?? 'text-white/40')} />
+                      <span className="text-xs text-white/70 truncate flex-1">{m.profiles?.username ?? 'Unknown'}</span>
+                      <span className="text-[10px] text-cyan-400/70 flex-shrink-0 font-mono">
+                        {(m.profiles?.gamercred_score ?? 0).toLocaleString()} GC
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
