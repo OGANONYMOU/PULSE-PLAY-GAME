@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Gamepad2, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,20 @@ import { toast } from 'sonner';
 import { AuthSEO } from '@/components/SEO';
 
 export function SignIn(): React.ReactElement {
-  const { signIn } = useAuth();
+  const { signIn, signInWithOAuth, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async () => {
     setError('');
@@ -48,8 +55,29 @@ export function SignIn(): React.ReactElement {
           <p className="text-muted-foreground text-sm">Sign in to your account</p>
         </div>
 
-        {/* Email form */}
         <div className="gaming-card p-6 space-y-4">
+          <Button
+            onClick={async () => {
+              setError('');
+              setOauthLoading(true);
+              const { error: err } = await signInWithOAuth('google');
+              if (err) {
+                setError(err.message || 'Unable to sign in with Google. Please try again.');
+                setOauthLoading(false);
+              }
+            }}
+            disabled={oauthLoading}
+            className="w-full h-11 flex items-center justify-center gap-2 border border-white/10 bg-white/5 text-white hover:bg-white/10"
+          >
+            <span className="inline-flex h-5 w-5 rounded-full bg-white text-black font-bold items-center justify-center text-[10px]">G</span>
+            {oauthLoading ? 'Opening Google…' : 'Continue with Google'}
+          </Button>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground uppercase tracking-[0.24em]">
+            <span className="h-px flex-1 bg-white/10" />
+            <span>or use email</span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
           {error && (
             <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />

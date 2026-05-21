@@ -535,6 +535,30 @@ export function AdminGames(): React.ReactElement {
 
   const canManageGames = hasPermission('games.manage' as never) || hasPermission('system.admin_access' as never);
 
+  const calculateStats = (data: Game[]) => {
+    const activeGames = data.filter(g => g.status === 'active').length;
+    const featuredGames = data.filter(g => g.featured).length;
+    const totalPlayers = data.reduce((sum, g) => sum + g.player_count, 0);
+    const totalTournaments = data.reduce((sum, g) => sum + g.tournament_count, 0);
+
+    const categoryDistribution = data.reduce((acc, g) => {
+      acc[g.category] = (acc[g.category] || 0) + 1;
+      return acc;
+    }, {} as Record<GameCategory, number>);
+
+    const topGames = [...data].sort((a, b) => b.popularity_score - a.popularity_score).slice(0, 3);
+
+    setStats({
+      totalGames: data.length,
+      activeGames,
+      featuredGames,
+      totalPlayers,
+      totalTournaments,
+      categoryDistribution,
+      topGames,
+    });
+  };
+
   // Mock data for demonstration
   useEffect(() => {
     const mockGames: Game[] = [
@@ -619,30 +643,6 @@ export function AdminGames(): React.ReactElement {
     calculateStats(mockGames);
     setIsLoading(false);
   }, []);
-
-  const calculateStats = (data: Game[]) => {
-    const activeGames = data.filter(g => g.status === 'active').length;
-    const featuredGames = data.filter(g => g.featured).length;
-    const totalPlayers = data.reduce((sum, g) => sum + g.player_count, 0);
-    const totalTournaments = data.reduce((sum, g) => sum + g.tournament_count, 0);
-
-    const categoryDistribution = data.reduce((acc, g) => {
-      acc[g.category] = (acc[g.category] || 0) + 1;
-      return acc;
-    }, {} as Record<GameCategory, number>);
-
-    const topGames = [...data].sort((a, b) => b.popularity_score - a.popularity_score).slice(0, 3);
-
-    setStats({
-      totalGames: data.length,
-      activeGames,
-      featuredGames,
-      totalPlayers,
-      totalTournaments,
-      categoryDistribution,
-      topGames,
-    });
-  };
 
   const filteredGames = useMemo(() => {
     let filtered = [...games];

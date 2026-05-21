@@ -17,10 +17,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { TournamentsSEO } from '@/components/SEO';
+import { resolveGameImage } from '@/lib/gameImages';
 
 type TStatus = 'upcoming' | 'ongoing' | 'completed';
 
-type GameRef = { name: string; icon: string } | null;
+type GameRef = { name: string; icon: string; image_url: string | null } | null;
 
 type Tournament = {
   id: string; name: string; game_id: string; status: TStatus;
@@ -176,7 +177,7 @@ export function Tournaments(): React.ReactElement {
     setLoading(true); setFetchError('');
     const { data, error } = await supabase
       .from('tournaments')
-      .select('*, games(name, icon)')
+      .select('*, games(name, icon, image_url)')
       .order('date', { ascending: false });
     if (error) { setFetchError(error.message); }
     else { setTournaments((data as Tournament[]) ?? []); }
@@ -336,9 +337,10 @@ export function Tournaments(): React.ReactElement {
                     <Button onClick={() => setActiveFilter('all')} variant="outline" size="sm">Show All</Button>
                   </motion.div>
                 ) : filtered.map((t, i) => {
-                  const gameName  = t.games?.name ?? 'Unknown';
-                  const gameIcon  = t.games?.icon ?? '🎮';
-                  const pct       = Math.round((t.current_players / t.max_players) * 100);
+                  const gameName     = t.games?.name ?? 'Unknown';
+                  const gameIcon     = t.games?.icon ?? '🎮';
+                  const gameImageUrl = resolveGameImage(gameName, t.games?.image_url);
+                  const pct          = Math.round((t.current_players / t.max_players) * 100);
                   const isFull    = t.current_players >= t.max_players;
                   const isReg     = myRegistrations.has(t.id);
 
@@ -348,21 +350,31 @@ export function Tournaments(): React.ReactElement {
                       transition={{ duration:0.22, delay: i * 0.04 }}>
                       <div className="gaming-card overflow-hidden h-full flex flex-col">
                         {/* Banner */}
-                        <div className={`relative h-28 bg-gradient-to-br ${gameColor(gameName)} cursor-pointer`}
+                        <div className={`relative h-28 bg-gradient-to-br ${gameColor(gameName)} cursor-pointer overflow-hidden`}
                           onClick={() => openDetailWithUrl(t)}>
+                          {gameImageUrl && (
+                            <img
+                              src={gameImageUrl}
+                              alt={gameName}
+                              className="absolute inset-0 w-full h-full object-cover opacity-40"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/30" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            {gameImageUrl
+                              ? <img src={gameImageUrl} alt={gameName} className="h-16 w-16 object-contain drop-shadow-lg rounded-xl" />
+                              : <span className="text-5xl">{gameIcon}</span>
+                            }
+                          </div>
                           <button
                             onClick={(e) => handleShare(t, e)}
                             className="absolute top-3 right-3 p-1.5 rounded-lg bg-black/30 hover:bg-black/50 text-white/80 hover:text-white transition-colors"
                           >
                             <Share2 className="w-4 h-4" />
                           </button>
-                          <div className="absolute inset-0 bg-black/20" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-5xl">{gameIcon}</span>
-                          </div>
                           <div className="absolute top-3 left-3"><StatusBadge status={t.status} /></div>
                           {isReg && (
-                            <div className="absolute top-3 right-3">
+                            <div className="absolute bottom-3 right-3">
                               <Badge className="bg-green-500/20 text-green-400 border-green-500/40 text-[10px]">
                                 <UserCheck className="w-2.5 h-2.5 mr-1" />Registered
                               </Badge>
@@ -449,12 +461,19 @@ export function Tournaments(): React.ReactElement {
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={v => { if (!v) handleCloseDetail(); }}>
         <DialogContent className="max-w-2xl glass border-border/40 max-h-[90vh] overflow-y-auto">
-          {detail && (
+          {detail && (() => {
+            const detailGameImg = resolveGameImage(detail.games?.name ?? '', detail.games?.image_url);
+            return (
             <>
               <DialogHeader>
                 <DialogTitle className="font-orbitron flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{detail.games?.icon ?? '🎮'}</span>
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                      {detailGameImg
+                        ? <img src={detailGameImg} alt={detail.games?.name} className="w-full h-full object-cover" />
+                        : <span className="text-2xl">{detail.games?.icon ?? '🎮'}</span>
+                      }
+                    </div>
                     <div>
                       <div className="text-base">{detail.name}</div>
                       <div className="text-xs text-muted-foreground font-normal mt-0.5">
@@ -596,7 +615,8 @@ export function Tournaments(): React.ReactElement {
                 )}
               </Tabs>
             </>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

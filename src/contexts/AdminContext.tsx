@@ -165,7 +165,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [recentAuditLogs, _setRecentAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [recentAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);

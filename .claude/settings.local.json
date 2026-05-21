@@ -19,7 +19,8 @@
       "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\lib\\\\gamercred\\\\scoring.ts\" -Force)",
       "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\hooks\\\\useGamerCred.ts\" -Force)",
       "PowerShell(New-Item -ItemType File -Path \"C:\\\\Users\\\\Anonimous\\\\PULSE-PLAY-CLONE\\\\src\\\\pages\\\\ClipUpload.tsx\" -Force)",
-      "PowerShell(\"ok\")"
+      "PowerShell(\"ok\")",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "\\mnt\\c\\Users\\Anonimous\\PULSE-PLAY-CLONE\\supabase\\migrations"

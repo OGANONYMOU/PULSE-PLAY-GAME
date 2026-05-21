@@ -241,7 +241,6 @@ export function SensitiveAction({
   onConfirm,
   confirmationData,
 }: SensitiveActionProps): ReactElement {
-  const { profile: _profile } = useAuth();
 
   const handleAction = () => {
     const actionLabels: Record<string, { title: string; warning: string }> = {

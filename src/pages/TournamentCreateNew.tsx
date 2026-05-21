@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHostableOrganizers } from '@/hooks/useOrganizers';
 import { toast } from 'sonner';
 import { writeAudit } from '@/lib/audit';
+import { resolveGameImage } from '@/lib/gameImages';
 // Note: tournament engine imports removed as they're dynamically imported when needed
 
 type Game = { id: string; name: string; icon: string; logo_url: string | null; category: string };
@@ -256,8 +257,8 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
             >
               {form.game_id === g.id && <CheckCircle className="absolute top-2 right-2 w-4 h-4 text-cyan-400" />}
               <div className="w-10 h-10 rounded-xl overflow-hidden mb-3 bg-white/8">
-                {g.logo_url
-                  ? <img src={g.logo_url} alt={g.name} className="w-full h-full object-cover" />
+                {resolveGameImage(g.name, g.logo_url)
+                  ? <img src={resolveGameImage(g.name, g.logo_url)!} alt={g.name} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-2xl">{g.icon}</div>}
               </div>
               <p className="font-semibold text-sm text-white truncate">{g.name}</p>

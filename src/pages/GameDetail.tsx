@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { GameDetailSEO } from '@/components/SEO';
+import { resolveGameImage } from '@/lib/gameImages';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -691,8 +692,9 @@ export function GameDetail(): React.ReactElement {
     );
   }
 
-  const cat    = CATEGORY_META[game.category] ?? CATEGORY_META.other;
+  const cat     = CATEGORY_META[game.category] ?? CATEGORY_META.other;
   const badgeCls = game.badge ? (BADGE_COLORS[game.badge] ?? 'bg-purple-500') : '';
+  const gameImg  = resolveGameImage(game.name, game.logo_url ?? game.image_url);
   const liveTournaments     = tournaments.filter(t => t.status === 'ongoing');
   const upcomingTournaments = tournaments.filter(t => t.status === 'upcoming');
   const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
@@ -730,10 +732,10 @@ export function GameDetail(): React.ReactElement {
             `,
           }}
         />
-        {(game.image_url ?? game.logo_url) && (
+        {gameImg && (
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <img
-              src={game.image_url ?? game.logo_url!}
+              src={gameImg}
               alt=""
               aria-hidden
               className="w-full h-full object-cover opacity-[0.04] scale-110 blur-2xl"
@@ -759,11 +761,11 @@ export function GameDetail(): React.ReactElement {
                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center shadow-xl"
                 style={{ boxShadow: `0 0 30px ${cat.accent}30` }}
               >
-                {game.logo_url || game.image_url ? (
+                {gameImg ? (
                   <img
-                    src={game.logo_url ?? game.image_url!}
+                    src={gameImg}
                     alt={game.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-5xl leading-none">{game.icon}</span>

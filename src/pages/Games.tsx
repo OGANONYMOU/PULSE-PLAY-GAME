@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { GamesSEO } from '@/components/SEO';
+import { resolveGameImage } from '@/lib/gameImages';
 
 type Game = {
   id: string;
@@ -63,6 +64,7 @@ function GameSkeleton(): React.ReactElement {
 
 function FeaturedBanner(p: { game: Game }): React.ReactElement {
   const g = p.game;
+  const img = resolveGameImage(g.name, g.image_url);
   const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -95,9 +97,9 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
             </Button>
           </div>
           <div className="relative">
-            <div className="aspect-square max-w-sm mx-auto rounded-3xl bg-gradient-to-br from-yellow-500/20 via-purple-500/20 to-cyan-500/20 flex items-center justify-center">
-              {g.image_url
-                ? <img src={g.image_url} alt={g.name} className="w-48 h-48 object-contain drop-shadow-2xl" />
+            <div className="aspect-square max-w-sm mx-auto rounded-3xl bg-gradient-to-br from-yellow-500/20 via-purple-500/20 to-cyan-500/20 flex items-center justify-center overflow-hidden">
+              {img
+                ? <img src={img} alt={g.name} className="w-full h-full object-cover" />
                 : <span className="text-9xl">{g.icon}</span>}
             </div>
           </div>
@@ -109,6 +111,7 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
 
 const GameCard = memo(function GameCard(p: { game: Game; index: number }): React.ReactElement {
   const g = p.game;
+  const img = resolveGameImage(g.name, g.image_url);
   const badgeColor = g.badge ? (BADGE_COLORS[g.badge] ?? 'bg-purple-500') : '';
   const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
   return (
@@ -116,8 +119,8 @@ const GameCard = memo(function GameCard(p: { game: Game; index: number }): React
       <div className="gaming-card p-4 sm:p-6 h-full flex flex-col">
         <div className="flex items-start justify-between mb-4">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 overflow-hidden">
-            {g.image_url
-              ? <img src={g.image_url} alt={g.name} className="w-full h-full object-cover" />
+            {img
+              ? <img src={img} alt={g.name} className="w-full h-full object-cover" />
               : g.icon}
           </div>
           {g.badge ? (

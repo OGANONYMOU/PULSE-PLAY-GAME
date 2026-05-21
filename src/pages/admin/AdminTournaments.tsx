@@ -332,7 +332,7 @@ function StatusBadge({ status }: { status: TournamentStatus }) {
     cancelled: 'Cancelled',
     locked: 'Locked',
   };
-  
+
   return (
     <Badge className={cn("border font-medium", getStatusColor(status))}>
       {/* eslint-disable-next-line react-hooks/static-components */}
@@ -1106,7 +1106,7 @@ export function AdminTournaments(): React.ReactElement {
   const [games, setGames] = useState<Game[]>([]);
   const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [disputes, setDisputes] = useState<Record<string, ExtendedTournamentDispute[]>>({});
-  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({}); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [_matches, _setMatches] = useState<Record<string, TournamentMatch[]>>({});
   const [healthData, setHealthData] = useState<Record<string, TournamentHealth>>({});
   
   // UI states

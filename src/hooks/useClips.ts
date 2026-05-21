@@ -37,7 +37,7 @@ export function useClips(tab: ClipTab) {
     const liked = likedIds.has(clipId);
     setLikedIds(prev => {
       const next = new Set(prev);
-      liked ? next.delete(clipId) : next.add(clipId);
+      if (liked) next.delete(clipId); else next.add(clipId);
       return next;
     });
     setClips(prev => prev.map(c =>
@@ -48,7 +48,7 @@ export function useClips(tab: ClipTab) {
     } catch {
       setLikedIds(prev => {
         const next = new Set(prev);
-        liked ? next.add(clipId) : next.delete(clipId);
+        if (liked) next.add(clipId); else next.delete(clipId);
         return next;
       });
       setClips(prev => prev.map(c =>

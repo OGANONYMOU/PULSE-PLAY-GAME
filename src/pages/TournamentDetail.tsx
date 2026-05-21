@@ -14,6 +14,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { submitDispute } from '@/lib/dispute/disputeSystem';
 import { type FraudFlag } from '@/lib/fraud/fraudDetection';
+import { resolveGameImage } from '@/lib/gameImages';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type TournamentFull = {
@@ -964,8 +965,8 @@ export function TournamentDetail() {
           <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-6">
             {/* Game logo */}
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0 bg-white/5">
-              {tournament.games?.logo_url
-                ? <img src={tournament.games.logo_url} alt={tournament.games.name} className="w-full h-full object-cover" />
+              {resolveGameImage(tournament.games?.name ?? '', tournament.games?.logo_url)
+                ? <img src={resolveGameImage(tournament.games?.name ?? '', tournament.games?.logo_url)!} alt={tournament.games?.name} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center text-4xl">{tournament.games?.icon ?? '🎮'}</div>}
             </div>
             <div className="flex-1 min-w-0">
