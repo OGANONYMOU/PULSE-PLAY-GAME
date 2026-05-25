@@ -6,6 +6,9 @@ interface Particle {
   size: number; opacity: number;
 }
 
+// Throttle to 24fps — particles move slowly, 60fps buys nothing but CPU
+const FRAME_INTERVAL = 1000 / 24;
+
 export function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -15,10 +18,10 @@ export function ParticleBackground() {
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    // Fewer particles on mobile — preserves battery and frame rate
     const isMobile = window.innerWidth < 768;
-    const COUNT = isMobile ? 16 : 28;
-    const CONNECTION_DIST = isMobile ? 100 : 140;
+    const COUNT        = isMobile ? 12 : 20;
+    const CONN_DIST    = isMobile ? 90 : 120;
+    const CONN_DIST_SQ = CONN_DIST * CONN_DIST;
 
     const resize = () => {
       canvas.width  = window.innerWidth;
@@ -29,17 +32,22 @@ export function ParticleBackground() {
     const particles: Particle[] = Array.from({ length: COUNT }, () => ({
       x:       Math.random() * canvas.width,
       y:       Math.random() * canvas.height,
-      vx:      (Math.random() - 0.5) * 0.35,
-      vy:      (Math.random() - 0.5) * 0.35,
-      size:    Math.random() * 2 + 0.8,
-      opacity: Math.random() * 0.4 + 0.15,
+      vx:      (Math.random() - 0.5) * 0.3,
+      vy:      (Math.random() - 0.5) * 0.3,
+      size:    Math.random() * 1.8 + 0.6,
+      opacity: Math.random() * 0.35 + 0.1,
     }));
 
     let raf = 0;
+    let lastTime = 0;
 
-    const draw = () => {
-      // Skip rendering when the tab is hidden — saves CPU/GPU completely
-      if (document.hidden) { raf = requestAnimationFrame(draw); return; }
+    const draw = (now: number) => {
+      raf = requestAnimationFrame(draw);
+
+      // Skip if tab is hidden or frame came too soon
+      if (document.hidden) return;
+      if (now - lastTime < FRAME_INTERVAL) return;
+      lastTime = now;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -49,9 +57,9 @@ export function ParticleBackground() {
         p.x += p.vx;
         p.y += p.vy;
         if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
+        else if (p.x > canvas.width) p.x = 0;
         if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
+        else if (p.y > canvas.height) p.y = 0;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -59,18 +67,18 @@ export function ParticleBackground() {
         ctx.fill();
       }
 
-      // Draw connections — only upper-triangle (i<j) avoids duplicate pairs
-      ctx.lineWidth = 0.6;
+      // Draw connections — batch all lines with a single path per alpha bucket
+      ctx.lineWidth = 0.5;
       for (let i = 0; i < COUNT - 1; i++) {
         for (let j = i + 1; j < COUNT; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
-          // Avoid Math.sqrt when possible: compare squared distance
           const distSq = dx * dx + dy * dy;
-          const limitSq = CONNECTION_DIST * CONNECTION_DIST;
-          if (distSq < limitSq) {
-            const alpha = (1 - distSq / limitSq) * 0.12;
-            ctx.strokeStyle = `rgba(0,217,255,${alpha.toFixed(3)})`;
+          if (distSq < CONN_DIST_SQ) {
+            // Round alpha to nearest 0.02 to reuse strokeStyle across nearby pairs
+            const rawAlpha = (1 - distSq / CONN_DIST_SQ) * 0.1;
+            const alpha = Math.round(rawAlpha * 50) / 50;
+            ctx.strokeStyle = `rgba(0,217,255,${alpha})`;
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -78,15 +86,12 @@ export function ParticleBackground() {
           }
         }
       }
-
-      raf = requestAnimationFrame(draw);
     };
 
-    draw();
+    raf = requestAnimationFrame(draw);
 
     const handleResize = () => {
       resize();
-      // Clamp particles back inside the new bounds
       particles.forEach(p => {
         p.x = Math.min(p.x, canvas.width);
         p.y = Math.min(p.y, canvas.height);
@@ -102,7 +107,6 @@ export function ParticleBackground() {
 
   return (
     <>
-      {/* Static CSS gradients — zero JS cost */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden>
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-cyan-500/5" />
         <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-20"
@@ -115,7 +119,7 @@ export function ParticleBackground() {
         ref={canvasRef}
         aria-hidden
         className="fixed inset-0 pointer-events-none z-0"
-        style={{ opacity: 0.55, willChange: 'contents' }}
+        style={{ opacity: 0.55 }}
       />
     </>
   );

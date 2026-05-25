@@ -2,7 +2,8 @@ const GAME_IMAGE_MAP: { keywords: string[]; path: string }[] = [
   { keywords: ['pubg'],                       path: '/games/pubg.webp' },
   { keywords: ['free fire', 'freefire'],      path: '/games/free-fire.webp' },
   { keywords: ['efootball', 'pes', 'e-foot'], path: '/games/efootball.webp' },
-  { keywords: ['fifa', 'ea fc', 'eafc'],       path: '/games/fifa-mobile.webp' },
+  { keywords: ['ea fc', 'eafc'],               path: '/games/ea%20fc.webp' },
+  { keywords: ['fifa'],                        path: '/games/fifa-mobile.webp' },
   { keywords: ['cod', 'call of duty'],        path: '/games/cod-mobile.webp' },
 ];
 
