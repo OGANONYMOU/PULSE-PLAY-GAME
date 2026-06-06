@@ -416,7 +416,7 @@ export async function getFraudFlags(
     }
     
     return { flags: data || [] };
-  } catch (err) {
+  } catch (_err) {
     return { flags: [], error: 'Query failed' };
   }
 }

@@ -519,7 +519,7 @@ export async function queryCases(
     }
 
     return { cases: data || [], total: count || 0 };
-  } catch (err) {
+  } catch (_err) {
     return { cases: [], total: 0, error: 'Query failed' };
   }
 }

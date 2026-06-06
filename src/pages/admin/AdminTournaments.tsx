@@ -1130,25 +1130,18 @@ export function AdminTournaments(): React.ReactElement {
   
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [actionInProgress, setActionInProgress] = useState(false);
-  
+
+  const BLANK_FORM: Partial<Tournament> = {
+    name: '', game_id: '', status: 'upcoming', date: '', prize_pool: '',
+    max_players: 64, duration: '1 Day', description: '', rules: '',
+    entry_fee: '₦0', format: 'single_elimination', region: 'online', requires_verification: false,
+  };
+
   // Form states for create/edit
-  const [formData, setFormData] = useState<Partial<Tournament>>({
-    name: '',
-    game_id: '',
-    status: 'upcoming',
-    date: '',
-    prize_pool: '',
-    max_players: 64,
-    duration: '1 Day',
-    description: '',
-    rules: '',
-    entry_fee: '₦0',
-    format: 'single_elimination',
-    region: 'online',
-    requires_verification: false,
-  });
+  const [formData, setFormData] = useState<Partial<Tournament>>(BLANK_FORM);
 
   // Permissions
   const canView = hasPermission('tournaments.view');
@@ -1376,8 +1369,24 @@ export function AdminTournaments(): React.ReactElement {
     try {
       switch (action) {
         case 'edit':
-          // Navigate to edit page or open edit modal
-          toast.info('Edit functionality coming soon');
+          setFormData({
+            name:                  selectedTournament.name,
+            game_id:               selectedTournament.game_id,
+            status:                selectedTournament.status,
+            date:                  selectedTournament.date?.slice(0, 16) ?? '',
+            end_date:              selectedTournament.end_date?.slice(0, 16) ?? '',
+            prize_pool:            selectedTournament.prize_pool,
+            max_players:           selectedTournament.max_players,
+            duration:              selectedTournament.duration,
+            description:           selectedTournament.description ?? '',
+            rules:                 selectedTournament.rules ?? '',
+            entry_fee:             selectedTournament.entry_fee ?? '₦0',
+            format:                selectedTournament.format,
+            region:                selectedTournament.region ?? 'online',
+            requires_verification: selectedTournament.requires_verification,
+            is_featured:           selectedTournament.is_featured,
+          });
+          setEditModalOpen(true);
           break;
           
         case 'lock':
@@ -1489,27 +1498,40 @@ export function AdminTournaments(): React.ReactElement {
       );
       toast.success('Tournament created successfully');
       setCreateModalOpen(false);
+      setFormData(BLANK_FORM);
       fetchTournaments();
-      
-      // Reset form
-      setFormData({
-        name: '',
-        game_id: '',
-        status: 'upcoming',
-        date: '',
-        prize_pool: '',
-        max_players: 64,
-        duration: '1 Day',
-        description: '',
-        rules: '',
-        entry_fee: '₦0',
-        format: 'single_elimination',
-        region: 'online',
-        requires_verification: false,
-      });
     } catch (err) {
       console.error('Failed to create tournament:', err);
       toast.error('Failed to create tournament');
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  // Handle update tournament
+  const handleUpdate = async () => {
+    if (!selectedTournament) return;
+    if (!formData.name || !formData.game_id || !formData.date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setActionInProgress(true);
+    try {
+      const { error } = await supabase.from('tournaments')
+        .update({ ...formData, updated_at: new Date().toISOString() } as never)
+        .eq('id', selectedTournament.id);
+      if (error) throw error;
+      await writeAudit(
+        { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+        { action: 'edit_tournament', category: 'tournament', target_id: selectedTournament.id, metadata: { name: formData.name } }
+      );
+      toast.success('Tournament updated');
+      setEditModalOpen(false);
+      setFormData(BLANK_FORM);
+      fetchTournaments();
+    } catch (err) {
+      console.error('Failed to update tournament:', err);
+      toast.error('Failed to update tournament');
     } finally {
       setActionInProgress(false);
     }
@@ -1938,6 +1960,160 @@ export function AdminTournaments(): React.ReactElement {
             >
               {actionInProgress ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
               Delete Tournament
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tournament Modal */}
+      <Dialog open={editModalOpen} onOpenChange={(o) => { if (!o) { setEditModalOpen(false); setFormData(BLANK_FORM); } }}>
+        <DialogContent className="bg-slate-950 border-slate-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-orbitron text-white flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-cyan-400" />
+              Edit Tournament
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Update details for <strong>{selectedTournament?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="col-span-2 space-y-2">
+              <label className="text-sm text-slate-400">Tournament Name *</label>
+              <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., eFootball Premier League Season 1" className="bg-slate-900 border-slate-800" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Game *</label>
+              <Select value={formData.game_id} onValueChange={v => setFormData({ ...formData, game_id: v })}>
+                <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select game" /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  {games.map(g => <SelectItem key={g.id} value={g.id}>{g.icon} {g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Status</label>
+              <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v as TournamentStatus })}>
+                <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="ongoing">Ongoing</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="locked">Locked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Start Date & Time *</label>
+              <Input type="datetime-local" value={formData.date as string}
+                onChange={e => setFormData({ ...formData, date: e.target.value })} className="bg-slate-900 border-slate-800" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">End Date & Time</label>
+              <Input type="datetime-local" value={(formData.end_date as string) ?? ''}
+                onChange={e => setFormData({ ...formData, end_date: e.target.value || null })} className="bg-slate-900 border-slate-800" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Prize Pool *</label>
+              <Input value={formData.prize_pool} onChange={e => setFormData({ ...formData, prize_pool: e.target.value })}
+                placeholder="e.g., ₦500,000" className="bg-slate-900 border-slate-800" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Max Players</label>
+              <Input type="number" value={formData.max_players}
+                onChange={e => setFormData({ ...formData, max_players: parseInt(e.target.value) })} className="bg-slate-900 border-slate-800" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Duration</label>
+              <Select value={formData.duration} onValueChange={v => setFormData({ ...formData, duration: v })}>
+                <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  <SelectItem value="1 Day">1 Day</SelectItem>
+                  <SelectItem value="2 Days">2 Days</SelectItem>
+                  <SelectItem value="3 Days">3 Days</SelectItem>
+                  <SelectItem value="1 Week">1 Week</SelectItem>
+                  <SelectItem value="2 Weeks">2 Weeks</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Format</label>
+              <Select value={formData.format} onValueChange={v => setFormData({ ...formData, format: v })}>
+                <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  <SelectItem value="single_elimination">Single Elimination</SelectItem>
+                  <SelectItem value="double_elimination">Double Elimination</SelectItem>
+                  <SelectItem value="round_robin">Round Robin</SelectItem>
+                  <SelectItem value="swiss">Swiss</SelectItem>
+                  <SelectItem value="bracket">Bracket</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Region</label>
+              <Select value={formData.region ?? 'online'} onValueChange={v => setFormData({ ...formData, region: v })}>
+                <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="lagos">Lagos</SelectItem>
+                  <SelectItem value="abuja">Abuja</SelectItem>
+                  <SelectItem value="port-harcourt">Port Harcourt</SelectItem>
+                  <SelectItem value="ibadan">Ibadan</SelectItem>
+                  <SelectItem value="kano">Kano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-slate-400">Entry Fee</label>
+              <Input value={formData.entry_fee ?? ''} onChange={e => setFormData({ ...formData, entry_fee: e.target.value })}
+                placeholder="e.g., ₦500 or Free" className="bg-slate-900 border-slate-800" />
+            </div>
+
+            <div className="col-span-2 space-y-2">
+              <label className="text-sm text-slate-400">Description</label>
+              <Textarea value={formData.description ?? ''} onChange={e => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe the tournament..." className="bg-slate-900 border-slate-800 min-h-[80px]" />
+            </div>
+
+            <div className="col-span-2 space-y-2">
+              <label className="text-sm text-slate-400">Rules</label>
+              <Textarea value={formData.rules ?? ''} onChange={e => setFormData({ ...formData, rules: e.target.value })}
+                placeholder="Tournament rules and regulations..." className="bg-slate-900 border-slate-800 min-h-[80px]" />
+            </div>
+
+            <div className="col-span-2 flex items-center gap-3">
+              <input type="checkbox" id="edit-featured" checked={!!formData.is_featured}
+                onChange={e => setFormData({ ...formData, is_featured: e.target.checked })}
+                className="w-4 h-4 accent-cyan-500" />
+              <label htmlFor="edit-featured" className="text-sm text-slate-400">Featured tournament</label>
+              <input type="checkbox" id="edit-verify" checked={!!formData.requires_verification}
+                onChange={e => setFormData({ ...formData, requires_verification: e.target.checked })}
+                className="w-4 h-4 accent-cyan-500 ml-4" />
+              <label htmlFor="edit-verify" className="text-sm text-slate-400">Requires verification</label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditModalOpen(false); setFormData(BLANK_FORM); }} className="border-slate-700">
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} disabled={actionInProgress}
+              className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:opacity-90">
+              {actionInProgress ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Edit3 className="w-4 h-4 mr-1" />}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

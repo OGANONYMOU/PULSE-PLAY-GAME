@@ -77,6 +77,7 @@ export function PostCard({
       setCommentText('');
       const data = await fetchComments(post.id);
       setComments(data);
+      setShowComments(false);
     }
     setSubmitting(false);
   };

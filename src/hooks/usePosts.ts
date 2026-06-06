@@ -74,7 +74,7 @@ export function usePosts(tagFilter?: string) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchPosts, loadMyLikes]);
+  }, [fetchPosts, loadMyLikes, tagFilter]);
 
   // ── Create post ───────────────────────────────────────────────────────────
   const createPost = async (authorId: string, title: string, content: string, tag: PostTag) => {

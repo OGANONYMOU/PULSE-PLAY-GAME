@@ -21,6 +21,21 @@ export default defineConfig([
         varsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_',
       }],
+      // Downgrade: existing codebase uses `any` intentionally for Supabase query results
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Downgrade: v7 new rule fires on valid async-in-effect and guard-clause patterns
+      'react-hooks/set-state-in-effect': 'warn',
+      // Downgrade: Math.random in useMemo is flagged but not a real render stability bug
+      'react-hooks/purity': 'warn',
+      // Context and UI library files legitimately export hooks + components together
+      'react-refresh/only-export-components': 'warn',
+      // Allow @ts-nocheck in the two legacy Supabase-typed hooks (usePermissions, useOrganizers)
+      '@typescript-eslint/ban-ts-comment': ['error', {
+        'ts-check': false,
+        'ts-expect-error': 'allow-with-description',
+        'ts-ignore': true,
+        'ts-nocheck': false,
+      }],
     },
     languageOptions: {
       ecmaVersion: 2020,

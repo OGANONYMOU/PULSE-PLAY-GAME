@@ -150,6 +150,7 @@ function AppContent(): React.ReactElement {
               <Route path="/profile"           element={<Profile />} />
               <Route path="/profile/:username" element={<Profile />} />
               <Route path="/rivalry/:playerA/:playerB" element={<RivalryPage />} />
+              <Route path="/organizers"            element={<AdminOrganizers />} />
 
               {/* Admin — nested layout */}
               <Route path="/admin" element={<AdminLayout />}>

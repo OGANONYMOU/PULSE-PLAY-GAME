@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { uploadClipFile, uploadThumbnail, createClip, type UploadProgress } from '@/lib/clips/clipsService';
-import { awardGamerCred } from '@/lib/gamercred/scoring';
+import { awardXpAndNotify } from '@/hooks/useLevelUp';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -77,10 +77,9 @@ export function ClipUpload(): React.ReactElement {
         tournamentId: null,
       });
 
-      await awardGamerCred(user.id, 'clip_uploaded', { title });
+      await awardXpAndNotify(user.id, 'clip_uploaded', { title });
 
       setUploadState('success');
-      toast.success('Clip uploaded! +10 GamerCred');
       setTimeout(() => navigate('/clips'), 1500);
     } catch (e) {
       setError((e as Error).message || 'Upload failed. Please try again.');

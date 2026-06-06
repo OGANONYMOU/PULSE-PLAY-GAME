@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Star, Zap, Loader2, Share2, Award } from 'lucide-react';
+import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Star, Zap, Loader2, Share2, Award, TrendingUp } from 'lucide-react';
+import { LevelBadge } from '@/components/ui-custom/LevelBadge';
 import { useGamerCred } from '@/hooks/useGamerCred';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
@@ -356,6 +357,8 @@ export function Profile(): React.ReactElement {
     { id: 'achievements', label: 'Achievements', icon: Star },
   ];
   const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
+  // Must be called unconditionally before any early returns (rules-of-hooks)
+  const { score: credScore, tier: credTier, level, xp, levelMeta } = useGamerCred(profile?.id);
 
   if (authLoading || pageLoading) {
     return (
@@ -414,7 +417,6 @@ export function Profile(): React.ReactElement {
   const postsLabel = isOwnProfile ? 'My Posts' : profile.username + "'s Posts";
   const grad = roleGradient(profile.role);
   const badge = roleBadge(profile.role);
-  const { score: credScore, tier: credTier } = useGamerCred(profile.id);
 
   return (
     <div className="min-h-screen pt-20 pb-16">
@@ -481,12 +483,41 @@ export function Profile(): React.ReactElement {
           <EditPanel show={isEditing} form={editForm} saving={isSaving} onChange={setEditForm} onSave={handleSave} onCancel={() => setIsEditing(false)} />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+        {/* Level progress card */}
+        <div className="mb-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <LevelBadge level={level} xp={xp} size="md" />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-white font-bold">{xp.toLocaleString()}</span> XP total
+              </span>
+              <span className="flex items-center gap-1">
+                <Zap className={`w-3.5 h-3.5 ${credTier.color}`} />
+                <span className={`font-bold ${credTier.color}`}>{credScore}</span> GamerCred
+              </span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>Level {level} → {level + 1}</span>
+              <span>{levelMeta.progressPct}% · {levelMeta.xpRemaining > 0 ? `${levelMeta.xpRemaining} XP to go` : 'Max!'}</span>
+            </div>
+            <div className="h-2 rounded-full bg-white/8 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-700"
+                style={{ width: `${levelMeta.progressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {[
-            { icon: MessageSquare, label: 'Posts', value: posts.length, color: 'text-cyan-400' },
-            { icon: Flame, label: 'Likes', value: totalLikes, color: 'text-orange-400' },
-            { icon: Trophy, label: 'Tournaments', value: tourneyEntries.length, color: 'text-yellow-400' },
-            { icon: Award, label: 'Wins', value: tourneyEntries.filter(e => e.status === 'winner').length, color: 'text-green-400' },
+            { icon: MessageSquare, label: 'Posts',       value: posts.length,                                           color: 'text-cyan-400' },
+            { icon: Flame,         label: 'Likes',       value: totalLikes,                                             color: 'text-orange-400' },
+            { icon: Trophy,        label: 'Tournaments', value: tourneyEntries.length,                                  color: 'text-yellow-400' },
+            { icon: Award,         label: 'Wins',        value: tourneyEntries.filter(e => e.status === 'winner').length, color: 'text-green-400' },
           ].map((s) => (
             <div key={s.label} className="p-4 rounded-xl bg-white/5 border border-white/10 text-center hover:border-white/20 transition-all">
               <s.icon className={'w-5 h-5 mx-auto mb-1.5 ' + s.color} />
@@ -494,12 +525,6 @@ export function Profile(): React.ReactElement {
               <div className="text-xs text-white/40 mt-0.5">{s.label}</div>
             </div>
           ))}
-          {/* GamerCred score card */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 text-center col-span-2 sm:col-span-1">
-            <Zap className={`w-5 h-5 mx-auto mb-1.5 ${credTier.color}`} />
-            <div className={`font-orbitron text-xl font-bold ${credTier.color}`}>{credScore}</div>
-            <div className="text-xs text-white/40 mt-0.5">GamerCred</div>
-          </div>
         </div>
 
         <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">

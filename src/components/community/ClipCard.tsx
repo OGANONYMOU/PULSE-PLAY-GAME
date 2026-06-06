@@ -85,7 +85,7 @@ function VideoPlayer({ objectKey, thumbnailKey, title }: { objectKey: string; th
 }
 
 // ── Clip comments ──────────────────────────────────────────────────────────
-function ClipComments({ clipId, count }: { clipId: string; count: number }) {
+function ClipComments({ clipId, count, onCommentPosted }: { clipId: string; count: number; onCommentPosted: () => void }) {
   const { user, isAuthenticated } = useAuth();
   const [comments, setComments] = useState<Array<{ id: string; content: string; created_at: string; profiles: { username: string; avatar_url: string | null } | null }>>([]);
   const [text, setText] = useState('');
@@ -107,9 +107,16 @@ function ClipComments({ clipId, count }: { clipId: string; count: number }) {
   const submit = async () => {
     if (!text.trim() || !user) return;
     setBusy(true);
-    await supabase.from('clip_comments').insert({ clip_id: clipId, author_id: user.id, content: text.trim() } as never);
+    const { error } = await supabase.from('clip_comments').insert({ clip_id: clipId, author_id: user.id, content: text.trim() } as never);
+    if (error) {
+      toast.error('Failed to post comment.');
+      setBusy(false);
+      return;
+    }
     await supabase.from('clips').update({ comments_count: count + 1 } as never).eq('id', clipId);
-    setText(''); load();
+    setText('');
+    await load();
+    onCommentPosted();
     setBusy(false);
   };
 
@@ -267,7 +274,7 @@ export function ClipCard({ clip, index = 0, onRefresh }: ClipCardProps) {
             {showComments && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}>
-                <ClipComments clipId={clip.id} count={clip.comments_count} />
+                <ClipComments clipId={clip.id} count={clip.comments_count} onCommentPosted={() => setShowComments(false)} />
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Shield, ChevronRight, ArrowLeft, Building2,
   Loader2, Lock, Globe, Info, Sparkles, CheckCircle,
-  Gamepad2, Swords, Medal,
+  Gamepad2, Swords, Medal, Plus,
   Calendar, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHostableOrganizers } from '@/hooks/useOrganizers';
+import { useHostableOrganizers, useOrganizerManagement } from '@/hooks/useOrganizers';
 import { toast } from 'sonner';
 import { writeAudit } from '@/lib/audit';
 import { resolveGameImage } from '@/lib/gameImages';
@@ -145,81 +145,121 @@ function FieldLabel({ label, required, hint }: { label: string; required?: boole
 const inputCls = 'bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-cyan-500/50 h-10 text-sm rounded-xl';
 
 // ── Step 1: Organizer Selection ──────────────────────────────────────────────
-function StepOrganizer({ 
-  form, 
-  setForm, 
-  organizers, 
-  loading 
-}: { 
-  form: TournamentForm; 
+function StepOrganizer({
+  form, setForm, organizers, loading, onOrganizerCreated, createOrganizer,
+}: {
+  form: TournamentForm;
   setForm: React.Dispatch<React.SetStateAction<TournamentForm>>;
   organizers: Array<{ id: string; name: string; avatar_url: string | null; tournament_count: number }>;
   loading: boolean;
+  onOrganizerCreated: () => void;
+  createOrganizer: ReturnType<typeof useOrganizerManagement>['createOrganizer'];
 }) {
-  const { profile } = useAuth();
-  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newSlug, setNewSlug] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-20 bg-white/5 rounded-xl animate-pulse" />
-        <div className="h-20 bg-white/5 rounded-xl animate-pulse" />
-      </div>
-    );
-  }
+  const handleCreateInline = async () => {
+    if (!newName.trim() || !newSlug.trim()) return;
+    setCreating(true);
+    const res = await createOrganizer({ name: newName.trim(), slug: newSlug.trim(), visibility: 'public' });
+    if (res.success && res.organizer) {
+      toast.success(`Organizer "${newName}" created!`);
+      setShowCreate(false); setNewName(''); setNewSlug('');
+      onOrganizerCreated();
+      setForm(prev => ({ ...prev, organizer_id: res.organizer!.id }));
+    } else {
+      toast.error(res.error || 'Failed to create organizer');
+    }
+    setCreating(false);
+  };
 
-  if (organizers.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <Building2 className="w-12 h-12 mx-auto text-white/20 mb-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">No organizers available</h3>
-        <p className="text-white/50 text-sm max-w-sm mx-auto mb-4">
-          {isAdmin 
-            ? "Create an organizer first to host tournaments under a branded identity."
-            : "You need to be added as a member to an organizer with hosting permissions."
-          }
-        </p>
-        {isAdmin && (
-          <Button asChild className="bg-gradient-to-r from-cyan-500 to-purple-600">
-            <Link to="/admin/organizers">Create Organizer</Link>
-          </Button>
-        )}
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="space-y-4">
+      {[1, 2].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      <h2 className="font-orbitron font-bold text-lg text-white">Select Organizer</h2>
-      <p className="text-sm text-white/40">Choose which organizer will host this tournament</p>
-      
-      <div className="grid grid-cols-1 gap-3">
-        {organizers.map((org) => (
-          <button
-            key={org.id}
-            onClick={() => setForm(prev => ({ ...prev, organizer_id: org.id }))}
-            className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
-              form.organizer_id === org.id
-                ? 'border-cyan-500/50 bg-cyan-500/10'
-                : 'border-white/10 bg-white/3 hover:border-white/20 hover:bg-white/5'
-            }`}
-          >
-            <Avatar className="w-12 h-12 rounded-xl">
-              <AvatarImage src={org.avatar_url || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 rounded-xl">
-                <Building2 className="w-5 h-5 text-white" />
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="font-semibold text-white">{org.name}</p>
-              <p className="text-xs text-white/40">{org.tournament_count} tournaments hosted</p>
-            </div>
-            {form.organizer_id === org.id && (
-              <CheckCircle className="w-5 h-5 text-cyan-400" />
-            )}
-          </button>
-        ))}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-orbitron font-bold text-lg text-white">Select Organizer</h2>
+          <p className="text-sm text-white/40 mt-0.5">Choose which organizer will host this tournament</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setShowCreate(v => !v)}
+          className="border-white/15 text-white/60 hover:text-white gap-1.5 shrink-0">
+          <Plus className="w-3.5 h-3.5" />New
+        </Button>
       </div>
+
+      {/* Inline organizer creation */}
+      {showCreate && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl bg-cyan-500/8 border border-cyan-500/20 space-y-3">
+          <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Create New Organizer</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] text-white/40 uppercase tracking-wider block mb-1">Name *</label>
+              <Input value={newName} onChange={e => {
+                const n = e.target.value;
+                setNewName(n);
+                setNewSlug(n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+              }} placeholder="My Esports Club" className="bg-white/5 border-white/10 text-sm h-9" />
+            </div>
+            <div>
+              <label className="text-[10px] text-white/40 uppercase tracking-wider block mb-1">Slug *</label>
+              <Input value={newSlug} onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="my-esports-club" className="bg-white/5 border-white/10 text-sm font-mono h-9" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowCreate(false)} className="border-white/15">Cancel</Button>
+            <Button size="sm" onClick={handleCreateInline} disabled={creating || !newName.trim() || !newSlug.trim()}
+              className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white flex-1">
+              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Building2 className="w-3.5 h-3.5 mr-1" />}
+              Create & Select
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
+      {organizers.length === 0 && !showCreate ? (
+        <div className="text-center py-8 rounded-xl bg-white/3 border border-white/8">
+          <Building2 className="w-12 h-12 mx-auto text-white/15 mb-3" />
+          <p className="text-sm font-bold text-white mb-1">No organizers yet</p>
+          <p className="text-xs text-white/40 mb-4 max-w-xs mx-auto">
+            Create an organizer to host tournaments under a branded identity.
+          </p>
+          <Button size="sm" onClick={() => setShowCreate(true)} className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
+            <Plus className="w-3.5 h-3.5 mr-1.5" />Create My Organizer
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3">
+          {organizers.map(org => (
+            <button key={org.id} onClick={() => setForm(prev => ({ ...prev, organizer_id: org.id }))}
+              className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
+                form.organizer_id === org.id
+                  ? 'border-cyan-500/50 bg-cyan-500/10'
+                  : 'border-white/10 bg-white/3 hover:border-white/20 hover:bg-white/5'
+              }`}>
+              <Avatar className="w-12 h-12 rounded-xl flex-shrink-0">
+                <AvatarImage src={org.avatar_url ?? undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 rounded-xl">
+                  <Building2 className="w-5 h-5 text-white" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white truncate">{org.name}</p>
+                <p className="text-xs text-white/40">{org.tournament_count} tournaments hosted</p>
+              </div>
+              {form.organizer_id === org.id && <CheckCircle className="w-5 h-5 text-cyan-400 shrink-0" />}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -410,14 +450,16 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
 export function TournamentCreateNew() {
   const { user, profile, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { organizers, loading: organizersLoading } = useHostableOrganizers();
+  const [searchParams] = useSearchParams();
+  const { organizers, loading: organizersLoading, refresh: refreshOrganizers } = useHostableOrganizers() as ReturnType<typeof useHostableOrganizers> & { refresh?: () => void };
+  const { createOrganizer } = useOrganizerManagement();
   
   const [step, setStep] = useState(0);
   const [games, setGames] = useState<Game[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState<TournamentForm>({
-    organizer_id: '',
+    organizer_id: searchParams.get('organizer') ?? '',
     game_id: '',
     tournament_family: 'esports',
     tournament_type: 'single_elimination',
@@ -636,6 +678,8 @@ export function TournamentCreateNew() {
                 setForm={setForm}
                 organizers={organizers}
                 loading={organizersLoading}
+                createOrganizer={createOrganizer}
+                onOrganizerCreated={() => refreshOrganizers?.()}
               />
             )}
             

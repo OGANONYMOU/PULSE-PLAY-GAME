@@ -4,10 +4,12 @@ import { HomeSEO } from '@/components/SEO';
 import { 
   Trophy, Users, ArrowRight, Sparkles, Shield, 
   Zap, Video, Crown, Play, ChevronRight,
-  Gem, Lock, CheckCircle2, Award
+  Gem, Lock, CheckCircle2, Award, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PULSEPLAY HOMEPAGE - Premium Investor-Grade Experience
@@ -100,6 +102,26 @@ export default function Home() {
 
   const heroY = useTransform(scrollYProgress, [0, 0.5], [0, -100]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.3]);
+  
+  // Auth state
+  const { isAuthenticated, signInWithOAuth } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await signInWithOAuth('google');
+      if (error) {
+        toast.error(error.message || 'Failed to sign in with Google');
+      } else {
+        toast.success('Redirecting to Google...');
+      }
+    } catch (_err) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background overflow-x-hidden">
@@ -170,34 +192,70 @@ export default function Home() {
               <span className="text-foreground">Tournaments. Community. Identity.</span>
             </motion.p>
 
-            {/* CTAs - consistent sizing */}
+            {/* CTAs - conditional based on auth state */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col sm:flex-row gap-3 justify-center"
             >
-              <Button
-                asChild
-                size="lg"
-                className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 text-white font-semibold text-base px-8 h-12 rounded-lg shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300"
-              >
-                <Link to="/register">
-                  Start Your Journey
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="border-white/15 hover:bg-white/[0.03] text-base px-8 h-12 rounded-lg transition-all duration-300"
-              >
-                <Link to="/tournaments">
-                  <Play className="mr-2 w-4 h-4" />
-                  Explore Tournaments
-                </Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 text-white font-semibold text-base px-8 h-12 rounded-lg shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300"
+                  >
+                    <Link to="/tournaments">
+                      Browse Tournaments
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="border-white/15 hover:bg-white/[0.03] text-base px-8 h-12 rounded-lg transition-all duration-300"
+                  >
+                    <Link to="/profile">
+                      <Play className="mr-2 w-4 h-4" />
+                      View Profile
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="lg"
+                    onClick={handleGoogleSignIn}
+                    disabled={googleLoading}
+                    className="bg-white/10 hover:bg-white/20 text-white font-semibold text-base px-8 h-12 rounded-lg border border-white/20 transition-all duration-300"
+                  >
+                    {googleLoading ? (
+                      <>
+                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <span className="inline-flex h-5 w-5 rounded-full bg-white text-black font-bold items-center justify-center text-[10px] mr-2">G</span>
+                        Sign in with Google
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="border-white/15 hover:bg-white/[0.03] text-base px-8 h-12 rounded-lg transition-all duration-300"
+                  >
+                    <Link to="/register">
+                      Create Account
+                      <ChevronRight className="ml-2 w-4 h-4" />
+                    </Link>
+                  </Button>
+                </>
+              )}
             </motion.div>
 
             {/* Trust indicators - tighter */}
@@ -450,8 +508,111 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════════════
-          FINAL CTA SECTION - Premium closing
+          AUTHENTICATION SECTION - Only shown when not logged in
           ═══════════════════════════════════════════════════════════════════════════════ */}
+      {!isAuthenticated && (
+        <section className="py-20 sm:py-28 relative overflow-hidden border-t border-white/[0.08]">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-cyan-500/8 via-transparent to-transparent rounded-full" />
+          </div>
+
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10">
+            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
+              {/* Left: Sign in section */}
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="relative p-8 sm:p-10 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
+                  
+                  <div className="relative z-10">
+                    <h3 className="font-orbitron text-2xl font-bold mb-3">
+                      Already a member?
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Sign in to your account and jump back into the action. Continue your tournaments, view your stats, and connect with the community.
+                    </p>
+                    
+                    <Button
+                      asChild
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white font-semibold h-12 rounded-lg"
+                    >
+                      <Link to="/signin">
+                        Sign In
+                        <ChevronRight className="ml-2 w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right: Create account section */}
+              <motion.div
+                initial={{ opacity: 0, x: 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="relative p-8 sm:p-10 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20 overflow-hidden">
+                  <div className="absolute top-0 left-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
+                  
+                  <div className="relative z-10">
+                    <h3 className="font-orbitron text-2xl font-bold mb-3">
+                      New to PulsePlay?
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Join Nigeria's premier gaming platform. Create your account today and start competing.
+                    </p>
+                    <p className="text-muted-foreground text-sm mb-6 font-medium text-purple-300">
+                      ✓ Free to join &nbsp; ✓ Instant setup &nbsp; ✓ Compete immediately
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <Button
+                        size="lg"
+                        onClick={handleGoogleSignIn}
+                        disabled={googleLoading}
+                        className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold h-12 rounded-lg transition-all"
+                      >
+                        {googleLoading ? (
+                          <>
+                            <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                            Signing up...
+                          </>
+                        ) : (
+                          <>
+                            <span className="inline-flex h-4 w-4 rounded-full bg-white text-black font-bold items-center justify-center text-[8px] mr-2">G</span>
+                            Sign up with Google
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        asChild
+                        size="lg"
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white font-semibold h-12 rounded-lg"
+                      >
+                        <Link to="/register">
+                          Create Account with Email
+                          <ChevronRight className="ml-2 w-4 h-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          FINAL CTA SECTION - Premium closing (hidden for authenticated users)
+          ═══════════════════════════════════════════════════════════════════════════════ */}
+      {!isAuthenticated && (
       <section className="py-20 sm:py-28 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-purple-500/8 via-transparent to-transparent rounded-full" />
@@ -502,6 +663,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
     </div>
   );
 }

@@ -95,6 +95,7 @@ export function useDebouncedValue<T>(value: T, delay: number = 500): T {
  * Usage: const stableConfig = useStableMemo(() => ({ a: 1, b: 2 }), [])
  */
 export function useStableMemo<T>(factory: () => T, deps: React.DependencyList): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(factory, deps);
 }
 

@@ -1,16 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell } from 'lucide-react';
+import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell, CheckCheck, Trophy, MessageSquare, Star, Zap, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { prefetchRoute } from '@/App';
+import { useNotifications } from '@/hooks/useNotifications';
+import { formatDistanceToNow } from 'date-fns';
+import type { Notification } from '@/hooks/useNotifications';
+
+function notifIcon(type: string) {
+  if (type.includes('tournament')) return <Trophy className="w-3.5 h-3.5 text-yellow-400" />;
+  if (type.includes('comment') || type.includes('reply')) return <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />;
+  if (type.includes('level') || type.includes('xp')) return <Zap className="w-3.5 h-3.5 text-purple-400" />;
+  if (type.includes('like') || type.includes('react')) return <Star className="w-3.5 h-3.5 text-pink-400" />;
+  return <Info className="w-3.5 h-3.5 text-white/50" />;
+}
+
+function NotificationPanel({
+  notifications,
+  unreadCount,
+  onMarkRead,
+  onNavigate,
+}: {
+  notifications: Notification[];
+  unreadCount: number;
+  onMarkRead: (id?: string) => void;
+  onNavigate: () => void;
+}) {
+  return (
+    <div className="w-80 max-h-[420px] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Bell className="w-4 h-4 text-cyan-400" />
+          <span className="font-bold text-sm text-white">Notifications</span>
+          {unreadCount > 0 && (
+            <span className="bg-cyan-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <button
+            onClick={() => onMarkRead()}
+            className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+          >
+            <CheckCheck className="w-3 h-3" />
+            Mark all read
+          </button>
+        )}
+      </div>
+
+      {/* List */}
+      <div className="overflow-y-auto flex-1">
+        {notifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+            <Bell className="w-8 h-8 text-white/10 mb-3" />
+            <p className="text-sm text-white/40">No notifications yet</p>
+            <p className="text-xs text-white/20 mt-1">You're all caught up!</p>
+          </div>
+        ) : (
+          notifications.map(n => (
+            <button
+              key={n.id}
+              onClick={() => { onMarkRead(n.id); onNavigate(); }}
+              className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 ${!n.is_read ? 'bg-cyan-500/5' : ''}`}
+            >
+              <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${!n.is_read ? 'bg-cyan-500/20' : 'bg-white/5'}`}>
+                {notifIcon(n.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold leading-tight ${!n.is_read ? 'text-white' : 'text-white/60'}`}>
+                  {n.title}
+                </p>
+                <p className="text-[11px] text-white/40 mt-0.5 leading-snug line-clamp-2">{n.body}</p>
+                <p className="text-[10px] text-white/25 mt-1">
+                  {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                </p>
+              </div>
+              {!n.is_read && (
+                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 flex-shrink-0" />
+              )}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 const navLinks = [
   { href: '/',            label: 'Home' },
@@ -21,11 +106,14 @@ const navLinks = [
 ];
 
 export function Navbar(): React.ReactElement {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled]     = useState(false);
+  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [scrolled, setScrolled]         = useState(false);
+  const [notifOpen, setNotifOpen]       = useState(false);
   const { profile, isAuthenticated, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const location = useLocation();
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const { notifications, unreadCount, markRead } = useNotifications();
 
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
@@ -110,14 +198,34 @@ export function Navbar(): React.ReactElement {
               {isAuthenticated ? (
                 <>
                   {/* Bell — desktop only */}
-                  <Button
-                    variant="ghost" size="icon"
-                    className="hidden sm:flex rounded-full w-9 h-9 border border-white/10 hover:bg-white/10 relative"
-                    aria-label="Notifications"
-                  >
-                    <Bell className="w-4 h-4 text-white/60" />
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                  </Button>
+                  <Popover open={notifOpen} onOpenChange={(o) => { setNotifOpen(o); }}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="hidden sm:flex rounded-full w-9 h-9 border border-white/10 hover:bg-white/10 relative"
+                        aria-label="Notifications"
+                      >
+                        <Bell className="w-4 h-4 text-white/60" />
+                        {unreadCount > 0 && (
+                          <span className="absolute top-1 right-1 min-w-[14px] h-3.5 px-0.5 flex items-center justify-center rounded-full bg-cyan-400 text-black text-[9px] font-bold leading-none">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      sideOffset={8}
+                      className="p-0 w-80 glass border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+                    >
+                      <NotificationPanel
+                        notifications={notifications}
+                        unreadCount={unreadCount}
+                        onMarkRead={markRead}
+                        onNavigate={() => { setNotifOpen(false); navigate('/profile'); }}
+                      />
+                    </PopoverContent>
+                  </Popover>
 
                   {/* Avatar dropdown */}
                   <DropdownMenu>

@@ -341,7 +341,7 @@ export async function queryAuditLogs(
     }
 
     return { entries: data || [], total: count || 0 };
-  } catch (err) {
+  } catch (_err) {
     return { entries: [], total: 0, error: 'Query failed' };
   }
 }
@@ -450,7 +450,7 @@ async function restorePreviousState(entry: AuditLogEntry): Promise<RestoreResult
     }
 
     return { success: true };
-  } catch (err) {
+  } catch (_err) {
     return { success: false, error: 'Failed to restore state' };
   }
 }
