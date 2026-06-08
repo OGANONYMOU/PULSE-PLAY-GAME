@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import {
   Building2, Plus, Search, Users, Trophy, Crown,
   Globe, Lock, EyeOff, CheckCircle, AlertCircle,
-  Edit2, ExternalLink, Zap, Shield, UserPlus,
-  X, Loader2, ChevronDown, Trash2,
+  Edit2, Zap, Shield, UserPlus,
+  X, Loader2, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
