@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { format, formatDistanceToNow, isPast, differenceInSeconds, addDays } from 'date-fns';
+import { format, formatDistanceToNow, isPast, differenceInSeconds } from 'date-fns';
 import { TournamentsSEO } from '@/components/SEO';
 import { resolveGameImage } from '@/lib/gameImages';
 import { awardXpAndNotify } from '@/hooks/useLevelUp';
@@ -25,15 +25,8 @@ import { awardXpAndNotify } from '@/hooks/useLevelUp';
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 
-function isStale(t: Tournament): boolean {
-  const start = new Date(t.date);
-  if (t.status === 'upcoming') return isPast(start);
-  if (t.status === 'ongoing') return isPast(addDays(start, 30));
-  return false;
-}
-
 function isVisibleOnPublic(t: Tournament): boolean {
-  return t.status !== 'cancelled' && !isStale(t);
+  return t.status !== 'cancelled';
 }
 
 type Tournament = {
