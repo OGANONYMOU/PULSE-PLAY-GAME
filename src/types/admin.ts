@@ -27,7 +27,11 @@ export type AdminPermission =
   // Analytics
   | 'analytics.view' | 'analytics.export'
   // System
-  | 'system.view' | 'system.configure' | 'system.audit';
+  | 'system.view' | 'system.configure' | 'system.audit' | 'system.admin_access'
+  // Content Management
+  | 'content.manage' | 'content.delete' | 'content.view'
+  // Extended User Actions
+  | 'users.mute';
 
 export interface RoleDefinition {
   role: AdminRole;

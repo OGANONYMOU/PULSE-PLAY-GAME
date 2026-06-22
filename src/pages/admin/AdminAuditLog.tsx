@@ -281,7 +281,7 @@ export function AdminAuditLog(): React.ReactElement {
 
   const pageSize = 25;
 
-  const canViewAuditLogs = hasPermission('system.view' as never);
+  const canViewAuditLogs = hasPermission('system.view');
 
   // Fetch audit logs from Supabase
   const fetchLogs = useCallback(async () => {

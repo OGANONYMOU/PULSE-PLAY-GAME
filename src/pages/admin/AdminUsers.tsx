@@ -946,7 +946,7 @@ export function AdminUsers(): React.ReactElement {
                           </div>
                         )}
 
-                        {hasPermission('users.mute' as never) && !isSelf && (
+                        {hasPermission('users.mute') && !isSelf && (
                           <Button
                             size="sm"
                             className={cn(

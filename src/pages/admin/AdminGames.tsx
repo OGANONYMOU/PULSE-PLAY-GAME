@@ -533,7 +533,7 @@ export function AdminGames(): React.ReactElement {
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
 
-  const canManageGames = hasPermission('games.manage' as never) || hasPermission('system.admin_access' as never);
+  const canManageGames = hasPermission('games.manage') || hasPermission('system.admin_access');
 
   const calculateStats = (data: Game[]) => {
     const activeGames = data.filter(g => g.status === 'active').length;

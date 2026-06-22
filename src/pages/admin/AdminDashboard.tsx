@@ -231,7 +231,7 @@ function QuickActionsPanel() {
     { id: 'tournament', label: 'New Tournament', icon: Trophy, color: 'cyan', permission: 'tournaments.create' },
     { id: 'moderate', label: 'Review Reports', icon: ShieldAlert, color: 'yellow', permission: 'moderation.view' },
     { id: 'game', label: 'Add Game', icon: Gamepad2, color: 'purple', permission: 'games.create' },
-  ].filter(a => !a.permission || hasPermission(a.permission as never));
+  ].filter(a => !a.permission || hasPermission(a.permission as import('@/types/admin').AdminPermission));
 
   return (
     <div className="grid grid-cols-2 gap-3">

@@ -8,6 +8,7 @@ import {
   ShieldAlert, MessageSquare, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { AdminProvider } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -226,6 +227,7 @@ export function AdminLayout(): React.ReactElement {
   );
 
   return (
+    <AdminProvider>
     <div className="min-h-screen flex bg-background">
       {/* Mobile overlay */}
       <AnimatePresence>
@@ -280,5 +282,6 @@ export function AdminLayout(): React.ReactElement {
         </div>
       </div>
     </div>
+    </AdminProvider>
   );
 }

@@ -429,8 +429,8 @@ function Sidebar({
   const { hasPermission, activities, dismissActivity } = useAdmin();
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
 
-  const filteredNav = navigation.filter(item => 
-    !item.permission || hasPermission(item.permission as never)
+  const filteredNav = navigation.filter(item =>
+    !item.permission || hasPermission(item.permission as import('@/types/admin').AdminPermission)
   );
 
   return (

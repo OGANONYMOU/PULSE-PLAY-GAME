@@ -716,7 +716,7 @@ function getRolePermissions(role: AdminRole): AdminPermission[] {
       return ['*' as AdminPermission]; // All permissions
     case 'ADMIN':
       return [
-        'users.view', 'users.manage', 'users.ban', 'users.suspend',
+        'users.view', 'users.manage', 'users.ban', 'users.suspend', 'users.mute',
         'games.view', 'games.manage', 'games.create', 'games.delete',
         'tournaments.view', 'tournaments.create', 'tournaments.edit', 'tournaments.delete',
         'tournaments.approve', 'tournaments.override_results',
@@ -724,7 +724,8 @@ function getRolePermissions(role: AdminRole): AdminPermission[] {
         'moderation.view', 'moderation.resolve', 'moderation.escalate', 'moderation.ban',
         'permissions.view', 'permissions.grant', 'permissions.revoke',
         'analytics.view', 'analytics.export',
-        'system.view', 'system.configure', 'system.audit',
+        'system.view', 'system.configure', 'system.audit', 'system.admin_access',
+        'content.view', 'content.manage', 'content.delete',
       ];
     case 'MODERATOR':
       return [
@@ -733,6 +734,7 @@ function getRolePermissions(role: AdminRole): AdminPermission[] {
         'community.view', 'community.moderate',
         'moderation.view', 'moderation.resolve', 'moderation.ban',
         'analytics.view',
+        'content.view', 'content.manage', 'content.delete',
       ];
     case 'TOURNAMENT_HOST':
       return [

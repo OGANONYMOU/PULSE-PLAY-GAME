@@ -419,8 +419,8 @@ function DeleteConfirm({ content, onClose, onConfirm }: {
 
 export function AdminPosts(): React.ReactElement {
   const { hasPermission, profile, role } = useAdmin();
-  const canManageContent = hasPermission('content.manage' as never) || hasPermission('system.admin_access' as never);
-  const canDelete = hasPermission('content.delete' as never) || hasPermission('system.admin_access' as never);
+  const canManageContent = hasPermission('content.manage') || hasPermission('system.admin_access');
+  const canDelete = hasPermission('content.delete') || hasPermission('system.admin_access');
 
   const [content, setContent] = useState<ContentItem[]>([]);
   const [stats, setStats] = useState<ContentStats>({
