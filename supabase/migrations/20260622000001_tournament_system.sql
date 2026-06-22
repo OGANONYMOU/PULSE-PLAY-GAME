@@ -225,7 +225,7 @@ DO $$ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='tournament_fixtures' AND policyname='tf_admin') THEN
     CREATE POLICY "tf_admin" ON public.tournament_fixtures FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('ADMIN','MODERATOR','SUPER_ADMIN'))
+      public.is_admin_or_moderator(auth.uid())
     );
   END IF;
 END $$;
@@ -356,7 +356,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='disputes' AND policyname='disp_parties') THEN
     CREATE POLICY "disp_parties" ON public.disputes FOR SELECT USING (
       auth.uid() = initiator_id OR auth.uid() = respondent_id
-      OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('ADMIN','MODERATOR','SUPER_ADMIN'))
+      OR public.is_admin_or_moderator(auth.uid())
     );
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='disputes' AND policyname='disp_insert') THEN
@@ -365,7 +365,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='disputes' AND policyname='disp_update') THEN
     CREATE POLICY "disp_update" ON public.disputes FOR UPDATE USING (
       auth.uid() = respondent_id
-      OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('ADMIN','MODERATOR','SUPER_ADMIN'))
+      OR public.is_admin_or_moderator(auth.uid())
     );
   END IF;
 END $$;
@@ -399,7 +399,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='dispute_evidence' AND policyname='de_select') THEN
     CREATE POLICY "de_select" ON public.dispute_evidence FOR SELECT USING (
       auth.uid() = uploaded_by
-      OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('ADMIN','MODERATOR','SUPER_ADMIN'))
+      OR public.is_admin_or_moderator(auth.uid())
     );
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='dispute_evidence' AND policyname='de_insert') THEN
@@ -446,7 +446,7 @@ ALTER TABLE public.fraud_flags ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='fraud_flags' AND policyname='ff_admin') THEN
     CREATE POLICY "ff_admin" ON public.fraud_flags FOR ALL USING (
-      EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('ADMIN','MODERATOR','SUPER_ADMIN'))
+      public.is_admin_or_moderator(auth.uid())
     );
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='fraud_flags' AND policyname='ff_select_own') THEN
@@ -764,7 +764,11 @@ BEGIN
     END LOOP;
   END IF;
 
-  SELECT username INTO v_username FROM public.profiles WHERE id = v_user_id;
+  BEGIN
+    SELECT username INTO v_username FROM public.profiles WHERE id = v_user_id;
+  EXCEPTION WHEN undefined_table THEN
+    v_username := NULL;
+  END;
 
   INSERT INTO public.tournament_posts (tournament_id, user_id, type, content)
   VALUES (
@@ -789,17 +793,18 @@ CREATE OR REPLACE FUNCTION public.confirm_match_result(
   p_reason    text DEFAULT NULL
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_user_id       uuid := auth.uid();
-  v_reporter_id   uuid;
-  v_p1_score      integer;
-  v_p2_score      integer;
-  v_player1_id    uuid;
-  v_player2_id    uuid;
-  v_next_match_id uuid;
-  v_next_slot     integer;
-  v_tournament_id uuid;
-  v_winner_id     uuid;
-  v_loser_id      uuid;
+  v_user_id         uuid := auth.uid();
+  v_reporter_id     uuid;
+  v_p1_score        integer;
+  v_p2_score        integer;
+  v_player1_id      uuid;
+  v_player2_id      uuid;
+  v_next_match_id   uuid;
+  v_next_slot       integer;
+  v_tournament_id   uuid;
+  v_winner_id       uuid;
+  v_loser_id        uuid;
+  v_winner_username text;
 BEGIN
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
@@ -887,13 +892,15 @@ BEGIN
 
   -- Post result to live feed
   IF v_tournament_id IS NOT NULL THEN
+    BEGIN
+      SELECT username INTO v_winner_username FROM public.profiles WHERE id = v_winner_id;
+    EXCEPTION WHEN undefined_table THEN
+      v_winner_username := NULL;
+    END;
     INSERT INTO public.tournament_posts (tournament_id, user_id, type, content, match_id)
     VALUES (
       v_tournament_id, NULL, 'result',
-      COALESCE(
-        (SELECT username FROM public.profiles WHERE id = v_winner_id),
-        'A player'
-      ) || ' wins the match!',
+      COALESCE(v_winner_username, 'A player') || ' wins the match!',
       p_match_id
     );
   END IF;
@@ -941,7 +948,7 @@ BEGIN
   SELECT (
     v_t_created_by = v_user_id
     OR EXISTS (SELECT 1 FROM public.tournament_staff WHERE tournament_id = p_tournament_id AND user_id = v_user_id)
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = v_user_id AND role IN ('ADMIN','MODERATOR','SUPER_ADMIN'))
+    OR public.is_admin_or_moderator(v_user_id)
   ) INTO v_is_organizer;
 
   IF NOT v_is_organizer THEN
