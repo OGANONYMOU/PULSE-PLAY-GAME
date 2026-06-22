@@ -78,8 +78,7 @@ export function usePosts(tagFilter?: string) {
 
   // ── Create post ───────────────────────────────────────────────────────────
   const createPost = async (authorId: string, title: string, content: string, tag: PostTag) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('posts') as any).insert({ author_id: authorId, title, content, tag });
+    const { error } = await supabase.from('posts').insert({ author_id: authorId, title, content, tag } as never);
     return { error };
   };
 
@@ -91,9 +90,7 @@ export function usePosts(tagFilter?: string) {
     const alreadyLiked = myLikes.has(postId);
 
     if (alreadyLiked) {
-      // Unlike
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('post_likes') as any)
+      const { error } = await supabase.from('post_likes')
         .delete()
         .eq('post_id', postId)
         .eq('user_id', user.id);
@@ -103,10 +100,8 @@ export function usePosts(tagFilter?: string) {
       }
       return { error };
     } else {
-      // Like — insert triggers DB counter sync
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('post_likes') as any)
-        .insert({ post_id: postId, user_id: user.id });
+      const { error } = await supabase.from('post_likes')
+        .insert({ post_id: postId, user_id: user.id } as never);
       if (!error) {
         setMyLikes(prev => new Set([...prev, postId]));
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: p.likes + 1, liked_by_me: true } : p));
@@ -128,9 +123,8 @@ export function usePosts(tagFilter?: string) {
 
   // ── Add a comment ─────────────────────────────────────────────────────────
   const addComment = async (postId: string, authorId: string, content: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('post_comments') as any)
-      .insert({ post_id: postId, author_id: authorId, content });
+    const { error } = await supabase.from('post_comments')
+      .insert({ post_id: postId, author_id: authorId, content } as never);
     if (!error) {
       // Optimistically bump comment counter
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: p.comments + 1 } : p));
@@ -140,8 +134,7 @@ export function usePosts(tagFilter?: string) {
 
   // ── Delete a comment ──────────────────────────────────────────────────────
   const deleteComment = async (commentId: string, postId: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('post_comments') as any)
+    const { error } = await supabase.from('post_comments')
       .delete()
       .eq('id', commentId);
     if (!error) {
