@@ -227,8 +227,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).gt('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('tournaments').select('*', { count: 'exact', head: true }),
-        supabase.from('tournaments').select('*', { count: 'exact', head: true }).eq('status', 'live'),
-        supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('tournaments').select('*', { count: 'exact', head: true }).eq('status', 'ongoing'),
+        supabase.from('content_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
       // Get recent content counts
@@ -460,46 +460,46 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       // Search reports
       if (types.includes('report')) {
         const { data: reports } = await supabase
-          .from('reports')
-          .select('id, reason, category, status, created_at')
-          .or(`reason.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`)
+          .from('content_reports')
+          .select('id, reason, content_type, status, created_at')
+          .or(`reason.ilike.%${searchTerm}%,content_type.ilike.%${searchTerm}%`)
           .limit(limit);
 
         if (reports) {
           results.push(...reports.map((r: Record<string, unknown>) => ({
             id: r.id as string,
             type: 'report' as const,
-            title: `Report: ${r.category as string}`,
+            title: `Report: ${r.content_type as string}`,
             subtitle: r.reason as string,
             image_url: null,
             status: r.status as string,
             metadata: {
-              category: r.category as string,
+              category: r.content_type as string,
             },
             updated_at: r.created_at as string,
           } as SearchResult)));
         }
       }
 
-      // Search teams
+      // Search clubs (teams are represented as clubs in this platform)
       if (types.includes('team')) {
-        const { data: teams } = await supabase
-          .from('teams')
-          .select('id, name, tag, members_count, wins, losses, created_at')
+        const { data: clubs } = await supabase
+          .from('clubs')
+          .select('id, name, tag, member_count, wins, losses, created_at')
           .ilike('name', `%${searchTerm}%`)
           .limit(limit);
 
-        if (teams) {
-          results.push(...teams.map((t: Record<string, unknown>) => ({
+        if (clubs) {
+          results.push(...clubs.map((t: Record<string, unknown>) => ({
             id: t.id as string,
             type: 'team' as const,
             title: `[${t.tag as string}] ${t.name as string}`,
-            subtitle: `${t.members_count || 0} members • ${t.wins || 0}W-${t.losses || 0}L`,
+            subtitle: `${t.member_count || 0} members • ${t.wins || 0}W-${t.losses || 0}L`,
             image_url: null,
             status: 'active',
             metadata: {
               tag: t.tag as string,
-              members: t.members_count as number || 0,
+              members: t.member_count as number || 0,
               record: `${t.wins || 0}-${t.losses || 0}`,
             },
             updated_at: t.created_at as string,
