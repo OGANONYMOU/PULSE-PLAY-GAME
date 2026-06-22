@@ -16,6 +16,7 @@ export default defineConfig({
   build: {
     target: 'es2020',
     minify: 'esbuild',
+    cssMinify: 'esbuild',
     sourcemap: false,
     // Keep CSS in one file — prevents async CSS loading race conditions on Vercel CDN
     cssCodeSplit: false,

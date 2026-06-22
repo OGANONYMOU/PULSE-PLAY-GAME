@@ -420,7 +420,7 @@ export function TournamentOrganizerPanel({
     try {
       await writeAuditLog({
         actor_id: user.id,
-        action: 'tournament.deleted',
+        action: 'tournament.delete',
         entity_type: 'tournament',
         entity_id: tournament.id,
         data: { name: tournament.name, status: tournament.status },
@@ -460,7 +460,7 @@ export function TournamentOrganizerPanel({
       if (error) { toast.error(error.message); return; }
       await writeAuditLog({
         actor_id: user.id,
-        action: 'tournament.edited',
+        action: 'tournament.update',
         entity_type: 'tournament',
         entity_id: tournament.id,
         data: { fields_changed: Object.keys(payload) },

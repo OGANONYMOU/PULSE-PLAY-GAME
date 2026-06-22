@@ -8,6 +8,7 @@ import {
   UserCheck, UserPlus, Lock, UserX, Settings,
   Target, Crosshair,
 } from 'lucide-react';
+import { FootballBracket } from '@/components/tournament/FootballBracket';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -113,135 +114,6 @@ function PlayerAvatar({ username, url, size = 'sm' }: { username: string; url?: 
         {username[0]?.toUpperCase()}
       </AvatarFallback>
     </Avatar>
-  );
-}
-
-// ── Match card in bracket ──────────────────────────────────────────────────
-function MatchCard({ match, myId, onOpenMatch }: {
-  match: Match;
-  myId: string | null;
-  onOpenMatch: (m: Match) => void;
-}) {
-  const isMyMatch = myId && (match.player1_id === myId || match.player2_id === myId);
-  const statusColor = {
-    scheduled: 'border-white/12',
-    in_progress: 'border-cyan-500/40 bg-cyan-500/5',
-    awaiting_proof: 'border-yellow-500/40 bg-yellow-500/5',
-    disputed: 'border-red-500/40 bg-red-500/5',
-    verified: 'border-green-500/20',
-    settled: 'border-white/8',
-  }[match.status] ?? 'border-white/12';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      onClick={() => !match.is_bye && match.status !== 'settled' ? onOpenMatch(match) : undefined}
-      className={`relative p-3 rounded-xl border ${statusColor} ${!match.is_bye && match.status !== 'settled' && isMyMatch ? 'cursor-pointer hover:border-cyan-500/60 hover:bg-cyan-500/5' : ''} transition-all min-w-[160px] max-w-[200px]`}
-    >
-      {match.match_number && (
-        <span className="absolute top-1 left-2 text-[9px] font-mono text-white/20">#{match.match_number}</span>
-      )}
-      {/* Player 1 */}
-      <div className={`flex items-center gap-2 py-1.5 rounded-lg px-1.5 mb-1 ${match.winner_id === match.player1_id ? 'bg-green-500/15 border border-green-500/25' : ''}`}>
-        {match.player1 ? (
-          <>
-            <PlayerAvatar username={match.player1.username} url={match.player1.avatar_url} />
-            <span className={`text-xs font-semibold truncate ${match.winner_id === match.player1_id ? 'text-green-400' : 'text-white/80'}`}>
-              {match.player1.username}
-              {match.winner_id === match.player1_id && ' 👑'}
-            </span>
-            {match.player1_score !== null && <span className="ml-auto font-orbitron font-black text-sm text-white">{match.player1_score}</span>}
-          </>
-        ) : (
-          <span className="text-xs text-white/25 italic">TBD</span>
-        )}
-      </div>
-      {/* Divider */}
-      <div className="flex items-center gap-2 my-1 px-1.5">
-        <div className="flex-1 h-px bg-white/8" />
-        <span className="text-[9px] font-mono text-white/20">VS</span>
-        <div className="flex-1 h-px bg-white/8" />
-      </div>
-      {/* Player 2 */}
-      <div className={`flex items-center gap-2 py-1.5 rounded-lg px-1.5 ${match.winner_id === match.player2_id ? 'bg-green-500/15 border border-green-500/25' : ''}`}>
-        {match.is_bye ? (
-          <span className="text-xs text-white/25 italic">BYE</span>
-        ) : match.player2 ? (
-          <>
-            <PlayerAvatar username={match.player2.username} url={match.player2.avatar_url} />
-            <span className={`text-xs font-semibold truncate ${match.winner_id === match.player2_id ? 'text-green-400' : 'text-white/80'}`}>
-              {match.player2.username}
-              {match.winner_id === match.player2_id && ' 👑'}
-            </span>
-            {match.player2_score !== null && <span className="ml-auto font-orbitron font-black text-sm text-white">{match.player2_score}</span>}
-          </>
-        ) : (
-          <span className="text-xs text-white/25 italic">TBD</span>
-        )}
-      </div>
-      {/* Status badge */}
-      {['awaiting_proof','disputed','in_progress'].includes(match.status) && (
-        <div className={`mt-2 text-center text-[10px] font-bold rounded-full px-2 py-0.5 ${
-          match.status === 'disputed' ? 'bg-red-500/20 text-red-400' :
-          match.status === 'awaiting_proof' ? 'bg-yellow-500/20 text-yellow-400' :
-          'bg-cyan-500/20 text-cyan-400'
-        }`}>
-          {match.status === 'awaiting_proof' ? 'Proof needed' :
-           match.status === 'disputed' ? 'Disputed' : 'Live'}
-        </div>
-      )}
-      {isMyMatch && match.status === 'awaiting_proof' && (
-        <div className="mt-1 text-center text-[10px] text-cyan-400 font-bold animate-pulse">
-          Submit your result →
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// ── Bracket view ───────────────────────────────────────────────────────────
-function BracketView({ rounds, matches, myId, onOpenMatch }: {
-  rounds: Round[]; matches: Match[]; myId: string | null;
-  onOpenMatch: (m: Match) => void;
-}) {
-  if (rounds.length === 0) return (
-    <div className="text-center py-16">
-      <Trophy className="w-14 h-14 mx-auto text-white/15 mb-4" />
-      <p className="text-white/35 text-sm">Bracket not generated yet.</p>
-      <p className="text-white/20 text-xs mt-1">Waiting for check-in to complete.</p>
-    </div>
-  );
-
-  const matchesByRound = rounds.map(r => matches.filter(m => m.round === r.round_number));
-
-  return (
-    <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-      <div className="flex items-start gap-8 min-w-fit p-2">
-        {rounds.map((round, ri) => (
-          <div key={round.id} className="flex flex-col gap-2">
-            {/* Round header */}
-            <div className={`text-center px-4 py-2 rounded-xl mb-2 ${
-              round.status === 'active' ? 'bg-cyan-500/15 border border-cyan-500/25' :
-              round.status === 'completed' ? 'bg-green-500/10 border border-green-500/15' :
-              'bg-white/4 border border-white/8'
-            }`}>
-              <p className="font-orbitron font-black text-xs text-white">{round.round_name}</p>
-              <p className="text-[10px] text-white/35 mt-0.5">
-                {round.completed_matches}/{round.total_matches} done
-                {round.status === 'active' && <span className="ml-1 text-cyan-400">• Live</span>}
-              </p>
-            </div>
-            {/* Matches column with vertical connector lines */}
-            <div className="relative flex flex-col" style={{ gap: ri === 0 ? '8px' : `${Math.pow(2, ri) * 4 + 12}px` }}>
-              {matchesByRound[ri]?.map(m => (
-                <MatchCard key={m.id} match={m} myId={myId} onOpenMatch={onOpenMatch} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -1459,7 +1331,7 @@ export function TournamentDetail() {
         )}
 
         {tab === 'bracket' && (
-          <BracketView rounds={rounds} matches={matches} myId={user?.id ?? null} onOpenMatch={setActiveMatch} />
+          <FootballBracket rounds={rounds} matches={matches} myId={user?.id ?? null} onOpenMatch={setActiveMatch} />
         )}
 
         {tab === 'fixtures' && (
