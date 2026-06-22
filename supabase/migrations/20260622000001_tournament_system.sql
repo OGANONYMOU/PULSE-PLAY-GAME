@@ -479,34 +479,22 @@ DO $$ BEGIN
 END $$;
 
 -- ── 14. RPC: create_notification ─────────────────────────────────────────────
+-- Parameter names match what disputeSystem.ts / incidentSystem.ts pass via rpc()
+DROP FUNCTION IF EXISTS public.create_notification(uuid, text, text, text, text);
 CREATE OR REPLACE FUNCTION public.create_notification(
-  p_user_id uuid,
-  p_type    text,
-  p_title   text,
-  p_message text DEFAULT NULL,
-  p_link    text DEFAULT NULL
+  user_id  uuid,
+  type     text,
+  title    text,
+  message  text DEFAULT NULL,
+  link     text DEFAULT NULL
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  INSERT INTO public.notifications (user_id, type, title, message, link)
-  VALUES (p_user_id, p_type, p_title, p_message, p_link);
-EXCEPTION WHEN OTHERS THEN
-  -- Silently fail — notifications are non-critical
-  NULL;
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.create_notification(uuid, text, text, text, text) TO authenticated, service_role;
-
--- Overload with named params (used by disputeSystem.ts via rpc call)
-CREATE OR REPLACE FUNCTION public.create_notification(
-  user_id uuid,
-  type    text,
-  title   text,
-  message text DEFAULT NULL,
-  link    text DEFAULT NULL
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  INSERT INTO public.notifications (user_id, type, title, message, link)
-  VALUES (user_id, type, title, message, link);
+  INSERT INTO public.notifications
+    (user_id,  type,  title,  message,  link)
+  VALUES
+    (create_notification.user_id, create_notification.type,
+     create_notification.title,   create_notification.message,
+     create_notification.link);
 EXCEPTION WHEN OTHERS THEN
   NULL;
 END;
@@ -514,21 +502,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.create_notification(uuid, text, text, text, text) TO authenticated, service_role;
 
 -- ── 15. RPC: add_user_warning ─────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.add_user_warning(
-  p_user_id uuid,
-  p_reason  text,
-  p_source  text DEFAULT 'system'
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  INSERT INTO public.notifications (user_id, type, title, message, priority)
-  VALUES (p_user_id, 'warning', 'Account Warning', p_reason, 'high');
-EXCEPTION WHEN OTHERS THEN
-  NULL;
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.add_user_warning(uuid, text, text) TO authenticated, service_role;
-
--- Overload for named params
+DROP FUNCTION IF EXISTS public.add_user_warning(uuid, text, text);
 CREATE OR REPLACE FUNCTION public.add_user_warning(
   user_id uuid,
   reason  text,
@@ -536,7 +510,7 @@ CREATE OR REPLACE FUNCTION public.add_user_warning(
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   INSERT INTO public.notifications (user_id, type, title, message, priority)
-  VALUES (user_id, 'warning', 'Account Warning', reason, 'high');
+  VALUES (add_user_warning.user_id, 'warning', 'Account Warning', add_user_warning.reason, 'high');
 EXCEPTION WHEN OTHERS THEN
   NULL;
 END;
