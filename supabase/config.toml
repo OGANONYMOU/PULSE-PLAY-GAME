@@ -132,51 +132,42 @@ client_id = ""
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Overrides the default auth redirectUrl.
 redirect_uri = ""
-# Overrides the default auth button label
-label = "Sign in with Apple"
 
 [auth.external.azure]
 enabled = false
 client_id = ""
 secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
 redirect_uri = ""
-label = "Sign in with Azure"
 
 [auth.external.discord]
 enabled = true
 client_id = "env(DISCORD_CLIENT_ID)"
 secret = "env(DISCORD_CLIENT_SECRET)"
 redirect_uri = ""
-label = "Sign in with Discord"
 
 [auth.external.facebook]
 enabled = true
 client_id = "env(FACEBOOK_CLIENT_ID)"
 secret = "env(FACEBOOK_CLIENT_SECRET)"
 redirect_uri = ""
-label = "Sign in with Facebook"
 
 [auth.external.github]
 enabled = false
 client_id = ""
 secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
 redirect_uri = ""
-label = "Sign in with GitHub"
 
 [auth.external.google]
 enabled = true
 client_id = "env(GOOGLE_CLIENT_ID)"
 secret = "env(GOOGLE_CLIENT_SECRET)"
 redirect_uri = ""
-label = "Sign in with Google"
 
 [auth.external.twitter]
 enabled = true
 client_id = "env(TWITTER_CLIENT_ID)"
 secret = "env(TWITTER_CLIENT_SECRET)"
-# Overrides the default auth redirectUrl.
 redirect_uri = ""
-label = "Sign in with X"
 
 [edge_runtime]
 enabled = true

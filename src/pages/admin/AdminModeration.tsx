@@ -507,183 +507,124 @@ export function AdminModeration(): React.ReactElement {
   const canEscalate = hasPermission('moderation.escalate');
   const canBan = hasPermission('moderation.ban') || role === 'SUPER_ADMIN' || role === 'ADMIN';
 
+  // Map DB reason values to ReportReason type
+  const mapReason = (dbReason: string): ReportReason => {
+    const map: Record<string, ReportReason> = {
+      harassment: 'harassment',
+      hate_speech: 'hate_speech',
+      spam: 'spam',
+      inappropriate_content: 'inappropriate_content',
+      misinformation: 'other',
+      adult_content: 'inappropriate_content',
+      violence: 'harassment',
+      cheating: 'cheating',
+      other: 'other',
+    };
+    return map[dbReason] ?? 'other';
+  };
+
+  // Map DB status to ReportStatus type
+  const mapStatus = (dbStatus: string): import('@/types/admin').ReportStatus => {
+    const map: Record<string, import('@/types/admin').ReportStatus> = {
+      pending: 'pending',
+      reviewed: 'under_review',
+      actioned: 'resolved',
+      dismissed: 'dismissed',
+    };
+    return map[dbStatus] ?? 'pending';
+  };
+
+  // Derive priority from reason
+  const priorityFromReason = (reason: ReportReason): import('@/types/admin').ReportPriority => {
+    if (reason === 'hate_speech') return 'urgent';
+    if (reason === 'harassment' || reason === 'cheating' || reason === 'scam') return 'high';
+    if (reason === 'inappropriate_content' || reason === 'impersonation') return 'medium';
+    return 'low';
+  };
+
   // Fetch reports
   const fetchReports = useCallback(async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, this would fetch from content_reports table
-      // For now, creating mock data that matches the expected structure
-      const mockReports: ExtendedReport[] = [
-        {
-          id: '1',
-          type: 'content',
-          reason: 'harassment',
-          status: 'pending',
-          priority: 'high',
-          description: 'This user is targeting another player with insults',
-          created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          updated_at: new Date().toISOString(),
+      const { data: reportsRaw, error } = await supabase
+        .from('content_reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      // Fetch reporter profiles
+      const reporterIds = [...new Set((reportsRaw || []).map((r: Record<string, unknown>) => r.reporter_id as string))];
+      const { data: profilesRaw } = reporterIds.length > 0
+        ? await supabase.from('profiles').select('id, username, avatar_url, gamercred').in('id', reporterIds)
+        : { data: [] };
+
+      const profileMap: Record<string, { id: string; username: string; avatar_url: string | null; gamercred?: number }> =
+        Object.fromEntries((profilesRaw || []).map((p: Record<string, unknown>) => [p.id as string, p as { id: string; username: string; avatar_url: string | null; gamercred?: number }]));
+
+      const reports: ExtendedReport[] = (reportsRaw || []).map((r: Record<string, unknown>) => {
+        const reason = mapReason(r.reason as string);
+        const status = mapStatus(r.status as string);
+        const priority = priorityFromReason(reason);
+        const reporter = profileMap[r.reporter_id as string];
+
+        return {
+          id: r.id as string,
+          type: (r.content_type as string === 'profile' ? 'user' : r.content_type) as import('@/types/admin').ReportType,
+          reason,
+          status,
+          priority,
+          description: (r.description as string) || '',
+          created_at: r.created_at as string,
+          updated_at: (r.reviewed_at as string) || (r.created_at as string),
           reporter: {
-            id: 'rep1',
-            username: 'concerned_user',
-            avatar_url: null,
+            id: r.reporter_id as string,
+            username: reporter?.username ?? 'Unknown',
+            avatar_url: reporter?.avatar_url ?? null,
             risk_level: 'low',
           },
           target: {
-            id: 'post1',
-            type: 'content',
-            title: 'Toxic Post',
-            content: 'Example toxic content',
-            author: {
-              id: 'author1',
-              username: 'toxic_player',
-              avatar_url: null,
-              risk_level: 'high',
-            },
-          },
-          content_preview: 'You are the worst player I have ever seen...',
-          content_author: {
-            id: 'author1',
-            username: 'toxic_player',
-            avatar_url: null,
-            gamercred: 150,
-            risk_level: 'high',
-          },
-          toxicity_analysis: {
-            content_id: 'post1',
-            toxicity_score: 75,
-            severity: 'high',
-            flagged_words: ['worst', 'trash'],
-            categories: [
-              { name: 'harassment', score: 80 },
-              { name: 'hate', score: 30 },
-            ],
-            ai_confidence: 0.85,
-          },
-          prior_reports_count: 3,
-          is_repeat_offender: true,
-          evidence: [],
-          assigned_to: null,
-          resolution: null,
-        },
-        {
-          id: '2',
-          type: 'clip',
-          reason: 'inappropriate_content',
-          status: 'pending',
-          priority: 'medium',
-          description: 'Clip contains inappropriate language',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          updated_at: new Date().toISOString(),
-          reporter: {
-            id: 'rep2',
-            username: 'parent_user',
-            avatar_url: null,
-            risk_level: 'low',
-          },
-          target: {
-            id: 'clip1',
-            type: 'clip',
-            title: 'Inappropriate Clip',
+            id: r.content_id as string,
+            type: (r.content_type as string === 'profile' ? 'user' : r.content_type) as import('@/types/admin').ReportType,
+            title: `Reported ${r.content_type}`,
             content: null,
             author: {
-              id: 'author2',
-              username: 'content_creator',
+              id: r.content_id as string,
+              username: 'Unknown',
               avatar_url: null,
               risk_level: 'low',
             },
           },
-          content_author: {
-            id: 'author2',
-            username: 'content_creator',
-            avatar_url: null,
-            gamercred: 500,
-            risk_level: 'low',
-          },
-          toxicity_analysis: {
-            content_id: 'clip1',
-            toxicity_score: 45,
-            severity: 'medium',
-            flagged_words: ['damn'],
-            categories: [
-              { name: 'spam', score: 20 },
-            ],
-            ai_confidence: 0.72,
-          },
+          evidence: [],
+          assigned_to: null,
+          resolution: r.action_taken
+            ? {
+                action: 'dismiss',
+                reason: r.action_taken as string,
+                moderator_id: (r.reviewed_by as string) || '',
+                moderator_name: profileMap[r.reviewed_by as string]?.username ?? 'Moderator',
+                created_at: (r.reviewed_at as string) || (r.created_at as string),
+              }
+            : null,
           prior_reports_count: 0,
           is_repeat_offender: false,
-          evidence: [],
-          assigned_to: null,
-          resolution: null,
-        },
-        {
-          id: '3',
-          type: 'user',
-          reason: 'spam',
-          status: 'under_review',
-          priority: 'low',
-          description: 'Spamming tournament invites',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-          updated_at: new Date().toISOString(),
-          reporter: {
-            id: 'rep3',
-            username: 'tournament_host',
-            avatar_url: null,
-            risk_level: 'low',
-          },
-          target: {
-            id: 'user1',
-            type: 'user',
-            title: 'Spam User',
-            content: null,
-            author: {
-              id: 'user1',
-              username: 'spammer_123',
-              avatar_url: null,
-              risk_level: 'medium',
-            },
-          },
-          content_author: {
-            id: 'user1',
-            username: 'spammer_123',
-            avatar_url: null,
-            gamercred: 10,
-            risk_level: 'medium',
-          },
-          toxicity_analysis: {
-            content_id: 'user1',
-            toxicity_score: 15,
-            severity: 'low',
-            flagged_words: [],
-            categories: [
-              { name: 'spam', score: 65 },
-            ],
-            ai_confidence: 0.60,
-          },
-          prior_reports_count: 5,
-          is_repeat_offender: true,
-          evidence: [],
-          assigned_to: null,
-          resolution: null,
-        },
-      ];
+        };
+      });
 
-      setReports(mockReports);
+      setReports(reports);
 
-      // Calculate stats
-      const pending = mockReports.filter(r => r.status === 'pending');
+      const pending = reports.filter(r => r.status === 'pending');
       const urgent = pending.filter(r => r.priority === 'urgent' || r.priority === 'high');
-      const aiFlagged = pending.filter(r => (r.toxicity_analysis?.toxicity_score || 0) > 50);
-      const repeatOffenders = pending.filter(r => r.is_repeat_offender);
 
       setStats({
         totalPending: pending.length,
         urgentCount: urgent.length,
-        aiFlaggedCount: aiFlagged.length,
-        repeatOffenderCount: repeatOffenders.length,
-        resolvedToday: 12,
-        avgResolutionTime: 45,
-        accuracy: 94,
+        aiFlaggedCount: 0,
+        repeatOffenderCount: 0,
+        resolvedToday: reports.filter(r => r.status === 'resolved').length,
+        avgResolutionTime: 0,
+        accuracy: 0,
       });
     } catch (err) {
       console.error('Failed to fetch reports:', err);

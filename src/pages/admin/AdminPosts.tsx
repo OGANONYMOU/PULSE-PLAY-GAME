@@ -3,7 +3,7 @@
 // Comprehensive content moderation for posts, comments, clips, discussions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
@@ -29,6 +29,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { writeAudit } from '@/lib/audit';
+import { supabase } from '@/lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -435,119 +436,95 @@ export function AdminPosts(): React.ReactElement {
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ContentItem | null>(null);
 
-  // Mock data
-  useEffect(() => {
-    const mockContent: ContentItem[] = [
-      {
-        id: '1',
-        type: 'post',
-        title: 'Best strategies for Battle Royale beginners',
-        content: 'After playing for 500+ hours, here are my top tips for anyone just starting out in battle royale games...',
-        author: { id: 'u1', username: 'ProGamer_99', avatar: '' },
-        likes: 245,
-        comments: 67,
-        views: 1845,
-        status: 'featured',
-        tag: 'tips',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: '2',
-        type: 'clip',
-        title: 'Insane 1v4 clutch in ranked',
-        content: 'Watch me clutch this impossible situation',
-        author: { id: 'u2', username: 'ClipMaster', avatar: '' },
-        likes: 892,
-        comments: 156,
-        views: 5234,
-        status: 'active',
-        tag: 'clips',
-        media_url: 'https://example.com/clip1.mp4',
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-      },
-      {
-        id: '3',
-        type: 'discussion',
-        title: 'What do you think about the new update?',
-        content: 'The latest patch changed the meta significantly. Let\'s discuss the implications...',
-        author: { id: 'u3', username: 'TheoryCrafter', avatar: '' },
-        likes: 45,
-        comments: 234,
-        views: 567,
-        status: 'active',
-        tag: 'general',
-        created_at: new Date(Date.now() - 43200000).toISOString(),
-      },
-      {
-        id: '4',
-        type: 'post',
-        title: 'Upcoming tournament announcement',
-        content: 'Get ready for the biggest tournament of the season with $10,000 prize pool!',
-        author: { id: 'u4', username: 'EventHost', avatar: '' },
-        likes: 567,
-        comments: 89,
-        views: 2341,
-        status: 'pinned',
-        tag: 'tournament',
-        created_at: new Date(Date.now() - 259200000).toISOString(),
-      },
-      {
-        id: '5',
-        type: 'comment',
-        content: 'This is toxic behavior, please ban this user',
-        author: { id: 'u5', username: 'Reporter123', avatar: '' },
-        likes: 2,
+  const fetchContent = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Fetch posts
+      const { data: postsRaw } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      // Fetch clips
+      const { data: clipsRaw } = await supabase
+        .from('clips')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      // Gather all author IDs and fetch profiles in one query
+      const postAuthorIds = (postsRaw || []).map((p: Record<string, unknown>) => p.author_id as string);
+      const clipAuthorIds = (clipsRaw || []).map((c: Record<string, unknown>) => c.user_id as string);
+      const allAuthorIds = [...new Set([...postAuthorIds, ...clipAuthorIds])];
+
+      const { data: profilesRaw } = allAuthorIds.length > 0
+        ? await supabase.from('profiles').select('id, username, avatar_url').in('id', allAuthorIds)
+        : { data: [] };
+
+      const profileMap: Record<string, { id: string; username: string; avatar_url: string | null }> =
+        Object.fromEntries((profilesRaw || []).map((p: Record<string, unknown>) => [p.id as string, p as { id: string; username: string; avatar_url: string | null }]));
+
+      const posts: ContentItem[] = (postsRaw || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        type: 'post' as ContentType,
+        title: p.title as string,
+        content: p.content as string,
+        author: {
+          id: p.author_id as string,
+          username: profileMap[p.author_id as string]?.username ?? 'Unknown',
+          avatar: profileMap[p.author_id as string]?.avatar_url ?? '',
+        },
+        likes: (p.likes as number) || 0,
+        comments: (p.comments as number) || 0,
+        views: 0,
+        status: 'active' as ContentStatus,
+        tag: p.tag as string | undefined,
+        created_at: p.created_at as string,
+      }));
+
+      const clips: ContentItem[] = (clipsRaw || []).map((c: Record<string, unknown>) => ({
+        id: c.id as string,
+        type: 'clip' as ContentType,
+        title: c.title as string,
+        content: (c.description as string) || '',
+        author: {
+          id: c.user_id as string,
+          username: profileMap[c.user_id as string]?.username ?? 'Unknown',
+          avatar: profileMap[c.user_id as string]?.avatar_url ?? '',
+        },
+        likes: (c.likes_count as number) || 0,
+        comments: (c.comments_count as number) || 0,
+        views: (c.views_count as number) || 0,
+        status: (c.is_featured ? 'featured' : 'active') as ContentStatus,
+        media_url: c.object_key as string | undefined,
+        created_at: c.created_at as string,
+      }));
+
+      const all = [...posts, ...clips];
+      setContent(all);
+
+      setStats({
+        total: all.length,
+        posts: posts.length,
         comments: 0,
-        views: 15,
-        status: 'hidden',
-        flags: 3,
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-      },
-      {
-        id: '6',
-        type: 'clip',
-        title: 'Pro player settings revealed',
-        content: 'Check out the sensitivity settings of top players',
-        author: { id: 'u6', username: 'SettingsGuide', avatar: '' },
-        likes: 1234,
-        comments: 345,
-        views: 8902,
-        status: 'active',
-        tag: 'guide',
-        flags: 1,
-        created_at: new Date(Date.now() - 345600000).toISOString(),
-      },
-      {
-        id: '7',
-        type: 'post',
-        title: 'Server maintenance notice',
-        content: 'Servers will be down for 2 hours tonight for maintenance.',
-        author: { id: 'u7', username: 'Admin', avatar: '' },
-        likes: 89,
-        comments: 45,
-        views: 4567,
-        status: 'active',
-        tag: 'news',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
-
-    setContent(mockContent);
-
-    setStats({
-      total: mockContent.length,
-      posts: mockContent.filter(c => c.type === 'post').length,
-      comments: mockContent.filter(c => c.type === 'comment').length,
-      clips: mockContent.filter(c => c.type === 'clip').length,
-      discussions: mockContent.filter(c => c.type === 'discussion').length,
-      pendingReview: mockContent.filter(c => c.flags && c.flags > 0).length,
-      reported: mockContent.filter(c => c.flags && c.flags > 0).length,
-      featured: mockContent.filter(c => c.status === 'featured').length,
-      dailyEngagement: 1234,
-    });
-
-    setIsLoading(false);
+        clips: clips.length,
+        discussions: 0,
+        pendingReview: 0,
+        reported: 0,
+        featured: all.filter(c => c.status === 'featured').length,
+        dailyEngagement: all.reduce((s, c) => s + c.likes + c.comments, 0),
+      });
+    } catch (err) {
+      console.error('Failed to fetch content:', err);
+      toast.error('Failed to load content');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchContent(); }, [fetchContent]);
 
   const filteredContent = useMemo(() => {
     let filtered = [...content];
