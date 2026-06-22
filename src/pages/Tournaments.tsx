@@ -29,9 +29,13 @@ function isVisibleOnPublic(t: Tournament): boolean {
   return t.status !== 'cancelled';
 }
 
+function isExpired(t: Tournament): boolean {
+  return t.end_date != null && new Date(t.end_date) < new Date();
+}
+
 type Tournament = {
   id: string; name: string; game_id: string; status: TStatus;
-  date: string; prize_pool: string; max_players: number; current_players: number;
+  date: string; end_date: string | null; prize_pool: string; max_players: number; current_players: number;
   duration: string; winner: string | null; description: string | null;
   rules: string | null; entry_fee: string | null; created_at: string;
   games: { name: string; icon: string; image_url: string | null } | null;
@@ -717,6 +721,8 @@ export function Tournaments(): React.ReactElement {
   // ── Load data ─────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true); setFetchError('');
+    // Auto-expire tournaments whose end_date has passed
+    await (supabase as any).rpc('auto_expire_tournaments');
     const { data, error } = await supabase
       .from('tournaments').select('*, games(name, icon, image_url)').order('date', { ascending: false });
     if (error) setFetchError(error.message);
@@ -743,7 +749,7 @@ export function Tournaments(): React.ReactElement {
   const heroTournaments = useMemo(() =>
     tournaments
       .filter(isVisibleOnPublic)
-      .filter(t => t.status === 'ongoing' || t.status === 'upcoming')
+      .filter(t => (t.status === 'ongoing' || t.status === 'upcoming') && !isExpired(t))
       .sort((a, b) => (a.status === 'ongoing' ? -1 : 1) - (b.status === 'ongoing' ? -1 : 1))
       .slice(0, 5),
     [tournaments]);
@@ -796,13 +802,29 @@ export function Tournaments(): React.ReactElement {
   const handleRegister = useCallback(async (t: Tournament) => {
     if (!isAuthenticated || !user) { toast.error('Sign in to register.'); return; }
     if (t.current_players >= t.max_players) { toast.error('Tournament is full.'); return; }
+    if (isExpired(t)) { toast.error('This tournament has ended.'); return; }
     if (myRegs.has(t.id)) { toast.info('Already registered!'); return; }
     setRegistering(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('tournament_participants') as any).insert({ tournament_id: t.id, user_id: user.id });
     if (error) {
-      if (error.code === '23505') toast.info('Already registered!');
-      else toast.error('Registration failed: ' + error.message);
+      if (error.code === '23505') {
+        // Unique constraint — could be a re-registration after withdrawal
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: rejoinErr } = await (supabase as any).rpc('rejoin_tournament', {
+          p_tournament_id: t.id,
+          p_in_game_username: null,
+        });
+        if (!rejoinErr) {
+          setMyRegs(prev => new Set([...prev, t.id]));
+          load();
+          toast.success('Registered! Check in before the tournament starts. 🎮');
+        } else {
+          toast.info('Already registered!');
+        }
+      } else {
+        toast.error('Registration failed: ' + error.message);
+      }
     } else {
       setMyRegs(prev => new Set([...prev, t.id]));
       if (detail?.id === t.id) {
@@ -818,12 +840,26 @@ export function Tournaments(): React.ReactElement {
   }, [isAuthenticated, user, myRegs, detail, load]);
 
   const handleWithdraw = useCallback(async (t: Tournament) => {
-    if (!user) return;
+    if (!user) { toast.error('Sign in to withdraw.'); return; }
+    if (t.status !== 'upcoming') {
+      toast.error(t.status === 'ongoing' ? 'Tournament has already started.' : 'Tournament is completed.');
+      return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('tournament_participants') as any)
-      .update({ status: 'withdrawn' }).eq('tournament_id', t.id).eq('user_id', user.id);
-    if (error) { toast.error('Withdrawal failed.'); return; }
-    toast.success('Withdrawn from tournament.');
+    const { error } = await (supabase as any).rpc('withdraw_from_tournament', {
+      p_tournament_id: t.id,
+    });
+    if (error) {
+      const msg: string = error.message ?? '';
+      if (msg.includes('already started'))      toast.error('Tournament has already started.');
+      else if (msg.includes('not registered') || msg.includes('not found'))
+                                                 toast.error('Registration not found.');
+      else if (msg.includes('completed'))        toast.error('Tournament is already completed.');
+      else if (msg.includes('already withdrawn'))toast.error('Already withdrawn from this tournament.');
+      else                                       toast.error(msg || 'Withdrawal failed. Please try again.');
+      return;
+    }
+    toast.success('Successfully withdrawn from tournament.');
     setMyRegs(prev => { const s = new Set(prev); s.delete(t.id); return s; });
     if (detail?.id === t.id) closeDetail();
     load();

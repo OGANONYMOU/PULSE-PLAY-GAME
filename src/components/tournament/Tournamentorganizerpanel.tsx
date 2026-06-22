@@ -11,6 +11,7 @@ import {
   Play, Square, Trash2, Plus,
   Loader2, Shield, UserCheck, UserX, Crown, MoreHorizontal,
   Flag, RefreshCw, Search, XCircle, Zap, Settings2,
+  Edit2, Save, X as XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,6 +41,14 @@ interface Tournament {
   tournament_family: string | null;
   tournament_type: string | null;
   requires_check_in: boolean;
+  description: string | null;
+  rules: string | null;
+  prize_pool: string | null;
+  entry_fee: number | null;
+  date: string | null;
+  end_date: string | null;
+  banner_url: string | null;
+  created_by: string | null;
 }
 
 interface Participant {
@@ -81,7 +90,21 @@ interface OrgPanelProps {
   isAdmin: boolean;
   fixtures: Fixture[];
   onFixturesUpdated: () => void;
-  onTournamentStatusChange: (status: 'upcoming' | 'ongoing' | 'completed') => void;
+  onTournamentStatusChange: (status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled') => void;
+  onTournamentDeleted?: () => void;
+  onTournamentEdited?: () => void;
+}
+
+interface EditForm {
+  name: string;
+  description: string;
+  rules: string;
+  prize_pool: string;
+  entry_fee: string;
+  max_players: string;
+  date: string;
+  end_date: string;
+  banner_url: string;
 }
 
 type PanelTab = 'participants' | 'staff' | 'fixtures' | 'disputes' | 'lifecycle';
@@ -152,6 +175,8 @@ export function TournamentOrganizerPanel({
   fixtures,
   onFixturesUpdated,
   onTournamentStatusChange,
+  onTournamentDeleted,
+  onTournamentEdited,
 }: OrgPanelProps): React.ReactElement {
   const { user } = useAuth();
 
@@ -172,6 +197,26 @@ export function TournamentOrganizerPanel({
 
   // Lifecycle action state
   const [lifecycleLoading, setLifecycleLoading] = useState(false);
+
+  // Delete state
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Edit state
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editLoading, setEditLoading]   = useState(false);
+  const [editForm, setEditForm] = useState<EditForm>({
+    name:        tournament.name ?? '',
+    description: tournament.description ?? '',
+    rules:       tournament.rules ?? '',
+    prize_pool:  tournament.prize_pool ?? '',
+    entry_fee:   tournament.entry_fee?.toString() ?? '0',
+    max_players: tournament.max_players?.toString() ?? '',
+    date:        tournament.date ? tournament.date.slice(0, 16) : '',
+    end_date:    tournament.end_date ? tournament.end_date.slice(0, 16) : '',
+    banner_url:  tournament.banner_url ?? '',
+  });
 
   const canManageParticipants = isAdmin || ['host', 'manager'].includes(myRole ?? '');
   const canManageStaff        = isAdmin || myRole === 'host';
@@ -335,10 +380,12 @@ export function TournamentOrganizerPanel({
 
     setLifecycleLoading(true);
     try {
-      const newStatus = action === 'start' ? 'ongoing' : 'completed';
+      const newStatus = action === 'start' ? 'ongoing'
+                      : action === 'cancel' ? 'cancelled'
+                      : 'completed';
       const { error } = await supabase.from('tournaments')
         .update({
-          status: action === 'cancel' ? 'completed' : newStatus,
+          status: newStatus,
           ...(action === 'complete' || action === 'cancel' ? { completed_at: new Date().toISOString() } : {}),
         } as never)
         .eq('id', tournament.id);
@@ -347,16 +394,82 @@ export function TournamentOrganizerPanel({
 
       await writeAuditLog({
         actor_id: user.id,
-        action: `tournament.${action === 'start' ? 'started' : action === 'complete' ? 'completed' : 'cancelled'}`,
+        action: action === 'start' ? 'tournament.started'
+               : action === 'cancel' ? 'tournament.cancelled'
+               : 'tournament.completed',
         entity_type: 'tournament',
         entity_id: tournament.id,
         data: { previous_status: tournament.status, new_status: newStatus },
       });
 
-      onTournamentStatusChange(action === 'cancel' ? 'completed' : newStatus as 'upcoming' | 'ongoing' | 'completed');
+      onTournamentStatusChange(newStatus);
       toast.success(`Tournament ${action === 'start' ? 'started' : action === 'complete' ? 'completed' : 'cancelled'}!`);
     } finally {
       setLifecycleLoading(false);
+    }
+  };
+
+  // ── Delete tournament ───────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!canManageLifecycle || !user) return;
+    if (confirmDeleteText !== tournament.name) {
+      toast.error('Tournament name does not match.');
+      return;
+    }
+    setDeleteLoading(true);
+    try {
+      await writeAuditLog({
+        actor_id: user.id,
+        action: 'tournament.deleted',
+        entity_type: 'tournament',
+        entity_id: tournament.id,
+        data: { name: tournament.name, status: tournament.status },
+      });
+      const { error } = await supabase.from('tournaments').delete().eq('id', tournament.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success('Tournament deleted.');
+      onTournamentDeleted?.();
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteConfirm(false);
+      setConfirmDeleteText('');
+    }
+  };
+
+  // ── Edit tournament ─────────────────────────────────────────────────────────
+  const handleEditSave = async () => {
+    if (!canManageLifecycle || !user) return;
+    if (!editForm.name.trim()) { toast.error('Tournament name is required.'); return; }
+    setEditLoading(true);
+    try {
+      const payload: Record<string, unknown> = {
+        name:        editForm.name.trim(),
+        description: editForm.description.trim() || null,
+        rules:       editForm.rules.trim() || null,
+        prize_pool:  editForm.prize_pool.trim() || null,
+        banner_url:  editForm.banner_url.trim() || null,
+      };
+      // Fields restricted once tournament has started
+      if (tournament.status === 'upcoming') {
+        payload.entry_fee   = parseFloat(editForm.entry_fee) || 0;
+        payload.max_players = parseInt(editForm.max_players, 10) || tournament.max_players;
+        if (editForm.date)     payload.date     = new Date(editForm.date).toISOString();
+        if (editForm.end_date) payload.end_date = new Date(editForm.end_date).toISOString();
+      }
+      const { error } = await supabase.from('tournaments').update(payload as never).eq('id', tournament.id);
+      if (error) { toast.error(error.message); return; }
+      await writeAuditLog({
+        actor_id: user.id,
+        action: 'tournament.edited',
+        entity_type: 'tournament',
+        entity_id: tournament.id,
+        data: { fields_changed: Object.keys(payload) },
+      });
+      toast.success('Tournament updated!');
+      setShowEditForm(false);
+      onTournamentEdited?.();
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -790,6 +903,162 @@ export function TournamentOrganizerPanel({
                   </div>
                 </div>
 
+                {/* Edit Tournament */}
+                <div className="rounded-2xl bg-white/[0.025] border border-white/8 overflow-hidden">
+                  <button
+                    onClick={() => setShowEditForm(v => !v)}
+                    className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.03] transition-colors"
+                  >
+                    <Edit2 className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                    <div className="text-left flex-1">
+                      <div className="text-sm font-bold text-cyan-400">Edit Tournament</div>
+                      <div className="text-[10px] text-white/30">Update details, dates, rules, prize info</div>
+                    </div>
+                    <XIcon className={cn('w-4 h-4 text-white/25 transition-transform', showEditForm ? 'rotate-0' : 'rotate-45')} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showEditForm && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4 space-y-3 border-t border-white/8 pt-3">
+                          {/* Name */}
+                          <div>
+                            <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Tournament Name *</label>
+                            <Input
+                              value={editForm.name}
+                              onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                              className="h-9 bg-white/5 border-white/10 text-white text-xs"
+                              placeholder="Tournament name"
+                            />
+                          </div>
+                          {/* Description */}
+                          <div>
+                            <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Description</label>
+                            <textarea
+                              value={editForm.description}
+                              onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                              rows={2}
+                              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-cyan-500/50 resize-none"
+                              placeholder="Tournament description"
+                            />
+                          </div>
+                          {/* Rules */}
+                          <div>
+                            <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Rules</label>
+                            <textarea
+                              value={editForm.rules}
+                              onChange={e => setEditForm(f => ({ ...f, rules: e.target.value }))}
+                              rows={3}
+                              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-cyan-500/50 resize-none"
+                              placeholder="Tournament rules"
+                            />
+                          </div>
+                          {/* Prize + Entry fee */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Prize Pool</label>
+                              <Input
+                                value={editForm.prize_pool}
+                                onChange={e => setEditForm(f => ({ ...f, prize_pool: e.target.value }))}
+                                className="h-9 bg-white/5 border-white/10 text-white text-xs"
+                                placeholder="₦50,000"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Entry Fee (PP)</label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={editForm.entry_fee}
+                                onChange={e => setEditForm(f => ({ ...f, entry_fee: e.target.value }))}
+                                disabled={tournament.status !== 'upcoming'}
+                                className="h-9 bg-white/5 border-white/10 text-white text-xs disabled:opacity-40"
+                              />
+                            </div>
+                          </div>
+                          {/* Max players + Banner */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Max Players</label>
+                              <Input
+                                type="number"
+                                min="2"
+                                value={editForm.max_players}
+                                onChange={e => setEditForm(f => ({ ...f, max_players: e.target.value }))}
+                                disabled={tournament.status !== 'upcoming'}
+                                className="h-9 bg-white/5 border-white/10 text-white text-xs disabled:opacity-40"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Banner URL</label>
+                              <Input
+                                value={editForm.banner_url}
+                                onChange={e => setEditForm(f => ({ ...f, banner_url: e.target.value }))}
+                                className="h-9 bg-white/5 border-white/10 text-white text-xs"
+                                placeholder="https://..."
+                              />
+                            </div>
+                          </div>
+                          {/* Dates — only upcoming */}
+                          {tournament.status === 'upcoming' && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Start Date</label>
+                                <Input
+                                  type="datetime-local"
+                                  value={editForm.date}
+                                  onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                                  className="h-9 bg-white/5 border-white/10 text-white text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">End Date</label>
+                                <Input
+                                  type="datetime-local"
+                                  value={editForm.end_date}
+                                  onChange={e => setEditForm(f => ({ ...f, end_date: e.target.value }))}
+                                  className="h-9 bg-white/5 border-white/10 text-white text-xs"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {tournament.status !== 'upcoming' && (
+                            <p className="text-[10px] text-amber-400/70 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              Dates, entry fee, and max players are locked once a tournament has started.
+                            </p>
+                          )}
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              onClick={handleEditSave}
+                              disabled={editLoading || !editForm.name.trim()}
+                              size="sm"
+                              className="flex-1 h-9 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold"
+                            >
+                              {editLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                              Save Changes
+                            </Button>
+                            <Button
+                              onClick={() => setShowEditForm(false)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-3 text-white/40 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 {/* Action buttons */}
                 <div className="space-y-2">
                   {tournament.status === 'upcoming' && (
@@ -844,6 +1113,57 @@ export function TournamentOrganizerPanel({
                         <div className="text-sm font-bold text-white/50">Tournament Concluded</div>
                         <div className="text-[10px] text-white/25">No further lifecycle actions available.</div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Delete Tournament */}
+                  {(isAdmin || (tournament.status in { upcoming: 1, cancelled: 1 })) && (
+                    <div className="pt-2 border-t border-white/8">
+                      {!showDeleteConfirm ? (
+                        <button
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="w-full flex items-center gap-3 p-4 rounded-2xl bg-red-900/10 border border-red-900/20
+                                     hover:bg-red-900/20 hover:border-red-900/35 transition-all"
+                        >
+                          <Trash2 className="w-5 h-5 text-red-500/70 flex-shrink-0" />
+                          <div className="text-left">
+                            <div className="text-sm font-bold text-red-500/70">Delete Tournament</div>
+                            <div className="text-[10px] text-white/25">Permanently remove this tournament and all its data.</div>
+                          </div>
+                        </button>
+                      ) : (
+                        <div className="p-4 rounded-2xl bg-red-900/10 border border-red-500/25 space-y-3">
+                          <p className="text-xs text-red-400 font-semibold">This cannot be undone.</p>
+                          <p className="text-[10px] text-white/40">
+                            Type <span className="text-white/70 font-mono">{tournament.name}</span> to confirm deletion.
+                          </p>
+                          <Input
+                            value={confirmDeleteText}
+                            onChange={e => setConfirmDeleteText(e.target.value)}
+                            className="h-9 bg-white/5 border-red-500/30 text-white text-xs"
+                            placeholder={tournament.name}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleDelete}
+                              disabled={deleteLoading || confirmDeleteText !== tournament.name}
+                              size="sm"
+                              className="flex-1 h-9 bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-40"
+                            >
+                              {deleteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Trash2 className="w-3.5 h-3.5 mr-1" />}
+                              Delete Forever
+                            </Button>
+                            <Button
+                              onClick={() => { setShowDeleteConfirm(false); setConfirmDeleteText(''); }}
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 px-3 text-white/40 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -5,7 +5,8 @@ import {
   Trophy, Users, Calendar, Clock, Zap,
   Play, CheckCircle, Loader2, X, Upload, Send,
   ArrowLeft, Sword, Crown, Flag, Bell, Info,
-  UserCheck, UserPlus, Lock,
+  UserCheck, UserPlus, Lock, UserX, Settings,
+  Target, Crosshair,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,15 +16,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { submitDispute } from '@/lib/dispute/disputeSystem';
 import { type FraudFlag } from '@/lib/fraud/fraudDetection';
 import { resolveGameImage } from '@/lib/gameImages';
+import { TournamentOrganizerPanel } from '@/components/tournament/Tournamentorganizerpanel';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type TournamentFull = {
-  id: string; name: string; status: string; date: string;
+  id: string; name: string; status: string; date: string; end_date: string | null;
   prize_pool: string; prize_amount: number; entry_fee: number; currency: string;
   max_players: number; current_players: number; duration: string;
   winner: string | null; runner_up: string | null;
   bracket_generated: boolean; total_rounds: number | null; current_round: number;
   easy_mode: boolean; format: string; rules: string | null; is_public: boolean;
+  description: string | null; banner_url: string | null;
   check_in_open: string | null; check_in_close: string | null;
   registration_closes: string | null; created_by: string | null;
   games: { id: string; name: string; icon: string; logo_url: string | null } | null;
@@ -65,8 +68,10 @@ type Fixture = {
   away_participant_id: string;
   home_score: number | null;
   away_score: number | null;
+  winner_id: string | null;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   scheduled_at: string;
+  is_walkover: boolean;
   home_participant: { username: string; avatar_url: string | null } | null;
   away_participant: { username: string; avatar_url: string | null } | null;
 };
@@ -84,6 +89,18 @@ type Standing = {
   goal_difference: number;
   points: number;
   form: string[];
+};
+
+type BRStanding = {
+  participant_id: string;
+  username: string;
+  avatar_url: string | null;
+  matches_played: number;
+  total_kills: number;
+  placement_points: number;
+  total_points: number;
+  chicken_dinners: number;
+  avg_placement: number;
 };
 
 // ── Avatar helper ──────────────────────────────────────────────────────────
@@ -596,36 +613,44 @@ function FixtureView({ fixtures, onOpenFixture }: { fixtures: Fixture[]; onOpenF
             <div className="h-px flex-1 bg-white/10" />
           </div>
           <div className="grid gap-2">
-            {roundFixtures.map(f => (
-              <motion.div
-                key={f.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => onOpenFixture?.(f)}
-                className={`flex items-center gap-3 p-3 rounded-xl border ${
-                  f.status === 'completed' ? 'bg-green-500/5 border-green-500/20' :
-                  f.status === 'in_progress' ? 'bg-cyan-500/5 border-cyan-500/30' :
-                  'bg-white/3 border-white/8'
-                } ${onOpenFixture ? 'cursor-pointer hover:bg-white/5' : ''} transition-all`}
-              >
-                <div className="flex-1 flex items-center justify-end gap-2">
-                  <span className="text-sm font-semibold text-white">{f.home_participant?.username ?? 'TBD'}</span>
-                  <PlayerAvatar username={f.home_participant?.username ?? '?'} url={f.home_participant?.avatar_url} />
-                </div>
-                <div className="px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 min-w-[80px] text-center">
-                  {f.status === 'completed' ? (
-                    <span className="font-orbitron font-black text-lg text-white">{f.home_score} - {f.away_score}</span>
-                  ) : (
-                    <span className="text-xs text-white/40">VS</span>
-                  )}
-                </div>
-                <div className="flex-1 flex items-center gap-2">
-                  <PlayerAvatar username={f.away_participant?.username ?? '?'} url={f.away_participant?.avatar_url} />
-                  <span className="text-sm font-semibold text-white">{f.away_participant?.username ?? 'TBD'}</span>
-                </div>
-                {f.status === 'in_progress' && <span className="text-[10px] text-cyan-400 animate-pulse">● Live</span>}
-              </motion.div>
-            ))}
+            {roundFixtures.map(f => {
+              const homeWon = f.winner_id === f.home_participant_id;
+              const awayWon = f.winner_id === f.away_participant_id;
+              return (
+                <motion.div
+                  key={f.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => onOpenFixture?.(f)}
+                  className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    f.is_walkover ? 'bg-orange-500/5 border-orange-500/20' :
+                    f.status === 'completed' ? 'bg-green-500/5 border-green-500/20' :
+                    f.status === 'in_progress' ? 'bg-cyan-500/5 border-cyan-500/30' :
+                    'bg-white/3 border-white/8'
+                  } ${onOpenFixture ? 'cursor-pointer hover:bg-white/5' : ''} transition-all`}
+                >
+                  <div className={`flex-1 flex items-center justify-end gap-2 ${f.status === 'completed' && !homeWon ? 'opacity-40' : ''}`}>
+                    <span className={`text-sm font-semibold ${homeWon ? 'text-green-400' : 'text-white'}`}>{f.home_participant?.username ?? 'TBD'}</span>
+                    <PlayerAvatar username={f.home_participant?.username ?? '?'} url={f.home_participant?.avatar_url} />
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 min-w-[80px] text-center">
+                    {f.is_walkover ? (
+                      <span className="text-[10px] font-orbitron font-bold text-orange-400 tracking-wider">W/O</span>
+                    ) : f.status === 'completed' ? (
+                      <span className="font-orbitron font-black text-lg text-white">{f.home_score} - {f.away_score}</span>
+                    ) : (
+                      <span className="text-xs text-white/40">VS</span>
+                    )}
+                  </div>
+                  <div className={`flex-1 flex items-center gap-2 ${f.status === 'completed' && !awayWon ? 'opacity-40' : ''}`}>
+                    <PlayerAvatar username={f.away_participant?.username ?? '?'} url={f.away_participant?.avatar_url} />
+                    <span className={`text-sm font-semibold ${awayWon ? 'text-green-400' : 'text-white'}`}>{f.away_participant?.username ?? 'TBD'}</span>
+                  </div>
+                  {f.status === 'in_progress' && <span className="text-[10px] text-cyan-400 animate-pulse">● Live</span>}
+                  {f.is_walkover && <span className="text-[9px] text-orange-400/70 font-mono">walkover</span>}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       ))}
@@ -717,6 +742,149 @@ function StandingsTable({ standings }: { standings: Standing[] }) {
   );
 }
 
+// ── Battle Royale standings ────────────────────────────────────────────────
+function BRStandingsTable({ standings }: { standings: BRStanding[] }) {
+  if (standings.length === 0) return (
+    <div className="text-center py-16">
+      <Crosshair className="w-14 h-14 mx-auto text-white/15 mb-4" />
+      <p className="text-white/35 text-sm">No battle royale stats yet.</p>
+      <p className="text-white/20 text-xs mt-1">Stats will appear as matches are recorded.</p>
+    </div>
+  );
+
+  const sorted = [...standings].sort((a, b) => b.total_points - a.total_points);
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-white/10">
+            {['#', 'Player', 'MP', 'Kills', 'Placement Pts', 'Total Pts', '#1 Wins', 'Avg Pos'].map(h => (
+              <th key={h} className={`${h === 'Player' ? 'text-left' : 'text-center'} py-3 px-2 text-[10px] font-bold text-white/40 uppercase tracking-wider`}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((s, i) => (
+            <tr key={s.participant_id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+              <td className="py-3 px-2">
+                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-xs font-bold ${
+                  i === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                  i === 1 ? 'bg-slate-400/20 text-slate-300' :
+                  i === 2 ? 'bg-orange-600/20 text-orange-400' :
+                  'bg-white/5 text-white/50'
+                }`}>{i + 1}</span>
+              </td>
+              <td className="py-3 px-2">
+                <div className="flex items-center gap-2">
+                  <PlayerAvatar username={s.username} url={s.avatar_url} />
+                  <span className="text-sm font-medium text-white">{s.username}</span>
+                </div>
+              </td>
+              <td className="py-3 px-2 text-center text-sm text-white/60">{s.matches_played}</td>
+              <td className="py-3 px-2 text-center">
+                <span className="font-orbitron font-bold text-sm text-red-400">{s.total_kills}</span>
+              </td>
+              <td className="py-3 px-2 text-center text-sm text-blue-400">{s.placement_points}</td>
+              <td className="py-3 px-2 text-center">
+                <span className="font-orbitron font-black text-lg text-cyan-400">{s.total_points}</span>
+              </td>
+              <td className="py-3 px-2 text-center">
+                {s.chicken_dinners > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-yellow-400 font-bold text-sm">
+                    🍗 {s.chicken_dinners}
+                  </span>
+                ) : <span className="text-white/30 text-sm">—</span>}
+              </td>
+              <td className="py-3 px-2 text-center text-sm text-white/60">
+                {s.avg_placement > 0 ? `#${Math.round(s.avg_placement)}` : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Withdraw Confirm Modal ─────────────────────────────────────────────────
+function WithdrawConfirmModal({
+  open, onClose, onConfirm, tournamentName, entryFee, bracketGenerated, loading,
+}: {
+  open: boolean; onClose: () => void; onConfirm: () => void;
+  tournamentName: string; entryFee: number; bracketGenerated: boolean; loading: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-[#0f1117] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-xl bg-red-500/15">
+            <UserX className="w-5 h-5 text-red-400" />
+          </div>
+          <div>
+            <h3 className="font-orbitron font-bold text-white text-base">Withdraw from Tournament</h3>
+            <p className="text-xs text-white/40">{tournamentName}</p>
+          </div>
+        </div>
+
+        <div className="space-y-2 mb-5">
+          <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mb-2">Consequences</p>
+          {!bracketGenerated ? (
+            <>
+              <div className="flex items-start gap-2 text-sm text-white/70">
+                <span className="text-green-400 mt-0.5">✓</span>
+                <span>Your slot becomes available for another player</span>
+              </div>
+              {entryFee > 0 && (
+                <div className="flex items-start gap-2 text-sm text-white/70">
+                  <span className="text-green-400 mt-0.5">✓</span>
+                  <span>Entry fee of <span className="text-yellow-400 font-semibold">{entryFee} PP</span> will be refunded</span>
+                </div>
+              )}
+              <div className="flex items-start gap-2 text-sm text-white/70">
+                <span className="text-white/30 mt-0.5">•</span>
+                <span>No fixtures affected (brackets not yet generated)</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 text-sm text-white/70">
+                <span className="text-orange-400 mt-0.5">!</span>
+                <span>All your remaining scheduled matches will be awarded as <span className="text-orange-400 font-semibold">Walkover Wins</span> to your opponents</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-white/70">
+                <span className="text-red-400 mt-0.5">✗</span>
+                <span>No entry fee refund — brackets have already been generated</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-white/70">
+                <span className="text-red-400 mt-0.5">✗</span>
+                <span>This action cannot be undone</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={loading}
+            className="flex-1 py-2.5 rounded-xl border border-white/15 text-white/60 text-sm font-semibold hover:bg-white/5 transition-all">
+            Cancel
+          </button>
+          <button onClick={onConfirm} disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 text-sm font-semibold hover:bg-red-500/30 transition-all flex items-center justify-center gap-2">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+            {loading ? 'Withdrawing…' : 'Withdraw'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 export function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -729,14 +897,23 @@ export function TournamentDetail() {
   const [posts, setPosts] = useState<TournPost[]>([]);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [brStandings, setBRStandings] = useState<BRStanding[]>([]);
   const [fraudFlags, setFraudFlags] = useState<FraudFlag[]>([]);
   const [fraudRisk, setFraudRisk] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'bracket' | 'fixtures' | 'standings' | 'participants' | 'feed'>('overview');
+  const [tab, setTab] = useState<
+    'overview' | 'bracket' | 'fixtures' | 'standings' | 'br_standings' |
+    'participants' | 'feed' | 'organizer'
+  >('overview');
   const [joining, setJoining] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [generatingFixtures, setGeneratingFixtures] = useState(false);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
   const [myParticipant, setMyParticipant] = useState<Participant | null>(null);
+  const [isOrganizer, setIsOrganizer] = useState(false);
+  const [myStaffRole, setMyStaffRole] = useState<string | null>(null);
   const [inGameUsername, setInGameUsername] = useState('');
   const [showIGNModal, setShowIGNModal] = useState(false);
   const realtimeRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -744,14 +921,17 @@ export function TournamentDetail() {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
+    // Auto-expire tournaments whose end_date has passed
+    await (supabase as any).rpc('auto_expire_tournaments');
 
-    const [tRes, pRes, rRes, mRes, postRes, fRes, sRes] = await Promise.all([
+    const [tRes, pRes, rRes, mRes, postRes, fRes, sRes, brRes] = await Promise.all([
       supabase.from('tournaments')
         .select('*, games(id, name, icon, logo_url)')
         .eq('id', id).single(),
       supabase.from('tournament_participants')
         .select('*, profiles(username, avatar_url)')
         .eq('tournament_id', id)
+        .neq('status', 'withdrawn')
         .order('joined_at'),
       supabase.from('tournament_rounds')
         .select('*').eq('tournament_id', id)
@@ -774,6 +954,10 @@ export function TournamentDetail() {
         .eq('tournament_id', id)
         .order('points', { ascending: false })
         .order('goal_difference', { ascending: false }),
+      supabase.from('tournament_br_standings')
+        .select('*, participant:profiles!participant_id(username, avatar_url)')
+        .eq('tournament_id', id)
+        .order('total_kills', { ascending: false }),
     ]);
 
     if (tRes.error) { toast.error('Tournament not found'); navigate('/tournaments'); return; }
@@ -793,8 +977,10 @@ export function TournamentDetail() {
       away_participant_id: f.away_participant_id as string,
       home_score: f.home_score as number | null,
       away_score: f.away_score as number | null,
+      winner_id: f.winner_id as string | null,
       status: f.status as Fixture['status'],
       scheduled_at: f.scheduled_at as string,
+      is_walkover: (f.is_walkover as boolean) ?? false,
       home_participant: f.home_participant as { username: string; avatar_url: string | null } | null,
       away_participant: f.away_participant as { username: string; avatar_url: string | null } | null,
     })));
@@ -816,9 +1002,41 @@ export function TournamentDetail() {
       form: (s.form as string[]) ?? [],
     })));
 
+    // Transform battle royale standings
+    const rawBR = brRes.data ?? [];
+    setBRStandings(rawBR.map((s: Record<string, unknown>) => {
+      const mp = (s.matches_played as number) || 0;
+      const tp = (s.total_placements as number) || 0;
+      return {
+        participant_id: s.participant_id as string,
+        username: (s.participant as { username: string })?.username ?? 'Unknown',
+        avatar_url: (s.participant as { avatar_url: string | null })?.avatar_url ?? null,
+        matches_played: mp,
+        total_kills: (s.total_kills as number) || 0,
+        placement_points: (s.placement_points as number) || 0,
+        total_points: ((s.total_kills as number) || 0) + ((s.placement_points as number) || 0),
+        chicken_dinners: (s.chicken_dinners as number) || 0,
+        avg_placement: mp > 0 ? Math.round(tp / mp) : 0,
+      };
+    }));
+
     if (user) {
       const mine = (pRes.data as Participant[])?.find(p => p.user_id === user.id) ?? null;
       setMyParticipant(mine);
+
+      // Check organizer/staff role
+      const tData = tRes.data as { created_by: string | null };
+      const isOwner = tData?.created_by === user.id;
+      const { data: staffRow } = await supabase
+        .from('tournament_staff').select('role')
+        .eq('tournament_id', id).eq('user_id', user.id)
+        .maybeSingle();
+      const { data: profileRow } = await supabase
+        .from('profiles').select('role').eq('id', user.id).single();
+      const profileRole = (profileRow as { role?: string } | null)?.role ?? '';
+      const isAdmin = ['ADMIN','MODERATOR','SUPER_ADMIN'].includes(profileRole);
+      setIsOrganizer(isOwner || !!staffRow || isAdmin);
+      setMyStaffRole(isOwner ? 'host' : ((staffRow as { role?: string } | null)?.role ?? (isAdmin ? 'admin' : null)));
     }
 
     // Fetch fraud flags for this tournament
@@ -877,8 +1095,20 @@ export function TournamentDetail() {
         in_game_username: inGameUsername.trim() || null,
         status: 'joined',
       } as never);
-      if (error?.code === '23505') { toast.info('Already registered!'); }
-      else if (error) throw new Error(error.message);
+      if (error?.code === '23505') {
+        // Unique constraint hit — might be a re-registration after withdrawal
+        const { error: rejoinErr } = await (supabase as any).rpc('rejoin_tournament', {
+          p_tournament_id: tournament.id,
+          p_in_game_username: inGameUsername.trim() || null,
+        });
+        if (!rejoinErr) {
+          toast.success('Registered! Check in before the tournament starts. 🎮');
+          setShowIGNModal(false); setInGameUsername('');
+          load();
+        } else {
+          toast.info('Already registered!');
+        }
+      } else if (error) throw new Error(error.message);
       else {
         toast.success('Registered! Check in before the tournament starts. 🎮');
         setShowIGNModal(false); setInGameUsername('');
@@ -895,6 +1125,60 @@ export function TournamentDetail() {
     if (error) toast.error(error.message);
     else { toast.success('Checked in! ✅'); load(); }
     setCheckingIn(false);
+  };
+
+  const handleWithdraw = async () => {
+    if (!user || !tournament) return;
+    setWithdrawing(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('withdraw_from_tournament', {
+        p_tournament_id: tournament.id,
+      });
+      if (error) {
+        const msg: string = error.message ?? '';
+        if (msg.includes('not registered') || msg.includes('not found'))
+          toast.error('Registration not found.');
+        else if (msg.includes('completed'))
+          toast.error('Tournament is already completed.');
+        else if (msg.includes('already withdrawn'))
+          toast.error('Already withdrawn from this tournament.');
+        else
+          toast.error(msg || 'Withdrawal failed. Please try again.');
+      } else {
+        const result = data as { refunded: number; walkovers_awarded: number; bracket_generated: boolean };
+        if (result?.walkovers_awarded > 0)
+          toast.success(`Withdrawn. ${result.walkovers_awarded} opponent${result.walkovers_awarded > 1 ? 's' : ''} received walkover wins.`);
+        else if (result?.refunded > 0)
+          toast.success(`Withdrawn and ${result.refunded} PP refunded.`);
+        else
+          toast.success('Successfully withdrawn from tournament.');
+        setWithdrawModalOpen(false);
+        setMyParticipant(null);
+        load();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Withdrawal failed.');
+    }
+    setWithdrawing(false);
+  };
+
+  const handleGenerateFixtures = async () => {
+    if (!tournament || !isOrganizer) return;
+    setGeneratingFixtures(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('generate_fixtures_auto', {
+        p_tournament_id: tournament.id,
+      });
+      if (error) toast.error(error.message || 'Failed to generate fixtures.');
+      else {
+        const result = data as { fixtures_created?: number; rounds?: number };
+        toast.success(`Generated ${result?.fixtures_created ?? 0} fixtures across ${result?.rounds ?? 0} rounds!`);
+        load();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate fixtures.');
+    }
+    setGeneratingFixtures(false);
   };
 
   if (loading) return (
@@ -937,19 +1221,34 @@ export function TournamentDetail() {
     upcoming : { label: 'Upcoming',   color: 'text-blue-400',   bg: 'bg-blue-500/15  border-blue-500/25'  },
     ongoing  : { label: 'Live',       color: 'text-green-400',  bg: 'bg-green-500/15 border-green-500/25' },
     completed: { label: 'Completed',  color: 'text-white/40',   bg: 'bg-white/8      border-white/12'     },
+    cancelled: { label: 'Cancelled',  color: 'text-red-400',    bg: 'bg-red-500/12   border-red-500/25'   },
   }[tournament.status] ?? { label: tournament.status, color: 'text-white/40', bg: 'bg-white/8 border-white/12' };
 
-  // Determine tournament type and show appropriate tabs
-  const isBracketTournament = tournament?.format?.includes('elimination') || tournament?.format === 'single' || tournament?.format === 'double';
-  const isLeagueTournament = tournament?.format?.includes('round') || tournament?.format?.includes('league') || tournament?.format?.includes('group');
+  // Game-type detection
+  const gameName = tournament.games?.name?.toLowerCase() ?? '';
+  const isBRGame = ['pubg', 'free fire', 'cod', 'call of duty'].some(g => gameName.includes(g));
+
+  // Tournament structure detection
+  const tType = (tournament as unknown as { tournament_type?: string }).tournament_type ?? '';
+  const bType = tournament.bracket_generated ? 'bracket' : '';
+  const isBracketTournament =
+    tType.includes('elimination') || bType === 'bracket' ||
+    rounds.length > 0 || matches.length > 0;
 
   const TABS = [
-    { id: 'overview',     label: 'Overview',     icon: Info       },
-    ...(isBracketTournament ? [{ id: 'bracket', label: 'Bracket', icon: Trophy }] : []),
-    ...(isLeagueTournament && fixtures.length > 0 ? [{ id: 'fixtures', label: 'Fixtures', icon: Calendar }] : []),
-    ...(isLeagueTournament && standings.length > 0 ? [{ id: 'standings', label: 'Standings', icon: Trophy }] : []),
-    { id: 'participants', label: 'Players',       icon: Users      },
-    { id: 'feed',         label: 'Live Feed',     icon: Bell       },
+    { id: 'overview',     label: 'Overview',   icon: Info       },
+    ...(isBracketTournament && (rounds.length > 0 || matches.length > 0)
+        ? [{ id: 'bracket', label: 'Bracket', icon: Trophy }] : []),
+    ...(fixtures.length > 0
+        ? [{ id: 'fixtures', label: 'Fixtures', icon: Calendar }] : []),
+    ...(standings.length > 0
+        ? [{ id: 'standings', label: 'Standings', icon: Trophy }] : []),
+    ...(brStandings.length > 0 || isBRGame
+        ? [{ id: 'br_standings', label: isBRGame ? 'Rankings' : 'BR Standings', icon: Target }] : []),
+    { id: 'participants', label: 'Players',     icon: Users      },
+    { id: 'feed',         label: 'Live Feed',   icon: Bell       },
+    ...(isOrganizer
+        ? [{ id: 'organizer', label: 'Manage', icon: Settings }] : []),
   ] as { id: typeof tab; label: string; icon: typeof Info }[];
 
   return (
@@ -1020,6 +1319,15 @@ export function TournamentDetail() {
                 <div className="py-3 px-5 rounded-2xl bg-green-500/15 border border-green-500/25 text-green-400 text-sm font-bold text-center flex items-center justify-center gap-2">
                   <CheckCircle className="w-4 h-4" />Ready ✓
                 </div>
+              )}
+              {/* Withdraw button — shown when registered + tournament not completed/cancelled */}
+              {myParticipant && ['joined', 'checked_in'].includes(myParticipant.status ?? '') &&
+               ['upcoming', 'ongoing'].includes(tournament.status) && (
+                <button onClick={() => setWithdrawModalOpen(true)} disabled={withdrawing}
+                  className="w-full py-2.5 px-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-all flex items-center justify-center gap-1.5">
+                  {withdrawing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                  Withdraw
+                </button>
               )}
               {myMatch && (
                 <button onClick={() => { setActiveMatch(myMatch); setTab('bracket'); }}
@@ -1155,7 +1463,26 @@ export function TournamentDetail() {
         )}
 
         {tab === 'fixtures' && (
-          <FixtureView fixtures={fixtures} onOpenFixture={() => {}} />
+          fixtures.length > 0
+            ? <FixtureView fixtures={fixtures} onOpenFixture={() => {}} />
+            : isOrganizer
+              ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <Calendar className="w-12 h-12 text-white/20" />
+                  <p className="text-white/40 text-sm">No fixtures generated yet.</p>
+                  <button onClick={handleGenerateFixtures} disabled={generatingFixtures}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-60">
+                    {generatingFixtures ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    Generate Fixtures
+                  </button>
+                </div>
+              )
+              : (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <Calendar className="w-12 h-12 text-white/20 mb-3" />
+                  <p className="text-white/40 text-sm">Fixtures not yet available.</p>
+                </div>
+              )
         )}
 
         {tab === 'standings' && (
@@ -1167,6 +1494,23 @@ export function TournamentDetail() {
         )}
 
         {tab === 'feed' && <LiveFeed posts={posts} />}
+
+        {tab === 'br_standings' && (
+          <BRStandingsTable standings={brStandings} />
+        )}
+
+        {tab === 'organizer' && isOrganizer && tournament && (
+          <TournamentOrganizerPanel
+            tournament={tournament as any}
+            myRole={(myStaffRole ?? (isOrganizer ? 'host' : null)) as import('@/components/tournament/Fixtureresultmodal').StaffRole | null}
+            isAdmin={!!(user as any)?.role && ['ADMIN','MODERATOR'].includes((user as any).role)}
+            fixtures={fixtures as any[]}
+            onFixturesUpdated={load}
+            onTournamentStatusChange={load}
+            onTournamentDeleted={() => navigate('/tournaments')}
+            onTournamentEdited={load}
+          />
+        )}
       </div>
 
       {/* IGN Modal */}
@@ -1208,6 +1552,18 @@ export function TournamentDetail() {
           </>
         )}
       </AnimatePresence>
+
+      {tournament && (
+        <WithdrawConfirmModal
+          open={withdrawModalOpen}
+          onClose={() => setWithdrawModalOpen(false)}
+          onConfirm={handleWithdraw}
+          tournamentName={tournament.name}
+          entryFee={tournament.entry_fee}
+          bracketGenerated={tournament.bracket_generated}
+          loading={withdrawing}
+        />
+      )}
     </div>
   );
 }
