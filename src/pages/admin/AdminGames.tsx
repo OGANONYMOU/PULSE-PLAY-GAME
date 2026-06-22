@@ -3,7 +3,7 @@
 // Comprehensive game catalog management with analytics
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdmin } from '@/contexts/AdminContext';
 import {
@@ -559,90 +559,26 @@ export function AdminGames(): React.ReactElement {
     });
   };
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockGames: Game[] = [
-      {
-        id: '1',
-        name: 'PUBG Mobile',
-        description: 'Battle royale mobile game with intense multiplayer action',
-        icon: '🏆',
-        image_url: null,
-        badge: 'Hot',
-        player_count: 15234,
-        tournament_count: 89,
-        category: 'battle-royale',
-        featured: true,
-        status: 'active',
-        popularity_score: 95,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'Free Fire MAX',
-        description: 'Enhanced battle royale experience with upgraded graphics',
-        icon: '🔥',
-        image_url: null,
-        badge: 'New',
-        player_count: 8934,
-        tournament_count: 56,
-        category: 'battle-royale',
-        featured: true,
-        status: 'active',
-        popularity_score: 88,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        name: 'Mobile Legends',
-        description: '5v5 MOBA action with iconic heroes',
-        icon: '⚔️',
-        image_url: null,
-        badge: null,
-        player_count: 12345,
-        tournament_count: 67,
-        category: 'moba',
-        featured: false,
-        status: 'active',
-        popularity_score: 82,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '4',
-        name: 'FIFA Mobile',
-        description: 'Ultimate football gaming experience',
-        icon: '⚽',
-        image_url: null,
-        badge: null,
-        player_count: 4567,
-        tournament_count: 23,
-        category: 'sports',
-        featured: false,
-        status: 'active',
-        popularity_score: 65,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '5',
-        name: 'Apex Legends Mobile',
-        description: 'Legendary battle royale with unique characters',
-        icon: '🦸',
-        image_url: null,
-        badge: 'Coming Soon',
-        player_count: 0,
-        tournament_count: 0,
-        category: 'battle-royale',
-        featured: false,
-        status: 'coming_soon',
-        popularity_score: 0,
-        created_at: new Date().toISOString(),
-      },
-    ];
-
-    setGames(mockGames);
-    calculateStats(mockGames);
-    setIsLoading(false);
+  const fetchGames = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('games')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const list = (data || []) as Game[];
+      setGames(list);
+      calculateStats(list);
+    } catch (err) {
+      console.error('Failed to load games:', err);
+      toast.error('Failed to load games');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchGames(); }, [fetchGames]);
 
   const filteredGames = useMemo(() => {
     let filtered = [...games];
@@ -682,14 +618,14 @@ export function AdminGames(): React.ReactElement {
   };
 
   const handleSave = () => {
-    // Would refresh data from server
     setIsModalOpen(false);
     setEditingGame(null);
+    fetchGames();
   };
 
   const handleDelete = () => {
-    // Would refresh data from server
     setDeleteTarget(null);
+    fetchGames();
   };
 
   return (
