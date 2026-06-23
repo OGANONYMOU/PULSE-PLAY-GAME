@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Shield, ChevronRight, ArrowLeft, Building2,
   Loader2, Lock, Globe, Info, Sparkles, CheckCircle,
-  Gamepad2, Swords, Medal, Plus,
+  Gamepad2, Swords, Medal, Plus, Crosshair,
   Calendar, DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,10 @@ import { resolveGameImage } from '@/lib/gameImages';
 // Note: tournament engine imports removed as they're dynamically imported when needed
 
 type Game = { id: string; name: string; icon: string; logo_url: string | null; category: string };
-type TournamentType = 'esports' | 'football' | 'league';
+type TournamentType = 'esports' | 'football' | 'league' | 'battle_royale';
 type BracketType = 'single_elimination' | 'double_elimination' | 'swiss' | 'round_robin' | 'ladder';
 type FootballType = 'league' | 'group_stage' | 'group_knockout' | 'knockout';
+type BRFormat = 'pubg_style' | 'free_fire' | 'codm_br' | 'codm_mp';
 
 interface TournamentForm {
   // Step 1: Organizer
@@ -31,7 +32,12 @@ interface TournamentForm {
   // Step 2: Game & Type
   game_id: string;
   tournament_family: TournamentType;
-  tournament_type: BracketType | FootballType;
+  tournament_type: BracketType | FootballType | BRFormat;
+
+  // Battle Royale-specific
+  br_preset?: BRFormat;
+  br_kill_points?: number;
+  br_games_per_session?: number;
   
   // Step 3: Basic Info
   name: string;
@@ -63,6 +69,88 @@ interface TournamentForm {
   rounds_count?: number;
   home_and_away?: boolean;
 }
+
+const BR_PRESETS: Record<BRFormat, {
+  label: string; emoji: string; description: string;
+  kill_points: number; placement_points: number[]; game_mode: string;
+  games_per_session: number; rules: string;
+}> = {
+  pubg_style: {
+    label: 'PUBG Style',
+    emoji: '🐔',
+    description: 'Classic PUBG/BGMI scoring — Chicken Dinners & kill points',
+    kill_points: 1,
+    placement_points: [10, 6, 5, 4, 3, 2, 2, 2, 1, 1, 1, 1, 0],
+    game_mode: 'TPP/FPP',
+    games_per_session: 4,
+    rules: `🎮 PUBG / BGMI Tournament Rules
+
+• Format: ${4} games per session, best overall score wins
+• Scoring: Placement Points + Kill Points
+• #1 (Chicken Dinner) = 10 pts · #2 = 6 pts · #3 = 5 pts · #4 = 4 pts · #5 = 3 pts · #6-8 = 2 pts · #9-12 = 1 pt
+• Kill Points: 1 pt per kill
+• Screenshot of final scoreboard required as proof
+• Results must be submitted within 30 minutes of game end
+• Disputes reviewed by admin within 24 hours
+• Any form of cheating or teaming = immediate disqualification`,
+  },
+  free_fire: {
+    label: 'Free Fire',
+    emoji: '🐔',
+    description: 'Free Fire / FF Max scoring — Booyah points system',
+    kill_points: 1,
+    placement_points: [12, 9, 7, 5, 4, 3, 3, 2, 2, 1, 1, 1, 0],
+    game_mode: 'Battle Royale',
+    games_per_session: 4,
+    rules: `🎮 Free Fire / FF Max Tournament Rules
+
+• Format: ${4} games per session, highest total score wins
+• Scoring: Placement Points + Kill Points
+• Booyah (#1) = 12 pts · #2 = 9 pts · #3 = 7 pts · #4 = 5 pts · #5 = 4 pts · #6-7 = 3 pts · #8-9 = 2 pts · #10-12 = 1 pt
+• Kill Points: 1 pt per kill
+• Full scoreboard screenshot mandatory — must show IGN + kills + placement
+• Submit within 20 minutes of match end
+• No squad members from other teams (teaming = DQ)
+• Hacking/cheating = permanent ban from all PulsePlay tournaments`,
+  },
+  codm_br: {
+    label: 'CODM Battle Royale',
+    emoji: '🏆',
+    description: 'Call of Duty Mobile BR — Victory Royale scoring',
+    kill_points: 1,
+    placement_points: [10, 7, 5, 4, 3, 2, 2, 1, 1, 1, 0, 0, 0],
+    game_mode: 'BR',
+    games_per_session: 4,
+    rules: `🎮 Call of Duty Mobile — Battle Royale Rules
+
+• Format: ${4} games per session
+• Scoring: Placement + Kill Points
+• Victory Royale (#1) = 10 pts · #2 = 7 pts · #3 = 5 pts · #4 = 4 pts · #5 = 3 pts · #6-7 = 2 pts · #8-10 = 1 pt
+• Kill Points: 1 pt per kill (shown on end-game scoreboard)
+• End-game scoreboard screenshot required — must show total kills and placement
+• Submit results within 20 minutes of match end
+• No pre-match communication with enemies
+• Fair play policy applies — any exploit abuse = DQ`,
+  },
+  codm_mp: {
+    label: 'CODM Multiplayer',
+    emoji: '🎖️',
+    description: 'CODM Multiplayer — score-based points tracking',
+    kill_points: 1,
+    placement_points: [10, 7, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    game_mode: 'MP',
+    games_per_session: 3,
+    rules: `🎮 Call of Duty Mobile — Multiplayer Rules
+
+• Format: ${3} games per session (Hardpoint/S&D/Domination)
+• Mode scoring: Win = 10 pts · Top 3 = varies · Kill performance tracked
+• Kill Points: 1 pt per kill (final scorecard)
+• Scorecard screenshot required after each match
+• Modes: Alternating between Hardpoint, S&D, and Domination
+• No camping in non-objective areas for more than 30 seconds
+• Toxicity and deliberate griefing = match forfeit`,
+  },
+};
 
 const EFOOTBALL_EASY_MODE = {
   rules: `🎮 eFootball Tournament Rules
@@ -269,15 +357,19 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
   const selectedGame = games.find(g => g.id === form.game_id);
   const isEFootball = selectedGame?.name.toLowerCase().includes('efootball');
   const isFootball = selectedGame?.category === 'sports' || isEFootball;
+  const gameName = selectedGame?.name.toLowerCase() ?? '';
+  const isBRGame = ['pubg', 'bgmi', 'free fire', 'cod', 'call of duty'].some(g => gameName.includes(g));
 
   // Auto-set tournament family based on game
   useEffect(() => {
     if (isFootball && form.tournament_family !== 'football') {
       setForm(prev => ({ ...prev, tournament_family: 'football', tournament_type: 'league' }));
+    } else if (isBRGame && form.tournament_family === 'esports' && !isFootball) {
+      // Suggest BR family for known BR games, but don't force it
     } else if (!isFootball && form.tournament_family === 'football') {
       setForm(prev => ({ ...prev, tournament_family: 'esports', tournament_type: 'single_elimination' }));
     }
-  }, [isFootball, setForm]);
+  }, [isFootball, isBRGame, setForm]);
 
   return (
     <div className="space-y-6">
@@ -312,12 +404,12 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
       {form.game_id && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <FieldLabel label="Tournament Format Family" required />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
-              onClick={() => setForm(prev => ({ 
-                ...prev, 
-                tournament_family: 'esports', 
-                tournament_type: 'single_elimination' 
+              onClick={() => setForm(prev => ({
+                ...prev,
+                tournament_family: 'esports',
+                tournament_type: 'single_elimination'
               }))}
               className={`p-4 rounded-xl border text-left transition-all ${
                 form.tournament_family === 'esports'
@@ -333,12 +425,12 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
               </div>
               <p className="text-xs text-white/40">Brackets, elimination, Swiss</p>
             </button>
-            
+
             <button
-              onClick={() => setForm(prev => ({ 
-                ...prev, 
-                tournament_family: 'football', 
-                tournament_type: 'league' 
+              onClick={() => setForm(prev => ({
+                ...prev,
+                tournament_family: 'football',
+                tournament_type: 'league'
               }))}
               className={`p-4 rounded-xl border text-left transition-all ${
                 form.tournament_family === 'football'
@@ -354,64 +446,167 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
               </div>
               <p className="text-xs text-white/40">Tables, fixtures, standings</p>
             </button>
+
+            <button
+              onClick={() => {
+                const defaultPreset: BRFormat = isBRGame && gameName.includes('free fire') ? 'free_fire'
+                  : isBRGame && gameName.includes('cod') ? 'codm_br'
+                  : 'pubg_style';
+                const preset = BR_PRESETS[defaultPreset];
+                setForm(prev => ({
+                  ...prev,
+                  tournament_family: 'battle_royale',
+                  tournament_type: defaultPreset,
+                  br_preset: defaultPreset,
+                  br_kill_points: preset.kill_points,
+                  br_games_per_session: preset.games_per_session,
+                  rules: prev.rules || preset.rules,
+                }));
+              }}
+              className={`p-4 rounded-xl border text-left transition-all ${
+                form.tournament_family === 'battle_royale'
+                  ? 'border-orange-500/50 bg-orange-500/10'
+                  : 'border-white/10 bg-white/3 hover:border-white/20'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Crosshair className={`w-5 h-5 ${form.tournament_family === 'battle_royale' ? 'text-orange-400' : 'text-white/50'}`} />
+                <span className={`font-semibold ${form.tournament_family === 'battle_royale' ? 'text-white' : 'text-white/70'}`}>
+                  Battle Royale
+                </span>
+              </div>
+              <p className="text-xs text-white/40">PUBG, Free Fire, CODM BR</p>
+            </button>
           </div>
 
           {/* Format Selection */}
-          <div>
-            <FieldLabel label="Specific Format" required />
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {form.tournament_family === 'esports' ? (
-                <>
-                  {[
-                    { id: 'single_elimination', label: 'Single Elimination', desc: 'Lose once = out' },
-                    { id: 'double_elimination', label: 'Double Elimination', desc: 'Lose twice = out' },
-                    { id: 'swiss', label: 'Swiss', desc: 'Fixed rounds, pair by record' },
-                    { id: 'round_robin', label: 'Round Robin', desc: 'Everyone plays everyone' },
-                    { id: 'ladder', label: 'Ladder', desc: 'Challenge-based ranking' },
-                  ].map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => setForm(prev => ({ ...prev, tournament_type: f.id as BracketType }))}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        form.tournament_type === f.id
-                          ? 'bg-cyan-500/15 border-cyan-500/35 text-cyan-400'
-                          : 'border-white/10 text-white/50 hover:border-white/20'
-                      }`}
-                    >
-                      <p className="font-semibold text-sm">{f.label}</p>
-                      <p className="text-[10px] opacity-70">{f.desc}</p>
-                    </button>
-                  ))}
-                </>
-              ) : (
-                <>
-                  {[
-                    { id: 'league', label: 'League / Round Robin', desc: 'Full table with home/away' },
-                    { id: 'group_stage', label: 'Group Stage Only', desc: 'Multiple groups, no knockout' },
-                    { id: 'group_knockout', label: 'Groups + Knockout', desc: 'Group stage then playoffs' },
-                    { id: 'knockout', label: 'Knockout Only', desc: 'Direct elimination bracket' },
-                  ].map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => setForm(prev => ({ ...prev, tournament_type: f.id as FootballType }))}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        form.tournament_type === f.id
-                          ? 'bg-green-500/15 border-green-500/35 text-green-400'
-                          : 'border-white/10 text-white/50 hover:border-white/20'
-                      }`}
-                    >
-                      <p className="font-semibold text-sm">{f.label}</p>
-                      <p className="text-[10px] opacity-70">{f.desc}</p>
-                    </button>
-                  ))}
-                </>
-              )}
+          {form.tournament_family !== 'battle_royale' && (
+            <div>
+              <FieldLabel label="Specific Format" required />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {form.tournament_family === 'esports' ? (
+                  <>
+                    {[
+                      { id: 'single_elimination', label: 'Single Elimination', desc: 'Lose once = out' },
+                      { id: 'double_elimination', label: 'Double Elimination', desc: 'Lose twice = out' },
+                      { id: 'swiss', label: 'Swiss', desc: 'Fixed rounds, pair by record' },
+                      { id: 'round_robin', label: 'Round Robin', desc: 'Everyone plays everyone' },
+                      { id: 'ladder', label: 'Ladder', desc: 'Challenge-based ranking' },
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setForm(prev => ({ ...prev, tournament_type: f.id as BracketType }))}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          form.tournament_type === f.id
+                            ? 'bg-cyan-500/15 border-cyan-500/35 text-cyan-400'
+                            : 'border-white/10 text-white/50 hover:border-white/20'
+                        }`}
+                      >
+                        <p className="font-semibold text-sm">{f.label}</p>
+                        <p className="text-[10px] opacity-70">{f.desc}</p>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {[
+                      { id: 'league', label: 'League / Round Robin', desc: 'Full table with home/away' },
+                      { id: 'group_stage', label: 'Group Stage Only', desc: 'Multiple groups, no knockout' },
+                      { id: 'group_knockout', label: 'Groups + Knockout', desc: 'Group stage then playoffs' },
+                      { id: 'knockout', label: 'Knockout Only', desc: 'Direct elimination bracket' },
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setForm(prev => ({ ...prev, tournament_type: f.id as FootballType }))}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          form.tournament_type === f.id
+                            ? 'bg-green-500/15 border-green-500/35 text-green-400'
+                            : 'border-white/10 text-white/50 hover:border-white/20'
+                        }`}
+                      >
+                        <p className="font-semibold text-sm">{f.label}</p>
+                        <p className="text-[10px] opacity-70">{f.desc}</p>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* BR preset selection */}
+          {form.tournament_family === 'battle_royale' && (
+            <div className="space-y-3">
+              <FieldLabel label="Game Scoring Preset" required />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {(Object.entries(BR_PRESETS) as [BRFormat, typeof BR_PRESETS[BRFormat]][]).map(([id, preset]) => (
+                  <button
+                    key={id}
+                    onClick={() => setForm(prev => ({
+                      ...prev,
+                      tournament_type: id,
+                      br_preset: id,
+                      br_kill_points: preset.kill_points,
+                      br_games_per_session: preset.games_per_session,
+                      rules: prev.rules === '' || Object.values(BR_PRESETS).some(p => p.rules === prev.rules) ? preset.rules : prev.rules,
+                    }))}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      form.br_preset === id
+                        ? 'bg-orange-500/15 border-orange-500/35'
+                        : 'border-white/10 text-white/50 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">{preset.emoji}</span>
+                      <p className={`font-semibold text-sm ${form.br_preset === id ? 'text-orange-300' : 'text-white/70'}`}>{preset.label}</p>
+                    </div>
+                    <p className="text-[10px] text-white/40">{preset.description}</p>
+                    <div className="flex gap-3 mt-2 text-[9px] text-white/30">
+                      <span>+{preset.kill_points} per kill</span>
+                      <span>#{1} = {preset.placement_points[0]}pts</span>
+                      <span>{preset.games_per_session} games/session</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Games per session control */}
+              <div>
+                <FieldLabel label="Games Per Session" hint="How many games each player plays per session" />
+                <div className="flex gap-2">
+                  {[2, 3, 4, 5, 6].map(n => (
+                    <button key={n}
+                      onClick={() => setForm(prev => ({ ...prev, br_games_per_session: n }))}
+                      className={`flex-1 py-2 rounded-xl border text-xs font-orbitron font-black transition-all ${
+                        (form.br_games_per_session ?? 4) === n
+                          ? 'bg-orange-500/15 border-orange-500/35 text-orange-400'
+                          : 'border-white/10 text-white/40 hover:border-white/20'
+                      }`}
+                    >{n}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/15">
+                <p className="text-[10px] text-orange-400 font-semibold mb-1">🎯 Scoring Preview</p>
+                {form.br_preset && (() => {
+                  const p = BR_PRESETS[form.br_preset];
+                  return (
+                    <div className="flex gap-4 text-[10px] text-white/50">
+                      <span>#1 = <span className="text-yellow-400 font-bold">{p.placement_points[0]}pts</span></span>
+                      <span>#2 = <span className="text-white/70 font-bold">{p.placement_points[1]}pts</span></span>
+                      <span>#3 = <span className="text-white/70 font-bold">{p.placement_points[2]}pts</span></span>
+                      <span>Kill = <span className="text-red-400 font-bold">+{form.br_kill_points ?? p.kill_points}pt</span></span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* Easy Mode for eFootball */}
-          {isEFootball && (
-            <div 
+          {isEFootball && form.tournament_family !== 'battle_royale' && (
+            <div
               className={`p-4 rounded-xl border cursor-pointer transition-all ${
                 form.tournament_family === 'football' ? 'border-green-500/30 bg-green-500/5' : 'border-yellow-500/30 bg-yellow-500/5'
               }`}
@@ -463,6 +658,9 @@ export function TournamentCreateNew() {
     game_id: '',
     tournament_family: 'esports',
     tournament_type: 'single_elimination',
+    br_preset: 'pubg_style',
+    br_kill_points: 1,
+    br_games_per_session: 4,
     name: '',
     description: '',
     format: 'best_of_1',
@@ -541,14 +739,27 @@ export function TournamentCreateNew() {
       // For football/league tournaments
       if (form.tournament_family === 'football' || form.tournament_family === 'league') {
         if (form.tournament_type === 'league' || form.tournament_type === 'group_stage') {
-          await supabase.from('tournaments').update({ 
+          await supabase.from('tournaments').update({
             fixture_type: form.tournament_type,
             fixtures_ready: true,
             home_and_away: form.home_and_away || false
           } as never).eq('id', tournamentId);
         }
       }
-      
+
+      // For battle royale tournaments — save scoring config
+      if (form.tournament_family === 'battle_royale' && form.br_preset) {
+        const preset = BR_PRESETS[form.br_preset];
+        await (supabase as any).rpc('upsert_br_scoring_config', {
+          p_tournament_id: tournamentId,
+          p_kill_points: form.br_kill_points ?? preset.kill_points,
+          p_placement_points: preset.placement_points,
+          p_preset_name: form.br_preset,
+          p_game_mode: preset.game_mode,
+          p_games_per_session: form.br_games_per_session ?? preset.games_per_session,
+        });
+      }
+
       toast.success('Tournament structure prepared');
     } catch (err) {
       console.error('Failed to generate tournament structure:', err);
