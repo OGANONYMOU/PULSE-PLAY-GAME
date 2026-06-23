@@ -118,6 +118,36 @@ function PrefetchCritical(): null {
   return null;
 }
 
+// ── Error boundary ────────────────────────────────────────────────────────────
+interface ErrorBoundaryState { hasError: boolean; error: Error | null }
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 text-center bg-[#0a0a12] text-white">
+          <div className="text-5xl">⚠️</div>
+          <h1 className="text-2xl font-bold text-cyan-400">Something went wrong</h1>
+          <p className="text-white/60 max-w-md">An unexpected error occurred. Try refreshing the page.</p>
+          <button
+            className="mt-2 px-6 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition-colors"
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Admin route guard ─────────────────────────────────────────────────────────
 function RequireAdmin({ children }: { children: React.ReactNode }): React.ReactElement {
   const { isAdmin, isLoading } = useAuth();
@@ -192,16 +222,18 @@ function AppContent(): React.ReactElement {
 
 function App(): React.ReactElement {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <PrefetchCritical />
-          <AppContent />
-          <Toaster richColors closeButton position="top-right" />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <PrefetchCritical />
+            <AppContent />
+            <Toaster richColors closeButton position="top-right" />
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

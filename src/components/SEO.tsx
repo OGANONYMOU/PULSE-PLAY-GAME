@@ -11,7 +11,7 @@ interface SEOProps {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const SITE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://pulseplay.app';
+const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) ?? (typeof window !== 'undefined' ? window.location.origin : 'https://pulseplay.app');
 const DEFAULT_IMAGE = '/pulseplay-logo.jpg';
 
 export function SEO({
