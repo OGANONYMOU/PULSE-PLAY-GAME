@@ -30,11 +30,12 @@ if (!url || !key || url === 'undefined' || key === 'undefined') {
         </p>
       </div>`;
   }
+  throw new Error(msg);
 }
 
 export const supabase = createClient<Database>(
-  url  ?? 'https://placeholder.supabase.co',
-  key  ?? 'placeholder-key',
+  url,
+  key,
   {
     auth: {
       autoRefreshToken:   true,

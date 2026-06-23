@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ── FIX 1: Hard timeout — unblock the app even if Supabase is slow/offline ──
     const loadingTimeout = setTimeout(() => {
       if (mounted) {
-        console.warn('[Auth] Loading timeout — unblocking app render');
+        if (import.meta.env.DEV) console.warn('[Auth] Loading timeout — unblocking app render');
         setIsLoading(false);
         initDone.current = true;
       }

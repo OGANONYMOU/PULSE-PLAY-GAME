@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -118,6 +118,14 @@ function PrefetchCritical(): null {
   return null;
 }
 
+// ── Admin route guard ─────────────────────────────────────────────────────────
+function RequireAdmin({ children }: { children: React.ReactNode }): React.ReactElement {
+  const { isAdmin, isLoading } = useAuth();
+  if (isLoading) return <AppLoader />;
+  if (!isAdmin) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────────
 function AppContent(): React.ReactElement {
   const { isLoading } = useAuth();
@@ -152,8 +160,8 @@ function AppContent(): React.ReactElement {
               <Route path="/rivalry/:playerA/:playerB" element={<RivalryPage />} />
               <Route path="/organizers"            element={<AdminOrganizers />} />
 
-              {/* Admin — nested layout */}
-              <Route path="/admin" element={<AdminLayout />}>
+              {/* Admin — nested layout, guarded at route level */}
+              <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
                 <Route index                      element={<AdminDashboard />} />
                 <Route path="analytics"           element={<AdminAnalytics />} />
                 <Route path="users"               element={<AdminUsers />} />
