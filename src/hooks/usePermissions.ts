@@ -199,9 +199,9 @@ export function useTournamentRole(tournamentId: string | null) {
         console.error('[useTournamentRole] Error:', error);
         setRole({ role: null, isAdmin: false });
       } else {
-        setRole({ 
-          role: data as TournamentStaffRole['role'], 
-          isAdmin: profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN' 
+        setRole({
+          role: data as TournamentStaffRole['role'],
+          isAdmin: false, // admins already returned early above
         });
       }
       

@@ -75,11 +75,18 @@ export function useOrganizers() {
       .select('organizer_id, role, can_host_tournaments, can_manage_staff, can_edit_branding')
       .eq('user_id', profile.id);
 
+    type MemberRow = {
+      organizer_id: string;
+      role: OrganizerMember['role'];
+      can_host_tournaments: boolean;
+      can_manage_staff: boolean;
+      can_edit_branding: boolean;
+    };
     const membershipMap = new Map(
-      (memberships ?? []).map(m => [m.organizer_id, m])
+      ((memberships ?? []) as MemberRow[]).map((m: MemberRow) => [m.organizer_id, m])
     );
 
-    const transformed: OrganizerWithMembership[] = orgs.map(org => {
+    const transformed: OrganizerWithMembership[] = (orgs as Organizer[]).map((org: Organizer) => {
       const m = membershipMap.get(org.id);
       return {
         ...org,
