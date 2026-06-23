@@ -112,28 +112,15 @@ DO $$ BEGIN
       USING (auth.uid() = created_by OR public.is_admin_or_moderator(auth.uid()));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='tournament_room_codes' AND policyname='rc_participant_read') THEN
-    -- Use EXECUTE so the subquery referencing tournament_participants is parsed at
-    -- runtime rather than compile-time; this lets the migration run safely on fresh
-    -- preview branches where tournament_participants may not exist yet.
-    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname='public' AND tablename='tournament_participants') THEN
-      EXECUTE $pol$
-        CREATE POLICY "rc_participant_read" ON public.tournament_room_codes FOR SELECT USING (
-          EXISTS (
-            SELECT 1 FROM public.tournament_participants tp
-            WHERE tp.tournament_id = tournament_room_codes.tournament_id
-              AND tp.user_id = auth.uid()
-              AND tp.status NOT IN ('withdrawn', 'dropped', 'disqualified')
-          )
-          OR public.is_admin_or_moderator(auth.uid())
-        )
-      $pol$;
-    ELSE
-      -- Fallback for preview branches: admin/moderator read-only until the
-      -- tournament_participants table is available via a subsequent migration.
-      CREATE POLICY "rc_participant_read" ON public.tournament_room_codes FOR SELECT USING (
-        public.is_admin_or_moderator(auth.uid())
-      );
-    END IF;
+    CREATE POLICY "rc_participant_read" ON public.tournament_room_codes FOR SELECT USING (
+      EXISTS (
+        SELECT 1 FROM public.tournament_participants tp
+        WHERE tp.tournament_id = tournament_room_codes.tournament_id
+          AND tp.user_id = auth.uid()
+          AND tp.status NOT IN ('withdrawn', 'dropped', 'disqualified')
+      )
+      OR public.is_admin_or_moderator(auth.uid())
+    );
   END IF;
 END $$;
 
