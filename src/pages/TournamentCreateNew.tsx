@@ -163,9 +163,6 @@ const EFOOTBALL_EASY_MODE = {
 • No custom formations from opponent — use default settings
 • Lag/disconnect: Reconnect within 5 minutes or forfeit
 • Fair play expected — toxicity = GamerCred penalty`,
-  format: 'best_of_1' as const,
-  max_players: 32,
-  duration: '2h',
 };
 
 const STEPS = [
@@ -613,11 +610,9 @@ function StepGame({ form, setForm, games }: { form: TournamentForm; setForm: Rea
               onClick={() => {
                 setForm(prev => ({
                   ...prev,
-                  format: EFOOTBALL_EASY_MODE.format,
-                  max_players: EFOOTBALL_EASY_MODE.max_players,
                   rules: prev.rules || EFOOTBALL_EASY_MODE.rules,
                 }));
-                toast.success('eFootball settings applied!');
+                toast.success('eFootball rules template applied!');
               }}
             >
               <div className="flex items-start gap-3">
@@ -710,63 +705,6 @@ export function TournamentCreateNew() {
     if (step < STEPS.length - 1) setStep(s => s + 1);
   };
 
-  // Generate tournament structure based on type
-  const generateTournamentStructure = async (tournamentId: string, form: TournamentForm, _userId: string) => {
-    try {
-      // For bracket-based tournaments (esports/shooters)
-      if (form.tournament_family === 'esports') {
-        if (form.tournament_type === 'single_elimination') {
-          // Will generate bracket when participants register
-          // For now, just mark as ready for bracket generation
-          await supabase.from('tournaments').update({ 
-            bracket_type: 'single_elimination',
-            bracket_ready: true 
-          } as never).eq('id', tournamentId);
-        } else if (form.tournament_type === 'double_elimination') {
-          await supabase.from('tournaments').update({ 
-            bracket_type: 'double_elimination',
-            bracket_ready: true 
-          } as never).eq('id', tournamentId);
-        } else if (form.tournament_type === 'round_robin') {
-          // Round robin uses fixture system
-          await supabase.from('tournaments').update({ 
-            fixture_type: 'round_robin',
-            fixtures_ready: true 
-          } as never).eq('id', tournamentId);
-        }
-      }
-      
-      // For football/league tournaments
-      if (form.tournament_family === 'football' || form.tournament_family === 'league') {
-        if (form.tournament_type === 'league' || form.tournament_type === 'group_stage') {
-          await supabase.from('tournaments').update({
-            fixture_type: form.tournament_type,
-            fixtures_ready: true,
-            home_and_away: form.home_and_away || false
-          } as never).eq('id', tournamentId);
-        }
-      }
-
-      // For battle royale tournaments — save scoring config
-      if (form.tournament_family === 'battle_royale' && form.br_preset) {
-        const preset = BR_PRESETS[form.br_preset];
-        await (supabase as any).rpc('upsert_br_scoring_config', {
-          p_tournament_id: tournamentId,
-          p_kill_points: form.br_kill_points ?? preset.kill_points,
-          p_placement_points: preset.placement_points,
-          p_preset_name: form.br_preset,
-          p_game_mode: preset.game_mode,
-          p_games_per_session: form.br_games_per_session ?? preset.games_per_session,
-        });
-      }
-
-      toast.success('Tournament structure prepared');
-    } catch (err) {
-      console.error('Failed to generate tournament structure:', err);
-      toast.error('Tournament created but structure generation failed');
-    }
-  };
-
   const createTournament = async () => {
     if (!user) return;
     setSaving(true);
@@ -833,8 +771,18 @@ export function TournamentCreateNew() {
       }
     );
     
-    // Generate bracket/fixtures based on tournament type
-    await generateTournamentStructure(tId, form, user.id);
+    // Save BR scoring config if applicable
+    if (form.tournament_family === 'battle_royale' && form.br_preset) {
+      const preset = BR_PRESETS[form.br_preset];
+      await (supabase as any).rpc('upsert_br_scoring_config', {
+        p_tournament_id: tId,
+        p_kill_points: form.br_kill_points ?? preset.kill_points,
+        p_placement_points: preset.placement_points,
+        p_preset_name: form.br_preset,
+        p_game_mode: preset.game_mode,
+        p_games_per_session: form.br_games_per_session ?? preset.games_per_session,
+      });
+    }
 
     toast.success('Tournament created successfully! 🏆');
     navigate(`/tournaments/${tId}`);

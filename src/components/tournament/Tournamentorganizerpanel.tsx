@@ -196,6 +196,9 @@ export function TournamentOrganizerPanel({
   const [inviteRole, setInviteRole]         = useState<StaffRole>('reporter');
   const [inviting, setInviting]             = useState(false);
 
+  // Fixture generation state
+  const [generatingFixtures, setGeneratingFixtures] = useState(false);
+
   // Lifecycle action state
   const [lifecycleLoading, setLifecycleLoading] = useState(false);
 
@@ -407,6 +410,25 @@ export function TournamentOrganizerPanel({
       toast.success(`Tournament ${action === 'start' ? 'started' : action === 'complete' ? 'completed' : 'cancelled'}!`);
     } finally {
       setLifecycleLoading(false);
+    }
+  };
+
+  // ── Generate fixtures / bracket ─────────────────────────────────────────────
+  const handleGenerateFixtures = async () => {
+    if (!canRecordResults) return;
+    setGeneratingFixtures(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('generate_fixtures_auto', {
+        p_tournament_id: tournament.id,
+      });
+      if (error) { toast.error(error.message || 'Failed to generate fixtures.'); return; }
+      const result = data as { fixtures_created?: number; rounds?: number };
+      toast.success(`Generated ${result?.fixtures_created ?? 0} fixtures across ${result?.rounds ?? 0} rounds!`);
+      onFixturesUpdated();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate fixtures.');
+    } finally {
+      setGeneratingFixtures(false);
     }
   };
 
@@ -675,7 +697,20 @@ export function TournamentOrganizerPanel({
                 <SectionHeader title="Fixtures" count={fixtures.length} />
 
                 {fixtures.length === 0 ? (
-                  <EmptySlate icon={<Swords className="w-10 h-10" />} text="No fixtures generated yet" />
+                  <div className="flex flex-col items-center gap-4 py-10 text-white/20">
+                    <Swords className="w-10 h-10" />
+                    <p className="text-xs">No fixtures generated yet.</p>
+                    {canRecordResults && (
+                      <button
+                        onClick={handleGenerateFixtures}
+                        disabled={generatingFixtures}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-xs font-bold disabled:opacity-50 hover:opacity-90 transition-all"
+                      >
+                        {generatingFixtures ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                        Generate Fixtures
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {fixtures.map((f, idx) => {
