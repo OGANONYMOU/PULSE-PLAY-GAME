@@ -11,7 +11,7 @@ import {
   Play, Square, Trash2, Plus,
   Loader2, Shield, UserCheck, UserX, Crown, MoreHorizontal,
   Flag, RefreshCw, Search, XCircle, Zap, Settings2,
-  Edit2, Save, X as XIcon,
+  Edit2, Save, X as XIcon, Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { FixtureResultModal, type Fixture, type StaffRole } from './Fixtureresultmodal';
+import { RoomCodePanel } from './RoomCodePanel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -107,7 +108,7 @@ interface EditForm {
   banner_url: string;
 }
 
-type PanelTab = 'participants' | 'staff' | 'fixtures' | 'disputes' | 'lifecycle';
+type PanelTab = 'participants' | 'staff' | 'fixtures' | 'disputes' | 'lifecycle' | 'room_codes';
 
 const STAFF_ROLES: { value: StaffRole; label: string; desc: string }[] = [
   { value: 'host',            label: 'Host',            desc: 'Full control' },
@@ -480,10 +481,13 @@ export function TournamentOrganizerPanel({
   );
 
   const checkedIn = participants.filter(p => p.status === 'checked_in').length;
+  const isBRTournament = tournament.tournament_family === 'battle_royale';
+
   const TABS: { id: PanelTab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'participants', label: 'Players',  icon: <Users className="w-3.5 h-3.5" />, count: participants.length },
     { id: 'fixtures',     label: 'Fixtures', icon: <Swords className="w-3.5 h-3.5" />, count: fixtures.length },
     { id: 'disputes',     label: 'Disputes', icon: <Flag className="w-3.5 h-3.5" />,   count: disputes.length },
+    ...(isBRTournament ? [{ id: 'room_codes' as PanelTab, label: 'Room Codes', icon: <Key className="w-3.5 h-3.5" /> }] : []),
     ...(canManageStaff ? [{ id: 'staff' as PanelTab, label: 'Staff', icon: <Shield className="w-3.5 h-3.5" />, count: staff.length }] : []),
     ...(canManageLifecycle ? [{ id: 'lifecycle' as PanelTab, label: 'Controls', icon: <Settings2 className="w-3.5 h-3.5" /> }] : []),
   ];
@@ -809,6 +813,16 @@ export function TournamentOrganizerPanel({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── ROOM CODES ───────────────────────────────────────────────── */}
+            {activeTab === 'room_codes' && (
+              <RoomCodePanel
+                tournamentId={tournament.id}
+                canManage={canRecordResults}
+                gamesPerSession={4}
+                maxSessions={6}
+              />
             )}
 
             {/* ── STAFF ────────────────────────────────────────────────────── */}

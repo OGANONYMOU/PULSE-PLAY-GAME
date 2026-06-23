@@ -18,6 +18,8 @@ import { submitDispute } from '@/lib/dispute/disputeSystem';
 import { type FraudFlag } from '@/lib/fraud/fraudDetection';
 import { resolveGameImage } from '@/lib/gameImages';
 import { TournamentOrganizerPanel } from '@/components/tournament/Tournamentorganizerpanel';
+import { BRGameResultModal, type BRScoringConfig } from '@/components/tournament/BRGameResultModal';
+import { RoomCodePanel } from '@/components/tournament/RoomCodePanel';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type TournamentFull = {
@@ -786,6 +788,8 @@ export function TournamentDetail() {
   const [myParticipant, setMyParticipant] = useState<Participant | null>(null);
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [myStaffRole, setMyStaffRole] = useState<string | null>(null);
+  const [brConfig, setBRConfig] = useState<BRScoringConfig | null>(null);
+  const [brModalOpen, setBRModalOpen] = useState(false);
   const [inGameUsername, setInGameUsername] = useState('');
   const [showIGNModal, setShowIGNModal] = useState(false);
   const realtimeRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -834,6 +838,22 @@ export function TournamentDetail() {
 
     if (tRes.error) { toast.error('Tournament not found'); navigate('/tournaments'); return; }
     setTournament(tRes.data as TournamentFull);
+
+    // Load BR scoring config
+    const { data: brConfigData } = await (supabase as any)
+      .from('br_scoring_configs')
+      .select('*')
+      .eq('tournament_id', id)
+      .maybeSingle();
+    if (brConfigData) {
+      setBRConfig({
+        kill_points: brConfigData.kill_points,
+        placement_points: brConfigData.placement_points,
+        preset_name: brConfigData.preset_name ?? null,
+        game_mode: brConfigData.game_mode ?? null,
+        games_per_session: brConfigData.games_per_session ?? 4,
+      });
+    }
     setParticipants((pRes.data as Participant[]) ?? []);
     setRounds((rRes.data as Round[]) ?? []);
     setMatches((mRes.data as Match[]) ?? []);
@@ -945,6 +965,8 @@ export function TournamentDetail() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `tournament_id=eq.${id}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_fixtures', filter: `tournament_id=eq.${id}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_standings', filter: `tournament_id=eq.${id}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'br_game_results', filter: `tournament_id=eq.${id}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_room_codes', filter: `tournament_id=eq.${id}` }, load)
       .subscribe();
     realtimeRef.current = channel;
     return () => { supabase.removeChannel(channel); };
@@ -1098,7 +1120,9 @@ export function TournamentDetail() {
 
   // Game-type detection
   const gameName = tournament.games?.name?.toLowerCase() ?? '';
-  const isBRGame = ['pubg', 'free fire', 'cod', 'call of duty'].some(g => gameName.includes(g));
+  const isBRGame = ['pubg', 'bgmi', 'free fire', 'cod', 'call of duty'].some(g => gameName.includes(g));
+  const tFamily = (tournament as unknown as { tournament_family?: string }).tournament_family ?? '';
+  const isBRTournament = tFamily === 'battle_royale' || (isBRGame && brConfig !== null);
 
   // Tournament structure detection
   const tType = (tournament as unknown as { tournament_type?: string }).tournament_type ?? '';
@@ -1115,8 +1139,8 @@ export function TournamentDetail() {
         ? [{ id: 'fixtures', label: 'Fixtures', icon: Calendar }] : []),
     ...(standings.length > 0
         ? [{ id: 'standings', label: 'Standings', icon: Trophy }] : []),
-    ...(brStandings.length > 0 || isBRGame
-        ? [{ id: 'br_standings', label: isBRGame ? 'Rankings' : 'BR Standings', icon: Target }] : []),
+    ...(brStandings.length > 0 || isBRTournament || isBRGame
+        ? [{ id: 'br_standings', label: isBRTournament ? 'Rankings' : 'BR Standings', icon: Target }] : []),
     { id: 'participants', label: 'Players',     icon: Users      },
     { id: 'feed',         label: 'Live Feed',   icon: Bell       },
     ...(isOrganizer
@@ -1368,7 +1392,44 @@ export function TournamentDetail() {
         {tab === 'feed' && <LiveFeed posts={posts} />}
 
         {tab === 'br_standings' && (
-          <BRStandingsTable standings={brStandings} />
+          <div className="space-y-6">
+            {/* Submit result CTA for registered participants */}
+            {myParticipant && ['joined', 'checked_in'].includes(myParticipant.status ?? '') &&
+             ['upcoming', 'ongoing'].includes(tournament.status) && (
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-orange-500/8 border border-orange-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center">
+                    <Crosshair className="w-4 h-4 text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Submit Your Game Result</p>
+                    <p className="text-[10px] text-white/40">Record kills + placement after each game</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBRModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-xs hover:opacity-90 transition-all flex items-center gap-1.5"
+                >
+                  <Crosshair className="w-3.5 h-3.5" />
+                  Submit Result
+                </button>
+              </div>
+            )}
+
+            {/* Standings table */}
+            <BRStandingsTable standings={brStandings} />
+
+            {/* Room Codes section */}
+            {(isBRTournament || isBRGame) && (
+              <div className="pt-4 border-t border-white/8">
+                <RoomCodePanel
+                  tournamentId={tournament.id}
+                  canManage={false}
+                  gamesPerSession={brConfig?.games_per_session ?? 4}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {tab === 'organizer' && isOrganizer && tournament && (
@@ -1384,6 +1445,19 @@ export function TournamentDetail() {
           />
         )}
       </div>
+
+      {/* BR Game Result Modal */}
+      {myParticipant && user && (
+        <BRGameResultModal
+          open={brModalOpen}
+          onClose={() => setBRModalOpen(false)}
+          onSubmitted={() => { setBRModalOpen(false); load(); }}
+          tournamentId={tournament.id}
+          participantId={myParticipant.id}
+          myUserId={user.id}
+          config={brConfig}
+        />
+      )}
 
       {/* IGN Modal */}
       <AnimatePresence>
