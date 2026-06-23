@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,7 +60,7 @@ export function usePermissions() {
     setLoading(true);
     
     // Fetch global permissions
-    const { data: permsData, error: permsError } = await supabase
+    const { data: permsData, error: permsError } = await (supabase as any)
       .from('global_permissions')
       .select('*')
       .eq('user_id', profile.id)
@@ -70,11 +69,11 @@ export function usePermissions() {
     if (permsError) {
       console.error('[usePermissions] Error fetching permissions:', permsError);
     } else {
-      setPermissions(permsData || []);
+      setPermissions((permsData as GlobalPermissionRow[]) || []);
     }
 
     // Fetch organizer memberships
-    const { data: membersData, error: membersError } = await supabase
+    const { data: membersData, error: membersError } = await (supabase as any)
       .from('organizer_members')
       .select('*')
       .eq('user_id', profile.id);
@@ -82,7 +81,7 @@ export function usePermissions() {
     if (membersError) {
       console.error('[usePermissions] Error fetching memberships:', membersError);
     } else {
-      setMyOrganizerMemberships(membersData || []);
+      setMyOrganizerMemberships((membersData as OrganizerMember[]) || []);
     }
 
     setLoading(false);
@@ -190,7 +189,7 @@ export function useTournamentRole(tournamentId: string | null) {
       }
 
       // Use the database function to get role
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .rpc('get_tournament_role', {
           p_user_id: profile.id,
           p_tournament_id: tournamentId,
@@ -200,9 +199,9 @@ export function useTournamentRole(tournamentId: string | null) {
         console.error('[useTournamentRole] Error:', error);
         setRole({ role: null, isAdmin: false });
       } else {
-        setRole({ 
-          role: data as TournamentStaffRole['role'], 
-          isAdmin: profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN' 
+        setRole({
+          role: data as TournamentStaffRole['role'],
+          isAdmin: false, // admins already returned early above
         });
       }
       
@@ -228,7 +227,7 @@ export function useUserPermissions(userId: string | null) {
 
     const fetchUserPermissions = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('global_permissions')
         .select('*')
         .eq('user_id', userId)
@@ -237,7 +236,7 @@ export function useUserPermissions(userId: string | null) {
       if (error) {
         console.error('[useUserPermissions] Error:', error);
       } else {
-        setPermissions(data || []);
+        setPermissions((data as GlobalPermissionRow[]) || []);
       }
       setLoading(false);
     };
@@ -263,7 +262,7 @@ export function usePermissionManagement() {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { error } = await supabase.from('global_permissions').insert({
+    const { error } = await (supabase as any).from('global_permissions').insert({
       user_id: userId,
       granted_by: profile.id,
       permission,
@@ -292,7 +291,7 @@ export function usePermissionManagement() {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('global_permissions')
       .update({
         is_active: false,
@@ -317,7 +316,7 @@ export function usePermissionManagement() {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('organizer_members')
       .update({ can_host_tournaments: canHost })
       .eq('id', membershipId);

@@ -38,7 +38,7 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-const PRIMARY_ADMIN_EMAIL = 'adegbesanadebola@outlook.com';
+const PRIMARY_ADMIN_EMAIL = (import.meta.env.VITE_PRIMARY_ADMIN_EMAIL as string | undefined) ?? '';
 type Role = 'USER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
 
 // ═══════════════════════════════════════════════════════════════════════════════

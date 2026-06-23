@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,26 +60,33 @@ export function useOrganizers() {
     setLoading(true); setError(null);
 
     // Fetch all visible organizers (RLS handles visibility)
-    const { data: orgs, error: orgErr } = await supabase
+    const { data: orgs, error: orgErr } = await (supabase as any)
       .from('organizers')
       .select('*, owner:profiles!owner_id(username, avatar_url)')
       .order('tournament_count', { ascending: false });
 
-    if (orgErr) { setError(orgErr.message); setLoading(false); return; }
+    if (orgErr) { setError((orgErr as { message: string }).message); setLoading(false); return; }
 
     if (!orgs?.length) { setOrganizers([]); setLoading(false); return; }
 
     // Fetch current user's memberships separately to avoid broken join
-    const { data: memberships } = await supabase
+    const { data: memberships } = await (supabase as any)
       .from('organizer_members')
       .select('organizer_id, role, can_host_tournaments, can_manage_staff, can_edit_branding')
       .eq('user_id', profile.id);
 
+    type MemberRow = {
+      organizer_id: string;
+      role: 'member' | 'moderator' | 'manager' | 'co_host';
+      can_host_tournaments: boolean;
+      can_manage_staff: boolean;
+      can_edit_branding: boolean;
+    };
     const membershipMap = new Map(
-      (memberships ?? []).map(m => [m.organizer_id, m])
+      ((memberships ?? []) as MemberRow[]).map((m: MemberRow) => [m.organizer_id, m])
     );
 
-    const transformed: OrganizerWithMembership[] = orgs.map(org => {
+    const transformed: OrganizerWithMembership[] = (orgs as Organizer[]).map((org: Organizer) => {
       const m = membershipMap.get(org.id);
       return {
         ...org,
@@ -116,22 +122,23 @@ export function useOrganizer(slug: string | null) {
     const fetchOrganizer = async () => {
       setLoading(true); setError(null);
 
-      const { data: orgData, error: orgError } = await supabase
+      const { data: orgData, error: orgError } = await (supabase as any)
         .from('organizers')
         .select('*, owner:profiles!owner_id(username, avatar_url)')
         .eq('slug', slug)
         .single();
 
-      if (orgError) { setError(orgError.message); setLoading(false); return; }
+      if (orgError) { setError((orgError as { message: string }).message); setLoading(false); return; }
 
-      const { data: membersData } = await supabase
+      const { data: membersData } = await (supabase as any)
         .from('organizer_members')
         .select('*, profile:user_id(username, avatar_url, role), added_by_profile:added_by(username)')
-        .eq('organizer_id', orgData.id);
+        .eq('organizer_id', (orgData as Organizer).id);
 
-      const myMembership = membersData?.find(m => m.user_id === profile?.id);
+      const rows = (membersData ?? []) as OrganizerMemberWithProfile[];
+      const myMembership = rows.find(m => m.user_id === profile?.id);
       setOrganizer({
-        ...orgData,
+        ...(orgData as Organizer),
         my_role: myMembership?.role,
         my_permissions: myMembership ? {
           can_host: myMembership.can_host_tournaments,
@@ -139,7 +146,7 @@ export function useOrganizer(slug: string | null) {
           can_edit_branding: myMembership.can_edit_branding,
         } : undefined,
       });
-      setMembers(membersData ?? []);
+      setMembers(rows);
       setLoading(false);
     };
 
@@ -161,7 +168,7 @@ export function useOrganizerManagement() {
   }): Promise<{ success: boolean; organizer?: Organizer; error?: string }> => {
     if (!profile) return { success: false, error: 'Not authenticated' };
 
-    const { data: organizer, error } = await supabase
+    const { data: organizer, error } = await (supabase as any)
       .from('organizers')
       .insert({
         name: data.name,
@@ -174,12 +181,12 @@ export function useOrganizerManagement() {
       .single();
 
     if (error) {
-      if (error.code === '23505') return { success: false, error: 'That slug is already taken — try a different one.' };
-      return { success: false, error: error.message };
+      if ((error as { code: string }).code === '23505') return { success: false, error: 'That slug is already taken — try a different one.' };
+      return { success: false, error: (error as { message: string }).message };
     }
 
     // Auto-add creator as co_host member with full permissions
-    await supabase.from('organizer_members').insert({
+    await (supabase as any).from('organizer_members').insert({
       organizer_id: (organizer as Organizer).id,
       user_id: profile.id,
       role: 'co_host',
@@ -198,12 +205,12 @@ export function useOrganizerManagement() {
   ): Promise<{ success: boolean; error?: string }> => {
     if (!profile) return { success: false, error: 'Not authenticated' };
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('organizers')
       .update({ ...data, updated_at: new Date().toISOString() })
       .eq('id', organizerId);
 
-    return error ? { success: false, error: error.message } : { success: true };
+    return error ? { success: false, error: (error as { message: string }).message } : { success: true };
   };
 
   const addMember = async (
@@ -214,7 +221,7 @@ export function useOrganizerManagement() {
   ): Promise<{ success: boolean; error?: string }> => {
     if (!profile) return { success: false, error: 'Not authenticated' };
 
-    const { error } = await supabase.from('organizer_members').insert({
+    const { error } = await (supabase as any).from('organizer_members').insert({
       organizer_id: organizerId,
       user_id: userId,
       role,
@@ -225,8 +232,8 @@ export function useOrganizerManagement() {
     });
 
     if (error) {
-      if (error.code === '23505') return { success: false, error: 'User is already a member' };
-      return { success: false, error: error.message };
+      if ((error as { code: string }).code === '23505') return { success: false, error: 'User is already a member' };
+      return { success: false, error: (error as { message: string }).message };
     }
     return { success: true };
   };
@@ -241,14 +248,14 @@ export function useOrganizerManagement() {
     }
   ): Promise<{ success: boolean; error?: string }> => {
     if (!profile) return { success: false, error: 'Not authenticated' };
-    const { error } = await supabase.from('organizer_members').update(updates).eq('id', membershipId);
-    return error ? { success: false, error: error.message } : { success: true };
+    const { error } = await (supabase as any).from('organizer_members').update(updates).eq('id', membershipId);
+    return error ? { success: false, error: (error as { message: string }).message } : { success: true };
   };
 
   const removeMember = async (membershipId: string): Promise<{ success: boolean; error?: string }> => {
     if (!profile) return { success: false, error: 'Not authenticated' };
 
-    const { data: membership } = await supabase
+    const { data: membership } = await (supabase as any)
       .from('organizer_members')
       .select('organizer_id, user_id')
       .eq('id', membershipId)
@@ -256,11 +263,11 @@ export function useOrganizerManagement() {
 
     if (!membership) return { success: false, error: 'Membership not found' };
 
-    const { data: org } = await supabase.from('organizers').select('owner_id').eq('id', membership.organizer_id).single();
-    if (org?.owner_id === membership.user_id) return { success: false, error: 'Cannot remove the owner' };
+    const { data: org } = await (supabase as any).from('organizers').select('owner_id').eq('id', (membership as { organizer_id: string; user_id: string }).organizer_id).single();
+    if ((org as { owner_id: string } | null)?.owner_id === (membership as { user_id: string }).user_id) return { success: false, error: 'Cannot remove the owner' };
 
-    const { error } = await supabase.from('organizer_members').delete().eq('id', membershipId);
-    return error ? { success: false, error: error.message } : { success: true };
+    const { error } = await (supabase as any).from('organizer_members').delete().eq('id', membershipId);
+    return error ? { success: false, error: (error as { message: string }).message } : { success: true };
   };
 
   return { createOrganizer, updateOrganizer, addMember, updateMember, removeMember };
@@ -272,60 +279,57 @@ export function useHostableOrganizers() {
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchHostable = useCallback(async () => {
     if (!profile) { setOrganizers([]); setLoading(false); return; }
+    setLoading(true);
 
-    const fetch = async () => {
-      setLoading(true);
-
-      // Admins see all
-      if (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN') {
-        const { data } = await supabase
-          .from('organizers')
-          .select('*, owner:profiles!owner_id(username, avatar_url)')
-          .order('name');
-        setOrganizers(data ?? []);
-        setLoading(false);
-        return;
-      }
-
-      // Owned organizers
-      const { data: owned } = await supabase
+    // Admins see all
+    if (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN') {
+      const { data } = await (supabase as any)
         .from('organizers')
         .select('*, owner:profiles!owner_id(username, avatar_url)')
-        .eq('owner_id', profile.id);
-
-      // Organizer memberships with hosting rights
-      const { data: memberRows } = await supabase
-        .from('organizer_members')
-        .select('organizer_id')
-        .eq('user_id', profile.id)
-        .eq('can_host_tournaments', true);
-
-      const memberOrgIds = (memberRows ?? []).map(r => r.organizer_id);
-
-      let memberOrgs: Organizer[] = [];
-      if (memberOrgIds.length > 0) {
-        const { data } = await supabase
-          .from('organizers')
-          .select('*, owner:profiles!owner_id(username, avatar_url)')
-          .in('id', memberOrgIds);
-        memberOrgs = data ?? [];
-      }
-
-      // Merge, deduplicate
-      const seen = new Set<string>();
-      const all: Organizer[] = [];
-      for (const org of [...(owned ?? []), ...memberOrgs]) {
-        if (!seen.has(org.id)) { seen.add(org.id); all.push(org); }
-      }
-
-      setOrganizers(all);
+        .order('name');
+      setOrganizers((data as Organizer[]) ?? []);
       setLoading(false);
-    };
+      return;
+    }
 
-    fetch();
+    // Owned organizers
+    const { data: owned } = await (supabase as any)
+      .from('organizers')
+      .select('*, owner:profiles!owner_id(username, avatar_url)')
+      .eq('owner_id', profile.id);
+
+    // Organizer memberships with hosting rights
+    const { data: memberRows } = await (supabase as any)
+      .from('organizer_members')
+      .select('organizer_id')
+      .eq('user_id', profile.id)
+      .eq('can_host_tournaments', true);
+
+    const memberOrgIds = ((memberRows ?? []) as Array<{ organizer_id: string }>).map(r => r.organizer_id);
+
+    let memberOrgs: Organizer[] = [];
+    if (memberOrgIds.length > 0) {
+      const { data } = await (supabase as any)
+        .from('organizers')
+        .select('*, owner:profiles!owner_id(username, avatar_url)')
+        .in('id', memberOrgIds);
+      memberOrgs = (data as Organizer[]) ?? [];
+    }
+
+    // Merge, deduplicate
+    const seen = new Set<string>();
+    const all: Organizer[] = [];
+    for (const org of [...((owned as Organizer[]) ?? []), ...memberOrgs]) {
+      if (!seen.has(org.id)) { seen.add(org.id); all.push(org); }
+    }
+
+    setOrganizers(all);
+    setLoading(false);
   }, [profile]);
 
-  return { organizers, loading, refresh: fetch };
+  useEffect(() => { fetchHostable(); }, [fetchHostable]);
+
+  return { organizers, loading, refresh: fetchHostable };
 }

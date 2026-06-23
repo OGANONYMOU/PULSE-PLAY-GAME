@@ -33,6 +33,8 @@ const DEFAULTS: Record<FlagKey, boolean> = {
 };
 
 export function getFlag(key: FlagKey): boolean {
+  // In production, always use compiled defaults — localStorage is not a trusted config source
+  if (import.meta.env.PROD) return DEFAULTS[key];
   try {
     const raw = localStorage.getItem(key);
     if (raw === null) return DEFAULTS[key];
@@ -41,6 +43,7 @@ export function getFlag(key: FlagKey): boolean {
 }
 
 export function setFlag(key: FlagKey, value: boolean): void {
+  if (import.meta.env.PROD) return;
   try { localStorage.setItem(key, String(value)); } catch { /* noop */ }
 }
 
