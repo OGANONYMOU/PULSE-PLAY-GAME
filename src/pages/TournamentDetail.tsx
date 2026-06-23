@@ -783,7 +783,6 @@ export function TournamentDetail() {
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
-  const [generatingFixtures, setGeneratingFixtures] = useState(false);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
   const [myParticipant, setMyParticipant] = useState<Participant | null>(null);
   const [isOrganizer, setIsOrganizer] = useState(false);
@@ -797,8 +796,6 @@ export function TournamentDetail() {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    // Auto-expire tournaments whose end_date has passed
-    await (supabase as any).rpc('auto_expire_tournaments');
 
     const [tRes, pRes, rRes, mRes, postRes, fRes, sRes, brRes] = await Promise.all([
       supabase.from('tournaments')
@@ -1054,25 +1051,6 @@ export function TournamentDetail() {
       toast.error(e instanceof Error ? e.message : 'Withdrawal failed.');
     }
     setWithdrawing(false);
-  };
-
-  const handleGenerateFixtures = async () => {
-    if (!tournament || !isOrganizer) return;
-    setGeneratingFixtures(true);
-    try {
-      const { data, error } = await (supabase as any).rpc('generate_fixtures_auto', {
-        p_tournament_id: tournament.id,
-      });
-      if (error) toast.error(error.message || 'Failed to generate fixtures.');
-      else {
-        const result = data as { fixtures_created?: number; rounds?: number };
-        toast.success(`Generated ${result?.fixtures_created ?? 0} fixtures across ${result?.rounds ?? 0} rounds!`);
-        load();
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to generate fixtures.');
-    }
-    setGeneratingFixtures(false);
   };
 
   if (loading) return (
@@ -1361,24 +1339,15 @@ export function TournamentDetail() {
         {tab === 'fixtures' && (
           fixtures.length > 0
             ? <FixtureView fixtures={fixtures} onOpenFixture={() => {}} />
-            : isOrganizer
-              ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-4">
-                  <Calendar className="w-12 h-12 text-white/20" />
-                  <p className="text-white/40 text-sm">No fixtures generated yet.</p>
-                  <button onClick={handleGenerateFixtures} disabled={generatingFixtures}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-60">
-                    {generatingFixtures ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    Generate Fixtures
-                  </button>
-                </div>
-              )
-              : (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <Calendar className="w-12 h-12 text-white/20 mb-3" />
-                  <p className="text-white/40 text-sm">Fixtures not yet available.</p>
-                </div>
-              )
+            : (
+              <div className="flex flex-col items-center justify-center py-16 gap-2">
+                <Calendar className="w-12 h-12 text-white/20" />
+                <p className="text-white/40 text-sm">Fixtures not yet available.</p>
+                {isOrganizer && (
+                  <p className="text-[11px] text-white/25 text-center">Use the <span className="text-amber-400">Manage</span> tab → Fixtures to generate them.</p>
+                )}
+              </div>
+            )
         )}
 
         {tab === 'standings' && (
