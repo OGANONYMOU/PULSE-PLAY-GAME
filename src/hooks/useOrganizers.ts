@@ -77,7 +77,7 @@ export function useOrganizers() {
 
     type MemberRow = {
       organizer_id: string;
-      role: OrganizerMember['role'];
+      role: 'member' | 'moderator' | 'manager' | 'co_host';
       can_host_tournaments: boolean;
       can_manage_staff: boolean;
       can_edit_branding: boolean;
