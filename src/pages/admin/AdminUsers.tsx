@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Search, Filter, Crown, Shield,
   Ban, UserCheck, AlertTriangle, CheckCircle2,
-  Flag,
+  Flag, CheckSquare, Square,
   AlertOctagon,
   ChevronDown,
   RefreshCw, Download,
@@ -506,6 +506,8 @@ export function AdminUsers(): React.ReactElement {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionModal, setActionModal] = useState<{ open: boolean; action: string; user: ExtendedUser | null }>({ open: false, action: '', user: null });
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ExtendedUser | null>(null);
 
   const isSuper = self?.role === 'ADMIN' || self?.role === 'SUPER_ADMIN';
@@ -748,9 +750,57 @@ export function AdminUsers(): React.ReactElement {
     if (error) { toast.error('Failed: ' + error.message); setActionLoading(false); return; }
     await writeAudit({ actor_id: self.id, actor_role: self.role || 'admin' }, { action: 'delete_user', category: 'user', target_id: deleteTarget.id, target_type: 'user', metadata: { username: deleteTarget.username } });
     toast.success(`${deleteTarget.username} deleted.`);
-    setDeleteTarget(null);
-    setActionLoading(false);
     load();
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedUsers);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedUsers(newSet);
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedUsers.size === filtered.length) setSelectedUsers(new Set());
+    else setSelectedUsers(new Set(filtered.map(u => u.id)));
+  };
+
+  const handleBulkAction = async (action: 'ban' | 'unban') => {
+    if (selectedUsers.size === 0) return;
+    if (!hasPermission('users.ban')) {
+      toast.error('Insufficient permissions');
+      return;
+    }
+    
+    setIsBulkLoading(true);
+    try {
+      const updates = {
+        is_banned: action === 'ban',
+        ban_reason: action === 'ban' ? 'Bulk action by admin' : null
+      };
+
+      const ids = Array.from(selectedUsers);
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates as never)
+        .in('id', ids);
+
+      if (error) throw error;
+
+      await writeAudit(
+        { actor_id: self?.id || '', actor_role: self?.role || 'admin' },
+        { action: `user.bulk_${action}`, category: 'user', target_id: ids[0], target_type: 'bulk_users', metadata: { count: ids.length } }
+      );
+
+      toast.success(`${ids.length} users ${action === 'ban' ? 'banned' : 'unbanned'}`);
+      setSelectedUsers(new Set());
+      load();
+    } catch (err) {
+      console.error(err);
+      toast.error(`Bulk ${action} failed`);
+    } finally {
+      setIsBulkLoading(false);
+    }
   };
 
   return (
@@ -846,11 +896,31 @@ export function AdminUsers(): React.ReactElement {
         />
       </div>
 
-      {/* Results Count */}
+      {/* Results Count & Bulk Actions */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-400">
-          Showing {filtered.length} of {users.length} users
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-slate-400">
+            Showing {filtered.length} of {users.length} users
+          </p>
+          {selectedUsers.size > 0 && (
+            <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700">
+              <span className="text-xs font-semibold text-white">{selectedUsers.size} selected</span>
+              <Button size="sm" variant="ghost" className="h-6 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/20" onClick={() => handleBulkAction('ban')} disabled={isBulkLoading}>
+                Bulk Ban
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/20" onClick={() => handleBulkAction('unban')} disabled={isBulkLoading}>
+                Bulk Unban
+              </Button>
+            </div>
+          )}
+        </div>
+        <Button size="sm" variant="ghost" className="text-slate-400" onClick={toggleAllSelection}>
+          {selectedUsers.size === filtered.length && filtered.length > 0 ? (
+            <><CheckSquare className="w-4 h-4 mr-2" /> Deselect All</>
+          ) : (
+            <><Square className="w-4 h-4 mr-2" /> Select All</>
+          )}
+        </Button>
       </div>
 
       {/* Users List */}
@@ -889,6 +959,13 @@ export function AdminUsers(): React.ReactElement {
                 )}
               >
                 <div className="flex items-center gap-3 p-4">
+                  <div className="flex items-center justify-center cursor-pointer p-1" onClick={() => toggleSelection(user.id)}>
+                    {selectedUsers.has(user.id) ? (
+                      <CheckSquare className="w-5 h-5 text-cyan-400" />
+                    ) : (
+                      <Square className="w-5 h-5 text-slate-600 hover:text-slate-400" />
+                    )}
+                  </div>
                   <UserAvatar user={user} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">

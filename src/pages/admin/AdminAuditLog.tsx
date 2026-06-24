@@ -273,8 +273,10 @@ export function AdminAuditLog(): React.ReactElement {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActionCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<string>('7d');
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('all');
+  const [actorFilter, setActorFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('7d');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -411,6 +413,16 @@ export function AdminAuditLog(): React.ReactElement {
       filtered = filtered.filter(l => l.severity === severityFilter);
     }
 
+    // Action filter
+    if (actionFilter !== 'all') {
+      filtered = filtered.filter(l => l.action === actionFilter);
+    }
+
+    // Actor filter
+    if (actorFilter !== 'all') {
+      filtered = filtered.filter(l => l.actor_username === actorFilter);
+    }
+
     // Date range filter
     const now = new Date();
     const cutoffDate = dateRange === '24h' ? subHours(now, 24) :
@@ -421,7 +433,10 @@ export function AdminAuditLog(): React.ReactElement {
 
     setFilteredLogs(filtered);
     setCurrentPage(0);
-  }, [logs, activeTab, searchQuery, severityFilter, dateRange]);
+  }, [logs, activeTab, searchQuery, severityFilter, actionFilter, actorFilter, dateRange]);
+
+  const uniqueActions = useMemo(() => Array.from(new Set(logs.map(l => l.action))).sort(), [logs]);
+  const uniqueActors = useMemo(() => Array.from(new Set(logs.map(l => l.actor_username).filter(Boolean))).sort(), [logs]);
 
   const paginatedLogs = useMemo(() => {
     const start = currentPage * pageSize;
@@ -578,6 +593,31 @@ export function AdminAuditLog(): React.ReactElement {
               <SelectItem value="7d">Last 7 Days</SelectItem>
               <SelectItem value="30d">Last 30 Days</SelectItem>
               <SelectItem value="90d">Last 90 Days</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={actionFilter} onValueChange={setActionFilter}>
+            <SelectTrigger className="w-40 bg-slate-900/50 border-slate-800">
+              <Activity className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Action" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 max-h-64">
+              <SelectItem value="all">All Actions</SelectItem>
+              {uniqueActions.map(action => (
+                <SelectItem key={action} value={action}>{action}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={actorFilter} onValueChange={setActorFilter}>
+            <SelectTrigger className="w-40 bg-slate-900/50 border-slate-800">
+              <Users className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Actor" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 max-h-64">
+              <SelectItem value="all">All Actors</SelectItem>
+              {uniqueActors.map(actor => (
+                <SelectItem key={actor as string} value={actor as string}>{actor}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

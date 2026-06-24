@@ -73,6 +73,25 @@ export function AdminTournamentControl() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase.channel(`admin_tourney_${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `tournament_id=eq.${id}` }, () => {
+        load();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_participants', filter: `tournament_id=eq.${id}` }, () => {
+        load();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'disputes' }, () => {
+        load();
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, load]);
+
   const generateBracket = async () => {
     if (!id || !user) return;
     setGeneratingBracket(true);
