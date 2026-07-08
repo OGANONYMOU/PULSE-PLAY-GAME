@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell, CheckCheck, Trophy, MessageSquare, Star, Zap, Info } from 'lucide-react';
+import { Menu, X, Sun, Moon, Gamepad2, User, LogOut, Shield, Bell, CheckCheck, Trophy, MessageSquare, Star, Zap, Info, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { prefetchRoute } from '@/App';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useWallet } from '@/hooks/useWallet';
 import { formatDistanceToNow } from 'date-fns';
 import type { Notification } from '@/hooks/useNotifications';
 
@@ -114,6 +115,7 @@ export function Navbar(): React.ReactElement {
   const location  = useLocation();
   const navigate  = useNavigate();
   const { notifications, unreadCount, markRead } = useNotifications();
+  const { balance: ppBalance } = useWallet(profile?.id);
 
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
@@ -197,6 +199,15 @@ export function Navbar(): React.ReactElement {
 
               {isAuthenticated ? (
                 <>
+                  {/* Wallet balance — desktop only */}
+                  <Link
+                    to="/wallet"
+                    className="hidden sm:flex items-center gap-1.5 rounded-full h-9 px-3 border border-white/10 hover:bg-white/10 transition-colors text-xs font-bold text-white/80"
+                  >
+                    <WalletIcon className="w-3.5 h-3.5 text-cyan-400" />
+                    {ppBalance.toLocaleString()} PP
+                  </Link>
+
                   {/* Bell — desktop only */}
                   <Popover open={notifOpen} onOpenChange={(o) => { setNotifOpen(o); }}>
                     <PopoverTrigger asChild>
@@ -263,6 +274,11 @@ export function Navbar(): React.ReactElement {
                       <DropdownMenuItem asChild>
                         <Link to="/profile" className="cursor-pointer focus:bg-white/10">
                           <User className="mr-2 h-4 w-4" />Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/wallet" className="cursor-pointer focus:bg-white/10">
+                          <WalletIcon className="mr-2 h-4 w-4" />Wallet
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-white/10" />

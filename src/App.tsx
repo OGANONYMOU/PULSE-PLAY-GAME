@@ -28,6 +28,7 @@ const SignIn       = lazy(() => import('@/pages/SignIn').then(m => ({ default: m
 const Register     = lazy(() => import('@/pages/Register').then(m => ({ default: m.Register })));
 const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
 const Profile      = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })));
+const Wallet       = lazy(() => import('@/pages/Wallet').then(m => ({ default: m.Wallet })));
 const NotFound     = lazy(() => import('@/pages/NotFound').then(m => ({ default: m.NotFound })));
 const RivalryPage  = lazy(() => import('@/pages/Rivalry').then(m => ({ default: m.RivalryPage })));
 const Terms        = lazy(() => import('@/pages/Terms').then(m => ({ default: m.Terms })));
@@ -63,6 +64,7 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   '/signin':      () => import('@/pages/SignIn'),
   '/register':    () => import('@/pages/Register'),
   '/profile':     () => import('@/pages/Profile'),
+  '/wallet':      () => import('@/pages/Wallet'),
 };
 
 export function prefetchRoute(path: string): void {
@@ -191,6 +193,7 @@ function AppContent(): React.ReactElement {
               <Route path="/auth/callback"     element={<AuthCallback />} />
               <Route path="/profile"           element={<Profile />} />
               <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/wallet"            element={<Wallet />} />
               <Route path="/rivalry/:playerA/:playerB" element={<RivalryPage />} />
               <Route path="/organizers"            element={<AdminOrganizers />} />
               <Route path="/terms"                 element={<Terms />} />
