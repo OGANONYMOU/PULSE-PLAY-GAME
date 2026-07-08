@@ -773,7 +773,7 @@ export function Tournaments(): React.ReactElement {
                 {PRIZE_TIERS.map((tier, i) => (
                   <motion.div key={tier.place} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                    <PrizeTierCard tier={tier} totalStr={totalPrize === '—' ? '₦100,000' : totalPrize} />
+                    <PrizeTierCard tier={tier} totalStr={totalPrize} />
                   </motion.div>
                 ))}
               </div>

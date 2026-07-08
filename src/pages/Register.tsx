@@ -221,8 +221,8 @@ export function Register(): React.ReactElement {
 
           <p className="text-center text-xs text-muted-foreground">
             By signing up you agree to our{' '}
-            <Link to="/about" className="text-cyan-400 hover:underline">Terms of Service</Link> and{' '}
-            <Link to="/about" className="text-cyan-400 hover:underline">Privacy Policy</Link>.
+            <Link to="/terms" className="text-cyan-400 hover:underline">Terms of Service</Link> and{' '}
+            <Link to="/privacy" className="text-cyan-400 hover:underline">Privacy Policy</Link>.
           </p>
         </div>
 
