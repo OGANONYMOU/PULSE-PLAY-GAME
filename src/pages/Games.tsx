@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { GamesSEO } from '@/components/SEO';
 import { resolveGameImage } from '@/lib/gameImages';
+import { getPlatformStats, type PlatformStats } from '@/lib/platformStats';
 
 type Game = {
   id: string;
@@ -62,10 +63,15 @@ function GameSkeleton(): React.ReactElement {
   );
 }
 
-function FeaturedBanner(p: { game: Game }): React.ReactElement {
+function FeaturedBanner(p: { game: Game; stats: PlatformStats | null }): React.ReactElement {
   const g = p.game;
   const img = resolveGameImage(g.name, g.image_url);
   const players = g.player_count >= 1000 ? (g.player_count / 1000).toFixed(1) + 'K' : String(g.player_count);
+  const prizePool = p.stats
+    ? (p.stats.totalPrizePool >= 1_000_000
+        ? `₦${(p.stats.totalPrizePool / 1_000_000).toFixed(1)}M`
+        : `₦${p.stats.totalPrizePool.toLocaleString()}`)
+    : '—';
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
       className="max-w-7xl mx-auto mb-12">
@@ -84,8 +90,8 @@ function FeaturedBanner(p: { game: Game }): React.ReactElement {
                 <div className="text-xs text-muted-foreground">Active Players</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-muted/50">
-                <div className="font-orbitron text-2xl font-bold gradient-text">&#x20A6;10M</div>
-                <div className="text-xs text-muted-foreground">Prize Pool</div>
+                <div className="font-orbitron text-2xl font-bold gradient-text">{prizePool}</div>
+                <div className="text-xs text-muted-foreground">Total Prize Pool</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-muted/50">
                 <div className="font-orbitron text-2xl font-bold gradient-text">{g.tournament_count}+</div>
@@ -175,6 +181,9 @@ export function Games(): React.ReactElement {
   const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
+
+  useEffect(() => { getPlatformStats().then(setPlatformStats); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -269,7 +278,7 @@ export function Games(): React.ReactElement {
         </>
       ) : (
         <>
-          {featured && !isFiltered ? <FeaturedBanner game={featured} /> : null}
+          {featured && !isFiltered ? <FeaturedBanner game={featured} stats={platformStats} /> : null}
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filtered.length > 0
