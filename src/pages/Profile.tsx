@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ProfileSEO } from '@/components/SEO';
+import { QuickTournamentModal } from '@/components/tournament/QuickTournamentModal';
 
 type TabId = 'posts' | 'tournaments' | 'achievements';
 type PostItem = { id: string; title: string; content: string; tag: string; likes: number; comments: number; created_at: string };
@@ -278,6 +279,7 @@ export function Profile(): React.ReactElement {
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('posts');
   const [isEditing, setIsEditing] = useState(false);
+  const [showQuickTournament, setShowQuickTournament] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -466,8 +468,17 @@ export function Profile(): React.ReactElement {
             </div>
             <div className="flex flex-col gap-2">
               <EditBtn show={isOwnProfile && !isEditing} onClick={() => setIsEditing(true)} />
-              <Button 
-                size="sm" 
+              {isOwnProfile && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowQuickTournament(true)}
+                  className="h-8 text-xs bg-gradient-to-r from-cyan-500 to-purple-600 text-white"
+                >
+                  <Zap className="w-3.5 h-3.5 mr-1.5" />Quick Tournament
+                </Button>
+              )}
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={() => {
                   const url = `${window.location.origin}/profile/${profile.username}`;
@@ -554,6 +565,9 @@ export function Profile(): React.ReactElement {
           </div>
         </div>
       </div>
+      {isOwnProfile && (
+        <QuickTournamentModal open={showQuickTournament} onOpenChange={setShowQuickTournament} />
+      )}
     </div>
   );
 }
