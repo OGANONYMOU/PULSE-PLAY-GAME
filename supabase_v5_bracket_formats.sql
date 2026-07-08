@@ -240,8 +240,10 @@ begin
     end loop;
   end loop;
 
+  -- Deliberately does NOT touch tournament_type: it may be 'group_stage'
+  -- (groups only, no follow-up) or 'group_knockout' (two-phase — the caller
+  -- still needs to know a knockout phase should follow group play).
   update public.tournaments set
-    tournament_type = 'group_stage',
     fixtures_generated = true,
     fixtures_count = v_total_fixtures
   where id = p_tournament_id;
@@ -927,3 +929,151 @@ end;
 $$;
 
 grant execute on function public.advance_match_winner_double_elim(uuid, uuid) to authenticated;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- 5. WIRING: make the two existing dispatch/entry-point functions format-aware
+-- ═══════════════════════════════════════════════════════════════════════════════
+--
+-- TournamentCreateNew.tsx already lets an organizer pick Double Elimination,
+-- Swiss, Round Robin, Group Stage, and Groups+Knockout — tournament_type gets
+-- saved correctly. But the two functions that actually GENERATE and PROGRESS
+-- a bracket never looked at that value: generate_fixtures_auto always fell
+-- through to single-elimination generate_bracket() for anything that wasn't
+-- round_robin/league/group_stage, and confirm_match_result (the normal
+-- player-facing "opponent confirmed my result" flow — not just the admin
+-- force-advance button) unconditionally called the single-elimination-only
+-- advance_match_winner(). Both are redefined below to dispatch on the
+-- tournament's actual type/bracket_type. Existing single-elimination
+-- tournaments are unaffected — bracket_type defaults to 'single_elimination'
+-- for every row that predates this migration, so they keep taking the exact
+-- branch they always did.
+
+create or replace function public.generate_fixtures_auto(
+  p_tournament_id uuid
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_tourn record;
+  v_result jsonb;
+begin
+  select * into v_tourn from public.tournaments where id = p_tournament_id;
+  if not found then raise exception 'Tournament not found'; end if;
+
+  if not (
+    v_tourn.created_by = auth.uid()
+    or exists (select 1 from public.profiles where id = auth.uid() and role in ('ADMIN', 'MODERATOR', 'SUPER_ADMIN'))
+  ) then
+    raise exception 'Not authorized';
+  end if;
+
+  if v_tourn.tournament_type in ('round_robin', 'league') then
+    select public.generate_round_robin_fixtures(p_tournament_id) into v_result;
+  elsif v_tourn.tournament_type in ('group_stage', 'group_knockout') then
+    -- group_knockout is two-phase: this generates the group stage (phase 1).
+    -- The organizer calls generate_knockout_from_groups separately once group
+    -- play has finished (phase 2) — that can't be auto-triggered here since
+    -- the groups haven't been played yet.
+    select public.generate_group_stage_fixtures(p_tournament_id) into v_result;
+  elsif v_tourn.tournament_type = 'swiss' then
+    select public.generate_swiss_round1(p_tournament_id) into v_result;
+  elsif v_tourn.tournament_type = 'double_elimination' then
+    select public.generate_bracket_double_elim(p_tournament_id) into v_result;
+  else
+    -- single_elimination, knockout, ladder (no dedicated ladder engine yet —
+    -- falls back to single-elimination), and any unrecognized value.
+    select public.generate_bracket(p_tournament_id) into v_result;
+  end if;
+
+  return v_result;
+end;
+$$;
+
+grant execute on function public.generate_fixtures_auto(uuid) to authenticated;
+
+create or replace function public.confirm_match_result(
+  p_match_id       uuid,
+  p_report_id      uuid,
+  p_decision       text,  -- 'confirm' or 'dispute'
+  p_reason         text default null
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_match    public.matches%rowtype;
+  v_report   public.match_reports%rowtype;
+  v_winner   uuid;
+  v_is_double_elim boolean;
+begin
+  select * into v_match  from public.matches       where id = p_match_id;
+  select * into v_report from public.match_reports where id = p_report_id;
+
+  if not found then raise exception 'Report not found'; end if;
+
+  if auth.uid() = v_report.reporter_id then
+    raise exception 'Cannot confirm your own report';
+  end if;
+  if auth.uid() != v_match.player1_id and auth.uid() != v_match.player2_id then
+    raise exception 'Only match participants can confirm results';
+  end if;
+
+  insert into public.match_confirmations(match_id, report_id, confirmer_id, decision, reason)
+  values (p_match_id, p_report_id, auth.uid(), p_decision, p_reason)
+  on conflict (match_id, confirmer_id) do update set
+    decision   = excluded.decision,
+    reason     = excluded.reason,
+    created_at = now();
+
+  if p_decision = 'confirm' then
+    if v_report.player1_score > v_report.player2_score then
+      v_winner := v_match.player1_id;
+    else
+      v_winner := v_match.player2_id;
+    end if;
+
+    update public.matches set
+      player1_score = v_report.player1_score,
+      player2_score = v_report.player2_score,
+      status = 'verified'
+    where id = p_match_id;
+
+    update public.match_reports set status = 'confirmed' where id = p_report_id;
+
+    select (bracket_type = 'double_elimination') into v_is_double_elim
+    from public.tournaments where id = v_match.tournament_id;
+
+    if v_is_double_elim then
+      perform public.advance_match_winner_double_elim(p_match_id, v_winner);
+    else
+      perform public.advance_match_winner(p_match_id, v_winner);
+    end if;
+
+    insert into public.notifications(user_id, type, title, body, ref_type, ref_id)
+    values (v_winner, 'match_start', '✅ Match confirmed', 'Your result was confirmed. You advance!', 'match', p_match_id);
+
+    return jsonb_build_object('status', 'confirmed', 'winner_id', v_winner);
+
+  else
+    if p_reason is null then
+      raise exception 'Reason is required to open a dispute';
+    end if;
+
+    update public.matches set status = 'disputed' where id = p_match_id;
+    update public.match_reports set status = 'disputed' where id = p_report_id;
+
+    insert into public.disputes(match_id, opened_by, reason, dispute_type, report_id, due_by)
+    values (
+      p_match_id, auth.uid(), p_reason, 'score_conflict', p_report_id,
+      now() + interval '48 hours'
+    )
+    on conflict (match_id) do update set
+      state    = 'open',
+      reason   = excluded.reason,
+      due_by   = excluded.due_by,
+      opened_by = excluded.opened_by;
+
+    insert into public.tournament_posts(tournament_id, type, content, match_id)
+    values (v_match.tournament_id, 'system', 'A dispute has been opened for Match #' || v_match.match_number || '. Admin review required.', p_match_id);
+
+    return jsonb_build_object('status', 'disputed');
+  end if;
+end;
+$$;
+
+grant execute on function public.confirm_match_result(uuid, uuid, text, text) to authenticated;

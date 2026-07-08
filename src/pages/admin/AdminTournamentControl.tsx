@@ -15,6 +15,7 @@ type Tournament = {
   id: string; name: string; status: string; bracket_generated: boolean;
   total_rounds: number | null; current_round: number; max_players: number;
   entry_fee: number; prize_amount: number; easy_mode: boolean;
+  tournament_type: string; bracket_type: string; fixtures_generated: boolean;
   games: { name: string; icon: string } | null;
 };
 type Participant = {
@@ -95,15 +96,42 @@ export function AdminTournamentControl() {
   const generateBracket = async () => {
     if (!id || !user) return;
     setGeneratingBracket(true);
-    const { error } = await (supabase as any).rpc('generate_bracket', { p_tournament_id: id });
+    // Dispatches to the right generator (single/double elimination, Swiss,
+    // round robin, or group stage) based on the tournament's own
+    // tournament_type — previously this always called generate_bracket
+    // directly, so picking anything other than Single Elimination in the
+    // creation wizard silently produced a single-elimination bracket anyway.
+    const { error } = await (supabase as any).rpc('generate_fixtures_auto', { p_tournament_id: id });
     if (error) toast.error(error.message);
     else { toast.success('Bracket generated! 🏆'); load(); }
     setGeneratingBracket(false);
   };
 
+  const generateKnockoutStage = async () => {
+    if (!id || !user) return;
+    setGeneratingBracket(true);
+    const { error } = await (supabase as any).rpc('generate_knockout_from_groups', { p_tournament_id: id });
+    if (error) toast.error(error.message);
+    else { toast.success('Knockout stage generated! 🏆'); load(); }
+    setGeneratingBracket(false);
+  };
+
+  const advanceSwissRound = async () => {
+    if (!id || !user) return;
+    setGeneratingBracket(true);
+    const { data, error } = await (supabase as any).rpc('advance_swiss_round', { p_tournament_id: id });
+    if (error) toast.error(error.message);
+    else {
+      toast.success(data?.is_final_round ? 'Swiss stage complete!' : `Round ${data?.round} pairings generated.`);
+      load();
+    }
+    setGeneratingBracket(false);
+  };
+
   const forceAdvance = async (matchId: string, winnerId: string) => {
     setAdvancingMatch(matchId);
-    const { error } = await (supabase as any).rpc('advance_match_winner', {
+    const rpcName = tournament?.bracket_type === 'double_elimination' ? 'advance_match_winner_double_elim' : 'advance_match_winner';
+    const { error } = await (supabase as any).rpc(rpcName, {
       p_match_id: matchId, p_winner_id: winnerId,
     });
     if (error) toast.error(error.message);
@@ -198,7 +226,37 @@ export function AdminTournamentControl() {
       </div>
 
       {/* Generate bracket button */}
-      {!tournament.bracket_generated && tournament.status !== 'completed' && (
+      {tournament.tournament_type === 'group_knockout' && tournament.fixtures_generated && !tournament.bracket_generated && tournament.status !== 'completed' && (
+        <div className="mb-5 p-4 rounded-2xl bg-gradient-to-r from-yellow-500/8 to-orange-500/8 border border-yellow-500/20">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-orbitron font-bold text-sm text-white">Group Stage in Progress</p>
+              <p className="text-xs text-white/40 mt-0.5">Generate the knockout bracket once all group fixtures have results.</p>
+            </div>
+            <button onClick={generateKnockoutStage} disabled={generatingBracket}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-sm font-bold hover:opacity-90 transition-all disabled:opacity-50">
+              {generatingBracket ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
+              Generate Knockout Stage
+            </button>
+          </div>
+        </div>
+      )}
+      {tournament.tournament_type === 'swiss' && tournament.fixtures_generated && tournament.status !== 'completed' && (
+        <div className="mb-5 p-4 rounded-2xl bg-gradient-to-r from-purple-500/8 to-cyan-500/8 border border-purple-500/20">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-orbitron font-bold text-sm text-white">Swiss Stage</p>
+              <p className="text-xs text-white/40 mt-0.5">Once every match in the current round has a result, advance to the next round.</p>
+            </div>
+            <button onClick={advanceSwissRound} disabled={generatingBracket}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-sm font-bold hover:opacity-90 transition-all disabled:opacity-50">
+              {generatingBracket ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Advance Round
+            </button>
+          </div>
+        </div>
+      )}
+      {!tournament.bracket_generated && !tournament.fixtures_generated && tournament.status !== 'completed' && (
         <div className="mb-5 p-4 rounded-2xl bg-gradient-to-r from-cyan-500/8 to-purple-500/8 border border-cyan-500/20">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
