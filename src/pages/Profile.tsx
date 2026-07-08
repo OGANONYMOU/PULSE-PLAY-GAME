@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Star, Zap, Loader2, Share2, Award, TrendingUp } from 'lucide-react';
+import { Camera, Edit2, Save, X, Twitter, Trophy, Flame, Calendar, MessageSquare, Shield, User, ExternalLink, Star, Zap, Loader2, Share2, Award, TrendingUp, Target, Swords, Gem } from 'lucide-react';
 import { LevelBadge } from '@/components/ui-custom/LevelBadge';
 import { useGamerCred } from '@/hooks/useGamerCred';
+import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/lib/supabase';
 import { useAuth, type Profile as ProfileType } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -359,8 +360,12 @@ export function Profile(): React.ReactElement {
     { id: 'achievements', label: 'Achievements', icon: Star },
   ];
   const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
+  const wins = tourneyEntries.filter(e => e.status === 'winner').length;
+  const matchesPlayed = tourneyEntries.filter(e => e.status === 'winner' || e.status === 'eliminated').length;
+  const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
   // Must be called unconditionally before any early returns (rules-of-hooks)
   const { score: credScore, tier: credTier, level, xp, levelMeta } = useGamerCred(profile?.id);
+  const { balance: ppBalance } = useWallet(profile?.id);
 
   if (authLoading || pageLoading) {
     return (
@@ -523,12 +528,15 @@ export function Profile(): React.ReactElement {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-4">
           {[
             { icon: MessageSquare, label: 'Posts',       value: posts.length,                                           color: 'text-cyan-400' },
             { icon: Flame,         label: 'Likes',       value: totalLikes,                                             color: 'text-orange-400' },
             { icon: Trophy,        label: 'Tournaments', value: tourneyEntries.length,                                  color: 'text-yellow-400' },
-            { icon: Award,         label: 'Wins',        value: tourneyEntries.filter(e => e.status === 'winner').length, color: 'text-green-400' },
+            { icon: Award,         label: 'Wins',        value: wins,                                                   color: 'text-green-400' },
+            { icon: Target,        label: 'Win Rate',    value: `${winRate}%`,                                          color: 'text-purple-400' },
+            { icon: Swords,        label: 'Matches',     value: matchesPlayed,                                          color: 'text-blue-400' },
+            { icon: Gem,           label: 'PP Balance',  value: ppBalance.toLocaleString(),                             color: 'text-emerald-400' },
           ].map((s) => (
             <div key={s.label} className="p-4 rounded-xl bg-white/5 border border-white/10 text-center hover:border-white/20 transition-all">
               <s.icon className={'w-5 h-5 mx-auto mb-1.5 ' + s.color} />
@@ -560,7 +568,7 @@ export function Profile(): React.ReactElement {
                   joinedAt={profile?.created_at ?? null}
                   postCount={posts.length}
                   tournamentCount={tourneyEntries.length}
-                  wonCount={tourneyEntries.filter(e => e.status === 'winner').length}
+                  wonCount={wins}
                 />
           </div>
         </div>
