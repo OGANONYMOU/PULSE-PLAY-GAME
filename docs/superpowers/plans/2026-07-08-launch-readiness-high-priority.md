@@ -21,7 +21,7 @@
 
 ## Track A — Data Layer (Supabase hooks/queries)
 
-### Task A1: PulsePoints wallet balance hook
+### Task 1 (A1): PulsePoints wallet balance hook
 
 **Files:**
 - Create: `src/hooks/useWallet.ts`
@@ -108,7 +108,7 @@ git commit -m "feat: add PulsePoints wallet balance/transactions hook"
 
 ---
 
-### Task A2: Real platform stats helper
+### Task 2 (A2): Real platform stats helper
 
 **Files:**
 - Create: `src/lib/platformStats.ts`
@@ -166,7 +166,7 @@ git commit -m "feat: add real platform stats aggregation helper"
 
 ## Track B — Structural / Routing Fixes
 
-### Task B1: Wire `/tournaments/:id` as a real page (replace modal)
+### Task 3 (B1): Wire `/tournaments/:id` as a real page (replace modal)
 
 **Files:**
 - Modify: `src/App.tsx` (add lazy import + route)
@@ -214,7 +214,7 @@ git commit -m "feat: convert tournament detail from modal to dedicated /tourname
 
 ---
 
-### Task B2: Fix the "Play" button on the Games grid
+### Task 4 (B2): Fix the "Play" button on the Games grid
 
 **Files:**
 - Modify: `src/pages/Games.tsx` (`GameCard` component, lines ~112-153)
@@ -256,7 +256,7 @@ git commit -m "fix: route Games grid Play button into the specific game's tourna
 
 ---
 
-### Task B3: Replace hardcoded ₦10M prize pool stat
+### Task 5 (B3): Replace hardcoded ₦10M prize pool stat
 
 **Files:**
 - Modify: `src/pages/Games.tsx` (`FeaturedBanner` component, lines 65-99)
@@ -302,7 +302,7 @@ git commit -m "fix: replace hardcoded prize pool stat with real aggregate data"
 
 ## Track C — New Components (Wallet, Quick Tournament, Profile stats)
 
-### Task C1: Wallet page
+### Task 6 (C1): Wallet page
 
 **Files:**
 - Create: `src/pages/Wallet.tsx`
@@ -338,7 +338,7 @@ git commit -m "feat: add Wallet page with PulsePoints balance, Paystack redempti
 
 ---
 
-### Task C2: Quick Tournament creation flow on Profile
+### Task 7 (C2): Quick Tournament creation flow on Profile
 
 **Files:**
 - Create: `src/components/tournament/QuickTournamentModal.tsx`
@@ -375,7 +375,7 @@ git commit -m "feat: add Quick Tournament creation flow to Profile page"
 
 ---
 
-### Task C3: Add Win Rate %, Matches Played, PP Balance to Profile stats
+### Task 8 (C3): Add Win Rate %, Matches Played, PP Balance to Profile stats
 
 **Files:**
 - Modify: `src/pages/Profile.tsx` (stat row, lines 515-528)
@@ -417,7 +417,7 @@ git commit -m "feat: add Win Rate, Matches Played, and PP Balance to Profile sta
 
 ---
 
-### Task C4: Check-in / result window "Key Info" block on tournament detail
+### Task 9 (C4): Check-in / result window "Key Info" block on tournament detail
 
 **Files:**
 - Modify: `src/pages/TournamentDetail.tsx`
@@ -465,7 +465,7 @@ git commit -m "feat: surface check-in window and result-submission rule on tourn
 
 ## Track D — Content, Copy & Trust Signaling
 
-### Task D1: Replace fabricated stats/timeline copy on About page
+### Task 10 (D1): Replace fabricated stats/timeline copy on About page
 
 **Files:**
 - Modify: `src/pages/About.tsx` (lines 7-12 `stats`, lines 38-43 `timeline`)
@@ -511,7 +511,7 @@ git commit -m "fix: replace fabricated About page stats/timeline with real data 
 
 ---
 
-### Task D2: Fix footer legal links + add compliance copy
+### Task 11 (D2): Fix footer legal links + add compliance copy
 
 **Files:**
 - Modify: `src/components/layout/Footer.tsx`
@@ -550,7 +550,7 @@ git commit -m "fix: correct footer legal links and add compliance disclaimer cop
 
 ---
 
-### Task D3: Paystack-branded copy on the homepage Fraud Protection card
+### Task 12 (D3): Paystack-branded copy on the homepage Fraud Protection card
 
 **Files:**
 - Modify: `src/pages/Home.tsx` (`hostingFeatures` array, lines 47-68)
@@ -580,7 +580,7 @@ git commit -m "content: name Paystack as the payout rail in homepage trust copy"
 
 ## Track E — QA & Verification Pass
 
-### Task E1: Full-repo audit + build/lint verification
+### Task 13 (E1): Full-repo audit + build/lint verification
 
 **Files:** No new files — this is a verification task across the repo.
 
