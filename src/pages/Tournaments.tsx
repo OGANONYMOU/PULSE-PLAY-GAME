@@ -1,23 +1,19 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Trophy, Calendar, Users, DollarSign, Clock,
   Flame, CheckCircle, Loader2, X, Info, UserCheck, Share2,
-  Play, Zap, Shield, Crown, Search, ChevronRight,
-  Tv, Swords, BookOpen, ChevronDown, Globe,
+  Zap, Crown, Search,
+  Swords, Globe, ChevronDown,
   BarChart2, Hash,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { format, formatDistanceToNow, isPast, differenceInSeconds } from 'date-fns';
+import { format, isPast, differenceInSeconds } from 'date-fns';
 import { TournamentsSEO } from '@/components/SEO';
 import { resolveGameImage } from '@/lib/gameImages';
 import { awardXpAndNotify } from '@/hooks/useLevelUp';
@@ -41,19 +37,8 @@ type Tournament = {
   games: { name: string; icon: string; image_url: string | null } | null;
 };
 
-type Participant = {
-  id: string; status: string; checked_in: boolean; registered_at: string;
-  seed: number | null;
-  profiles: { username: string; avatar_url: string | null } | null;
-};
-
-type LiveUpdate = { id: string; message: string; created_at: string };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDate(iso: string) {
-  try { return format(new Date(iso), 'MMM d, yyyy · h:mm a'); } catch { return iso; }
-}
-
 function gameGradient(name = '') {
   const lc = name.toLowerCase();
   if (lc.includes('efootball') || lc.includes('fifa') || lc.includes('ea fc')) return 'from-emerald-600 via-green-500 to-teal-400';
@@ -130,19 +115,6 @@ function StatusPill({ status }: { status: TStatus }) {
   );
 }
 
-// ── Avatar helper ─────────────────────────────────────────────────────────────
-function PAv({ username, url, size = 'sm' }: { username: string; url?: string | null; size?: 'sm' | 'md' | 'lg' }) {
-  const sz = { sm: 'h-7 w-7', md: 'h-9 w-9', lg: 'h-12 w-12' }[size];
-  return (
-    <Avatar className={`${sz} flex-shrink-0 ring-2 ring-white/10`}>
-      <AvatarImage src={url ?? undefined} />
-      <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white font-black text-xs">
-        {username[0]?.toUpperCase()}
-      </AvatarFallback>
-    </Avatar>
-  );
-}
-
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function TSkel() {
   return (
@@ -183,132 +155,6 @@ function PrizeTierCard({ tier, totalStr }: { tier: typeof PRIZE_TIERS[0]; totalS
           className={`h-full bg-gradient-to-r ${tier.color} rounded-full`} />
       </div>
     </motion.div>
-  );
-}
-
-// ── Schedule timeline ─────────────────────────────────────────────────────────
-const PHASES = [
-  { label: 'Registration Opens', icon: '📋', offset: 0 },
-  { label: 'Registration Closes', icon: '🔒', offset: 1 },
-  { label: 'Qualifiers', icon: '⚡', offset: 3 },
-  { label: 'Group Stage', icon: '🎮', offset: 5 },
-  { label: 'Quarter Finals', icon: '⚔️', offset: 7 },
-  { label: 'Semi Finals', icon: '🔥', offset: 8 },
-  { label: 'Grand Finals', icon: '🏆', offset: 10 },
-];
-
-function ScheduleTimeline({ tournament }: { tournament: Tournament }) {
-  const base = new Date(tournament.date).getTime();
-  const phases = PHASES.map((p, i) => {
-    const d = new Date(base + p.offset * 86400000);
-    const done = isPast(d);
-    const prev = PHASES[i - 1];
-    const active = !done && (i === 0 || isPast(new Date(base + (prev?.offset ?? -1) * 86400000)));
-    return { ...p, date: d, done, active };
-  });
-  return (
-    <div className="relative">
-      <div className="absolute left-5 top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-purple-500/20 to-transparent" />
-      <div className="space-y-3 pl-14">
-        {phases.map((ph, i) => (
-          <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-            className={`relative p-4 rounded-xl border transition-all ${ph.done ? 'bg-green-500/5 border-green-500/15 opacity-60' : ph.active ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-white/3 border-white/8'}`}>
-            <div className={`absolute -left-9 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-sm
-              ${ph.done ? 'bg-green-500/20 border border-green-500/30' : ph.active ? 'bg-cyan-500/20 border border-cyan-500/40 animate-pulse' : 'bg-white/5 border border-white/10'}`}>
-              {ph.done ? '✓' : ph.icon}
-            </div>
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <p className={`font-bold text-sm ${ph.active ? 'text-cyan-400' : ph.done ? 'text-green-400' : 'text-white/70'}`}>{ph.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{format(ph.date, 'EEE, MMM d · h:mm a')}</p>
-              </div>
-              {ph.done && <Badge className="bg-green-500/15 text-green-400 border-green-500/20 text-[10px]">Done</Badge>}
-              {ph.active && <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/20 text-[10px] animate-pulse">Active</Badge>}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Rules accordion ───────────────────────────────────────────────────────────
-const RULES_DATA = [
-  { cat: 'General Rules', icon: '📋', items: ['All participants must register before the deadline.', 'Players must use their registered in-game username.', 'Late arrivals forfeit their match.', 'All decisions by tournament officials are final.'] },
-  { cat: 'Match Rules', icon: '⚔️', items: ['Matches are best-of-1 (group stage) and best-of-3 (finals).', 'Both players must be ready at match time.', 'Screenshot proof of results is required.', 'Technical issues must be reported immediately.'] },
-  { cat: 'Fair Play Policy', icon: '🛡️', items: ['No cheating, modding, or exploiting game bugs.', 'Unsportsmanlike conduct results in disqualification.', 'Smurfing or account sharing is prohibited.', 'Respect all opponents and officials.'] },
-  { cat: 'Disqualification', icon: '🚫', items: ['Using unauthorized software or hardware.', 'Intentional disconnects to avoid losing.', 'Threatening or harassing other participants.', 'Failure to comply with admin instructions.'] },
-];
-
-function RulesSection({ rulesText }: { rulesText: string | null }) {
-  const [open, setOpen] = useState<number | null>(0);
-  return (
-    <div className="space-y-2">
-      {RULES_DATA.map((s, i) => (
-        <div key={i} className="rounded-xl border border-white/8 overflow-hidden">
-          <button onClick={() => setOpen(open === i ? null : i)}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/3 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <span className="text-lg">{s.icon}</span>
-              <span className="font-bold text-sm">{s.cat}</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open === i ? 'rotate-180' : ''}`} />
-          </button>
-          <AnimatePresence>
-            {open === i && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                <div className="px-4 pb-4 pt-3 border-t border-white/8 space-y-2">
-                  {s.items.map((item, j) => (
-                    <div key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <ChevronRight className="w-3.5 h-3.5 text-cyan-500/60 mt-0.5 flex-shrink-0" />{item}
-                    </div>
-                  ))}
-                  {i === 0 && rulesText && (
-                    <div className="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15 text-xs text-white/60 whitespace-pre-line">{rulesText}</div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Stream section ────────────────────────────────────────────────────────────
-function StreamSection() {
-  const platforms = [
-    { name: 'YouTube', icon: '▶', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', viewers: '2.4K' },
-    { name: 'Twitch',  icon: '🟣', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', viewers: '1.8K' },
-    { name: 'Kick',    icon: '🟢', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20', viewers: '840' },
-  ];
-  return (
-    <div className="space-y-4">
-      <div className="relative rounded-2xl overflow-hidden bg-black/60 border border-white/10 aspect-video flex items-center justify-center group cursor-pointer">
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-purple-500/5 to-pink-500/10" />
-        <div className="relative z-10 text-center">
-          <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-            <Play className="w-7 h-7 text-white ml-1" />
-          </div>
-          <p className="font-orbitron font-bold text-white">Live Stream</p>
-          <p className="text-xs text-muted-foreground mt-1">Stream starts when tournament goes live</p>
-        </div>
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/50 border border-white/10 rounded-full px-2.5 py-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
-          <span className="text-xs text-white/50 font-bold">OFFLINE</span>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {platforms.map(p => (
-          <button key={p.name} className={`p-3 rounded-xl border ${p.bg} text-center hover:scale-105 transition-transform`}>
-            <span className="text-2xl block mb-1">{p.icon}</span>
-            <p className={`font-bold text-xs ${p.color}`}>{p.name}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{p.viewers} viewers</p>
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -487,236 +333,19 @@ function TournamentCard({ t, isReg, onOpen, onRegister, onWithdraw, onShare, reg
   );
 }
 
-// ── Detail modal ──────────────────────────────────────────────────────────────
-function DetailModal({ t, isReg, participants, liveUpdates, loading, onClose, onRegister, onWithdraw, onShare, registering }: {
-  t: Tournament; isReg: boolean; participants: Participant[]; liveUpdates: LiveUpdate[];
-  loading: boolean; onClose: () => void; onRegister: () => void; onWithdraw: () => void;
-  onShare: () => void; registering: boolean;
-}) {
-  const [searchP, setSearchP] = useState('');
-  const gameImg  = resolveGameImage(t.games?.name ?? '', t.games?.image_url);
-  const gameName = t.games?.name ?? 'Unknown';
-  const isFull   = t.current_players >= t.max_players;
-  const pct      = Math.round((t.current_players / t.max_players) * 100);
-  const filtered = useMemo(() =>
-    participants.filter(p => p.profiles?.username?.toLowerCase().includes(searchP.toLowerCase())),
-    [participants, searchP]);
-
-  const modalTabs = [
-    { value: 'overview', label: 'Overview', icon: Info },
-    { value: 'prizes',   label: 'Prizes',   icon: Trophy },
-    { value: 'schedule', label: 'Schedule', icon: Calendar },
-    { value: 'players',  label: `Players (${participants.length})`, icon: Users },
-    { value: 'stream',   label: 'Stream',   icon: Tv },
-    { value: 'rules',    label: 'Rules',    icon: BookOpen },
-    ...(t.status === 'ongoing' ? [{ value: 'live', label: 'Live', icon: Flame }] : []),
-  ];
-
-  return (
-    <div className="flex flex-col h-full max-h-[90vh]">
-      {/* Hero */}
-      <div className={`relative h-40 sm:h-52 flex-shrink-0 overflow-hidden bg-gradient-to-br ${gameGradient(gameName)}`}>
-        {gameImg && <img src={gameImg} alt={gameName} className="absolute inset-0 w-full h-full object-cover opacity-25" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d1a] via-black/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d0d1a]/70 via-transparent to-transparent" />
-        <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-black/50 hover:bg-black/70 flex items-center justify-center text-white/70 hover:text-white backdrop-blur-sm transition-all z-20">
-          <X className="w-4 h-4" />
-        </button>
-        <button onClick={onShare} className="absolute top-4 right-16 w-9 h-9 rounded-xl bg-black/50 hover:bg-black/70 flex items-center justify-center text-white/70 hover:text-white backdrop-blur-sm transition-all z-20">
-          <Share2 className="w-4 h-4" />
-        </button>
-        <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-          <div className="flex items-end gap-3">
-            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-black/50 border-2 border-white/20 flex items-center justify-center flex-shrink-0">
-              {gameImg ? <img src={gameImg} alt="" className="w-full h-full object-cover" /> : <span className="text-3xl">{t.games?.icon ?? '🎮'}</span>}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-orbitron font-black text-lg sm:text-xl text-white leading-tight line-clamp-2">{t.name}</h2>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <StatusPill status={t.status} />
-                <span className="text-xs text-white/50">{gameName}</span>
-                {isReg && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 text-green-400 text-[10px] font-bold"><UserCheck className="w-2.5 h-2.5" />Registered</span>}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex-1 overflow-y-auto">
-        <Tabs defaultValue="overview" className="flex flex-col">
-          <div className="px-4 pt-2 border-b border-white/8 sticky top-0 bg-card/95 backdrop-blur-xl z-10">
-            <TabsList className="w-full h-auto p-0 bg-transparent gap-0 overflow-x-auto scrollbar-hide flex">
-              {modalTabs.map(tab => (
-                <TabsTrigger key={tab.value} value={tab.value}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-cyan-400 data-[state=active]:text-cyan-400 text-white/50 hover:text-white/80 bg-transparent">
-                  <tab.icon className="w-3.5 h-3.5" />{tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-
-          {/* Overview */}
-          <TabsContent value="overview" className="p-5 space-y-5 mt-0">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { icon: DollarSign, label: 'Prize Pool', val: t.prize_pool, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' },
-                { icon: Users,      label: 'Players',    val: `${t.current_players}/${t.max_players}`, color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20' },
-                { icon: Clock,      label: 'Duration',   val: t.duration, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
-                { icon: Shield,     label: 'Entry Fee',  val: t.entry_fee ?? 'Free', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
-              ].map(({ icon: Icon, label, val, color, bg }) => (
-                <div key={label} className={`p-3.5 rounded-2xl border ${bg} flex flex-col gap-1`}>
-                  <Icon className={`w-4 h-4 ${color}`} />
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
-                  <div className="font-bold text-sm truncate">{val}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/3 border border-white/8">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Tournament Date</p>
-                  <p className="font-bold text-sm">{fmtDate(t.date)}</p>
-                </div>
-                {t.status === 'upcoming' && !isPast(new Date(t.date)) && (
-                  <div><p className="text-xs text-muted-foreground mb-1">Starts In</p><Countdown to={t.date} /></div>
-                )}
-              </div>
-              <div className="mt-3">
-                <div className="flex justify-between text-[10px] mb-1.5">
-                  <span className="text-muted-foreground">Registration</span>
-                  <span>{pct}% ({t.current_players}/{t.max_players})</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <motion.div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-purple-500" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1 }} />
-                </div>
-              </div>
-            </div>
-
-            {t.description && (
-              <div className="p-4 rounded-2xl bg-white/3 border border-white/8">
-                <h4 className="font-bold text-sm mb-2 flex items-center gap-2"><Info className="w-4 h-4 text-cyan-400" />About</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">{t.description}</p>
-              </div>
-            )}
-            {t.winner && (
-              <div className="p-4 rounded-2xl bg-yellow-500/8 border border-yellow-500/20 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center text-2xl flex-shrink-0">🏆</div>
-                <div><p className="text-xs text-muted-foreground">Tournament Champion</p><p className="font-orbitron font-black text-yellow-400 text-lg">{t.winner}</p></div>
-              </div>
-            )}
-            {t.status === 'upcoming' && (
-              !isReg ? (
-                <Button disabled={registering || isFull} onClick={onRegister}
-                  className="w-full h-12 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-sm gap-2">
-                  {registering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                  {isFull ? 'Tournament Full' : "Register Now — It's Free"}
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={onWithdraw} className="w-full h-12 border-red-500/25 text-red-400 hover:bg-red-500/8 font-bold text-sm">
-                  Withdraw Registration
-                </Button>
-              )
-            )}
-          </TabsContent>
-
-          {/* Prizes */}
-          <TabsContent value="prizes" className="p-5 space-y-5 mt-0">
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-yellow-500/10 via-amber-500/5 to-orange-500/10 border border-yellow-500/20">
-              <Trophy className="w-12 h-12 mx-auto text-yellow-400 mb-3" />
-              <p className="text-muted-foreground text-sm mb-1">Total Prize Pool</p>
-              <p className="font-orbitron font-black text-3xl sm:text-4xl text-yellow-400">{t.prize_pool}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {PRIZE_TIERS.map(tier => <PrizeTierCard key={tier.place} tier={tier} totalStr={t.prize_pool} />)}
-            </div>
-          </TabsContent>
-
-          {/* Schedule */}
-          <TabsContent value="schedule" className="p-5 mt-0"><ScheduleTimeline tournament={t} /></TabsContent>
-
-          {/* Players */}
-          <TabsContent value="players" className="p-5 space-y-4 mt-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search players…" value={searchP} onChange={e => setSearchP(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 focus:border-cyan-500/40" />
-            </div>
-            {loading ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-10">
-                <Users className="w-10 h-10 mx-auto text-white/15 mb-3" />
-                <p className="text-muted-foreground text-sm">{searchP ? 'No results.' : 'No participants yet.'}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filtered.map((p, i) => (
-                  <motion.div key={p.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/8 hover:bg-white/6 transition-all">
-                    <span className="w-7 text-center text-sm flex-shrink-0">
-                      {i < 3 ? ['🥇','🥈','🥉'][i] : <span className="text-muted-foreground text-xs font-mono">{i+1}</span>}
-                    </span>
-                    <PAv username={p.profiles?.username ?? '?'} url={p.profiles?.avatar_url} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{p.profiles?.username ?? 'Unknown'}</p>
-                      <p className="text-[10px] text-muted-foreground">Joined {formatDistanceToNow(new Date(p.registered_at), { addSuffix: true })}</p>
-                    </div>
-                    {p.checked_in && <Badge className="text-[10px] bg-green-500/15 text-green-400 border-green-500/20 shrink-0"><UserCheck className="w-2.5 h-2.5 mr-1" />In</Badge>}
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Stream */}
-          <TabsContent value="stream" className="p-5 mt-0"><StreamSection /></TabsContent>
-
-          {/* Rules */}
-          <TabsContent value="rules" className="p-5 mt-0"><RulesSection rulesText={t.rules} /></TabsContent>
-
-          {/* Live */}
-          {t.status === 'ongoing' && (
-            <TabsContent value="live" className="p-5 space-y-3 mt-0">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                <span className="text-sm font-bold text-red-400">Live Updates</span>
-              </div>
-              {liveUpdates.length === 0 ? (
-                <p className="text-center py-10 text-muted-foreground text-sm">No live updates yet.</p>
-              ) : liveUpdates.map(u => (
-                <div key={u.id} className="flex gap-3 p-3 rounded-xl bg-white/3 border border-white/8">
-                  <span className="text-[10px] text-muted-foreground font-mono whitespace-nowrap mt-0.5">{format(new Date(u.created_at), 'HH:mm')}</span>
-                  <p className="text-sm">{u.message}</p>
-                </div>
-              ))}
-            </TabsContent>
-          )}
-        </Tabs>
-      </div>
-    </div>
-  );
-}
-
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export function Tournaments(): React.ReactElement {
   const { user, isAuthenticated } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [tournaments, setTournaments]     = useState<Tournament[]>([]);
   const [loading, setLoading]             = useState(true);
   const [fetchError, setFetchError]       = useState('');
   const [activeFilter, setActiveFilter]   = useState<'all' | TStatus>('all');
   const [search, setSearch]               = useState('');
-  const [detail, setDetail]               = useState<Tournament | null>(null);
-  const [participants, setParticipants]   = useState<Participant[]>([]);
-  const [liveUpdates, setLiveUpdates]     = useState<LiveUpdate[]>([]);
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [registering, setRegistering]     = useState(false);
   const [myRegs, setMyRegs]               = useState<Set<string>>(new Set());
   const [heroIdx, setHeroIdx]             = useState(0);
-  const closingRef = useRef<string | null>(null);
 
   // ── Load data ─────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -759,45 +388,6 @@ export function Tournaments(): React.ReactElement {
     return () => clearInterval(id);
   }, [heroTournaments.length]);
 
-  // ── Detail dialog ─────────────────────────────────────────────────────────
-  const openDetail = useCallback(async (t: Tournament) => {
-    closingRef.current = null;
-    setDetail(t);
-    const p = new URLSearchParams(searchParams);
-    p.set('id', t.id);
-    setSearchParams(p, { replace: true });
-    setLoadingDetail(true);
-    const [partRes, liveRes] = await Promise.all([
-      supabase.from('tournament_participants').select('*, profiles(username, avatar_url)')
-        .eq('tournament_id', t.id).neq('status', 'withdrawn').order('registered_at', { ascending: true }),
-      supabase.from('live_updates').select('*').eq('tournament_id', t.id)
-        .order('created_at', { ascending: false }).limit(20),
-    ]);
-    setParticipants((partRes.data as Participant[]) ?? []);
-    setLiveUpdates((liveRes.data as LiveUpdate[]) ?? []);
-    setLoadingDetail(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-
-  const closeDetail = useCallback(() => {
-    if (detail) closingRef.current = detail.id;
-    setDetail(null);
-    setParticipants([]);
-    const p = new URLSearchParams(searchParams);
-    p.delete('id');
-    setSearchParams(p, { replace: true });
-  }, [detail, searchParams, setSearchParams]);
-
-  // URL auto-open
-  useEffect(() => {
-    const id = searchParams.get('id');
-    if (id && tournaments.length > 0 && !detail && id !== closingRef.current) {
-      const found = tournaments.find(t => t.id === id);
-      if (found) openDetail(found);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, tournaments]);
-
   // ── Registration ──────────────────────────────────────────────────────────
   const handleRegister = useCallback(async (t: Tournament) => {
     if (!isAuthenticated || !user) { toast.error('Sign in to register.'); return; }
@@ -827,17 +417,12 @@ export function Tournaments(): React.ReactElement {
       }
     } else {
       setMyRegs(prev => new Set([...prev, t.id]));
-      if (detail?.id === t.id) {
-        const { data } = await supabase.from('tournament_participants').select('*, profiles(username, avatar_url)')
-          .eq('tournament_id', t.id).neq('status', 'withdrawn').order('registered_at', { ascending: true });
-        setParticipants((data as Participant[]) ?? []);
-      }
       load();
       const isFirst = myRegs.size === 0;
       await awardXpAndNotify(user.id, isFirst ? 'first_tournament' : 'tournament_joined', { tournament: t.name });
     }
     setRegistering(false);
-  }, [isAuthenticated, user, myRegs, detail, load]);
+  }, [isAuthenticated, user, myRegs, load]);
 
   const handleWithdraw = useCallback(async (t: Tournament) => {
     if (!user) { toast.error('Sign in to withdraw.'); return; }
@@ -861,13 +446,12 @@ export function Tournaments(): React.ReactElement {
     }
     toast.success('Successfully withdrawn from tournament.');
     setMyRegs(prev => { const s = new Set(prev); s.delete(t.id); return s; });
-    if (detail?.id === t.id) closeDetail();
     load();
-  }, [user, detail, closeDetail, load]);
+  }, [user, load]);
 
   const handleShare = useCallback(async (t: Tournament, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const url = `${window.location.origin}/tournaments?id=${t.id}`;
+    const url = `${window.location.origin}/tournaments/${t.id}`;
     if (navigator.share) {
       try { await navigator.share({ title: t.name, text: `Join ${t.name} — Prize: ${t.prize_pool}`, url }); }
       catch { /* cancelled */ }
@@ -1021,12 +605,12 @@ export function Tournaments(): React.ReactElement {
                     </Button>
                   )}
                   {heroT.status === 'ongoing' && (
-                    <Button onClick={() => openDetail(heroT)}
+                    <Button onClick={() => navigate(`/tournaments/${heroT.id}`)}
                       className="h-12 px-8 bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 font-bold gap-2 rounded-2xl">
                       <Flame className="w-4 h-4 animate-pulse" />Watch Live
                     </Button>
                   )}
-                  <Button variant="outline" onClick={() => openDetail(heroT)}
+                  <Button variant="outline" onClick={() => navigate(`/tournaments/${heroT.id}`)}
                     className="h-12 px-6 border-white/15 text-white hover:bg-white/8 rounded-2xl gap-2 font-bold">
                     <Info className="w-4 h-4" />Tournament Details
                   </Button>
@@ -1158,7 +742,7 @@ export function Tournaments(): React.ReactElement {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filtered.map(t => (
                   <TournamentCard key={t.id} t={t} isReg={myRegs.has(t.id)}
-                    onOpen={() => openDetail(t)} onRegister={() => handleRegister(t)}
+                    onOpen={() => navigate(`/tournaments/${t.id}`)} onRegister={() => handleRegister(t)}
                     onWithdraw={() => handleWithdraw(t)} onShare={() => handleShare(t)}
                     registering={registering} />
                 ))}
@@ -1269,21 +853,6 @@ export function Tournaments(): React.ReactElement {
           </div>
         </div>
       </motion.section>
-
-      {/* ═══════════════════════ DETAIL DIALOG ═══════════════════════════════ */}
-      <Dialog open={!!detail} onOpenChange={v => { if (!v) closeDetail(); }}>
-        <DialogContent className="max-w-2xl w-full p-0 glass border-border/30 overflow-hidden max-h-[92vh] flex flex-col [&>button]:hidden">
-          {detail && (
-            <DetailModal
-              t={detail} isReg={myRegs.has(detail.id)}
-              participants={participants} liveUpdates={liveUpdates} loading={loadingDetail}
-              onClose={closeDetail} onRegister={() => handleRegister(detail)}
-              onWithdraw={() => handleWithdraw(detail)} onShare={() => handleShare(detail)}
-              registering={registering}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
