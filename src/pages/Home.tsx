@@ -58,7 +58,7 @@ const hostingFeatures = [
   {
     icon: Lock,
     title: 'Fraud Protection',
-    description: 'Advanced monitoring detects suspicious patterns before they impact your community.',
+    description: 'Advanced monitoring detects suspicious patterns before they impact your community. Payouts are processed securely through Paystack.',
   },
   {
     icon: Award,
