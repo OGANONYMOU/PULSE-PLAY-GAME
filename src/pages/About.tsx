@@ -1,15 +1,10 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trophy, DollarSign, Gamepad2, Users, Check, ArrowRight, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AboutSEO } from '@/components/SEO';
-
-const stats = [
-  { value: '10K+', label: 'Active Gamers',      icon: Users },
-  { value: '50+',  label: 'Tournaments Hosted', icon: Trophy },
-  { value: '₦5M+', label: 'Total Prize Pool',   icon: DollarSign },
-  { value: '15+',  label: 'Partner Games',      icon: Gamepad2 },
-];
+import { getPlatformStats, type PlatformStats } from '@/lib/platformStats';
 
 const features = [
   { icon: Trophy,      title: 'Weekly Tournaments', description: 'Compete every week across multiple games' },
@@ -36,13 +31,23 @@ const values = [
 ];
 
 const timeline = [
-  { year: '2024',      title: 'PulsePlay Founded',         description: 'A small team of mobile gaming enthusiasts launched PulsePlay with a single goal: make competitive mobile gaming accessible to everyone.', current: false },
-  { year: 'Early 2025', title: 'First 1,000 Players',     description: 'We hit our first milestone — 1,000 registered players and our inaugural tournament series across CODM and eFootball.', current: false },
-  { year: 'Mid 2025',  title: '₦1M in Prizes Distributed', description: 'Players earned real cash through PulsePlay tournaments, proving that mobile gaming can be a legitimate competitive pursuit.', current: false },
-  { year: 'Now',       title: '10K+ Gamers & Growing',    description: 'With over 10,000 active players, 50+ tournaments, and a thriving community, PulsePlay is just getting started.', current: true },
+  { year: '2024',      title: 'PulsePlay Founded',       description: 'A small team of mobile gaming enthusiasts launched PulsePlay with a single goal: make competitive mobile gaming accessible to everyone.', current: false },
+  { year: 'Early 2025', title: 'First Tournament Series', description: 'Our inaugural tournament series went live across CODM and eFootball, kicking off a growing player community.', current: false },
+  { year: 'Mid 2025',  title: 'Real Cash Prizes',         description: 'Players started earning real cash through PulsePlay tournaments, proving mobile gaming can be a legitimate competitive pursuit.', current: false },
+  { year: 'Now',       title: 'Growing Every Week',        description: 'With an active and growing community across multiple games, PulsePlay is just getting started.', current: true },
 ];
 
 export function About() {
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
+  useEffect(() => { getPlatformStats().then(setPlatformStats); }, []);
+
+  const stats = [
+    { value: platformStats ? `${platformStats.activeGamers.toLocaleString()}+` : '—', label: 'Active Gamers',      icon: Users },
+    { value: platformStats ? `${platformStats.tournamentsHosted.toLocaleString()}+` : '—', label: 'Tournaments Hosted', icon: Trophy },
+    { value: platformStats ? `₦${platformStats.totalPrizePool.toLocaleString()}` : '—', label: 'Total Prize Pool',   icon: DollarSign },
+    { value: platformStats ? `${platformStats.partnerGames}+` : '—', label: 'Partner Games',      icon: Gamepad2 },
+  ];
+
   return (
     <div className="min-h-screen pt-20 sm:pt-24 overflow-x-hidden">
       <AboutSEO />
