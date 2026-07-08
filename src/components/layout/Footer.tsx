@@ -28,8 +28,8 @@ const footerLinks = [
   {
     title: 'Legal',
     links: [
-      { label: 'Terms of Service', href: '/about' },
-      { label: 'Privacy Policy',   href: '/about' },
+      { label: 'Terms of Service', href: '/terms' },
+      { label: 'Privacy Policy',   href: '/privacy' },
       { label: 'Contact Us',       href: '/about' },
     ],
   },
@@ -103,6 +103,9 @@ export function Footer() {
             All systems operational
           </div>
         </div>
+        <p className="text-muted-foreground text-[11px] text-center sm:text-left mt-3">
+          18+ to participate in cash tournaments. PulsePlay is not affiliated with or endorsed by the publishers of the games featured on this platform.
+        </p>
       </div>
     </footer>
   );
