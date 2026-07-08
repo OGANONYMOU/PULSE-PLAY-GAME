@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -197,7 +198,18 @@ export function AdminPermissions(): React.ReactElement {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [tempRole, setTempRole] = useState<AdminRole>('USER');
-    const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkRole, setBulkRole] = useState<AdminRole>('USER');
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  const toggleUserSelected = (id: string) => {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const canManagePermissions = hasPermission('system.admin_access') || role === 'SUPER_ADMIN' || role === 'ADMIN';
 
@@ -229,11 +241,18 @@ export function AdminPermissions(): React.ReactElement {
         return acc;
       }, {} as Record<AdminRole, number>);
 
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { count: recentChanges } = await supabase
+        .from('audit_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('action', 'role_change')
+        .gt('created_at', sevenDaysAgo);
+
       setStats({
         totalUsers: adminUsers.length,
         roleDistribution: distribution,
         permissionCount: PERMISSION_CATEGORIES.reduce((sum, c) => sum + c.permissions.length, 0),
-        recentChanges: 12,
+        recentChanges: recentChanges ?? 0,
       });
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -291,6 +310,41 @@ export function AdminPermissions(): React.ReactElement {
     }
   };
 
+  const handleBulkSave = async () => {
+    if (selectedUserIds.size === 0) return;
+    setBulkSaving(true);
+    try {
+      const ids = Array.from(selectedUserIds);
+      const targets = users.filter(u => ids.includes(u.id));
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: bulkRole } as never)
+        .in('id', ids);
+
+      if (error) throw error;
+
+      await Promise.all(
+        targets
+          .filter(u => u.role !== bulkRole)
+          .map(u => writeAudit(
+            { actor_id: profile?.id || 'unknown', actor_email: profile?.email || 'unknown', actor_role: role || 'admin' },
+            { action: 'role_change', category: 'user', target_id: u.id, metadata: { old_role: u.role, new_role: bulkRole, bulk: true } }
+          ))
+      );
+
+      toast.success(`Updated role for ${ids.length} user${ids.length === 1 ? '' : 's'}`);
+      fetchUsers();
+      setSelectedUserIds(new Set());
+      setIsBulkDialogOpen(false);
+    } catch (err) {
+      console.error('Failed to bulk update users:', err);
+      toast.error('Failed to update selected users');
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   if (!canManagePermissions) {
     return (
       <div className="p-8 text-center">
@@ -323,10 +377,11 @@ export function AdminPermissions(): React.ReactElement {
             size="sm"
             variant="outline"
             onClick={() => setIsBulkDialogOpen(true)}
-            className="border-slate-700 hover:bg-slate-800"
+            disabled={selectedUserIds.size === 0}
+            className="border-slate-700 hover:bg-slate-800 disabled:opacity-50"
           >
             <Users className="w-4 h-4 mr-1" />
-            Bulk Edit
+            Bulk Edit{selectedUserIds.size > 0 ? ` (${selectedUserIds.size})` : ''}
           </Button>
           <Button
             size="sm"
@@ -410,9 +465,17 @@ export function AdminPermissions(): React.ReactElement {
                     exit={{ opacity: 0, x: 16 }}
                     transition={{ delay: index * 0.03 }}
                   >
-                    <Card className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors">
+                    <Card className={cn(
+                      "bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors",
+                      selectedUserIds.has(u.id) && "border-cyan-500/50 bg-cyan-500/5"
+                    )}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
+                          <Checkbox
+                            checked={selectedUserIds.has(u.id)}
+                            onCheckedChange={() => toggleUserSelected(u.id)}
+                            aria-label={`Select ${u.username}`}
+                          />
                           <Avatar className="w-10 h-10">
                             <AvatarImage src={u.avatar_url || ''} />
                             <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white">
@@ -601,11 +664,38 @@ export function AdminPermissions(): React.ReactElement {
           <DialogHeader>
             <DialogTitle className="font-orbitron text-white">Bulk Role Change</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Select users and assign a new role
+              Assign a new role to {selectedUserIds.size} selected user{selectedUserIds.size === 1 ? '' : 's'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <p className="text-sm text-slate-500">Feature coming soon - select users from the list above</p>
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              {users.filter(u => selectedUserIds.has(u.id)).map(u => (
+                <Badge key={u.id} variant="outline" className="border-slate-700 text-slate-300">
+                  @{u.username}
+                </Badge>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Select value={bulkRole} onValueChange={(v) => setBulkRole(v as AdminRole)}>
+                <SelectTrigger className="bg-slate-900 border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ROLE_CONFIG) as AdminRole[]).map((r) => (
+                    <SelectItem key={r} value={r}>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const Icon = ROLE_CONFIG[r].icon;
+                          return <Icon className={cn("w-4 h-4", ROLE_CONFIG[r].color)} />;
+                        })()}
+                        {ROLE_CONFIG[r].label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">{ROLE_CONFIG[bulkRole].description}</p>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -613,7 +703,15 @@ export function AdminPermissions(): React.ReactElement {
               onClick={() => setIsBulkDialogOpen(false)}
               className="border-slate-700"
             >
-              Close
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkSave}
+              disabled={bulkSaving || selectedUserIds.size === 0}
+              className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:opacity-90"
+            >
+              {bulkSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              Apply to {selectedUserIds.size} user{selectedUserIds.size === 1 ? '' : 's'}
             </Button>
           </DialogFooter>
         </DialogContent>

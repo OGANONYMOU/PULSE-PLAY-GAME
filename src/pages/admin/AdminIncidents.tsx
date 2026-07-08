@@ -539,12 +539,12 @@ export function AdminIncidents(): React.ReactElement {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [stats, setStats] = useState<IncidentStats | null>(null);
   const [metrics, setMetrics] = useState<RealTimeMetrics>({
-    activeUsers: 1247,
-    reportsPerHour: 23,
-    tournamentsLive: 18,
-    systemHealth: 98,
-    moderationQueue: 45,
-    pendingDisputes: 12,
+    activeUsers: 0,
+    reportsPerHour: 0,
+    tournamentsLive: 0,
+    systemHealth: 0,
+    moderationQueue: 0,
+    pendingDisputes: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
@@ -631,7 +631,13 @@ export function AdminIncidents(): React.ReactElement {
           const today = new Date().toDateString();
           return new Date(i.resolvedAt || '').toDateString() === today;
         }).length,
-        avgResolutionTime: 45, // Could calculate this from data
+        avgResolutionTime: (() => {
+          const resolved = transformedIncidents.filter(i => i.status === 'resolved' && i.resolvedAt);
+          if (resolved.length === 0) return 0;
+          const totalMinutes = resolved.reduce((sum, i) =>
+            sum + (new Date(i.resolvedAt!).getTime() - new Date(i.createdAt).getTime()) / 60000, 0);
+          return Math.round(totalMinutes / resolved.length);
+        })(),
         topTypes: Object.entries(
           transformedIncidents.reduce((acc, i) => {
             acc[i.type] = (acc[i.type] || 0) + 1;
@@ -640,19 +646,39 @@ export function AdminIncidents(): React.ReactElement {
         ).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count).slice(0, 5),
       });
 
-      // Fetch real-time metrics from RPC
-      const { data: metricsData } = await supabase.rpc('get_admin_metrics');
-      const metrics = metricsData as Record<string, number> | null;
-      if (metrics) {
-        setMetrics({
-          activeUsers: metrics.active_users || 0,
-          reportsPerHour: metrics.reports_per_hour || 0,
-          tournamentsLive: metrics.tournaments_live || 0,
-          systemHealth: metrics.system_health || 98,
-          moderationQueue: metrics.moderation_queue || 0,
-          pendingDisputes: metrics.pending_disputes || 0,
-        });
-      }
+      // Real-time metrics computed directly from real tables — get_admin_metrics
+      // is not a real RPC (no such function exists server-side; calling it
+      // always errored and silently left this panel on its hardcoded defaults).
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const [
+        { count: activeUsers },
+        { count: reportsPerHour },
+        { count: tournamentsLive },
+        { count: moderationQueue },
+        { count: pendingDisputes },
+      ] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).gt('updated_at', oneHourAgo),
+        supabase.from('content_reports').select('id', { count: 'exact', head: true }).gt('created_at', oneHourAgo),
+        supabase.from('tournaments').select('id', { count: 'exact', head: true }).eq('status', 'ongoing'),
+        supabase.from('content_reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('disputes').select('id', { count: 'exact', head: true }).eq('state', 'open'),
+      ]);
+
+      const activeCriticalOrHigh = transformedIncidents.filter(
+        i => i.status !== 'resolved' && (i.severity === 'critical' || i.severity === 'high')
+      ).length;
+
+      setMetrics({
+        activeUsers: activeUsers ?? 0,
+        reportsPerHour: reportsPerHour ?? 0,
+        tournamentsLive: tournamentsLive ?? 0,
+        // Derived from real open incidents, not a fabricated uptime figure —
+        // there's no server health-check infra behind this SPA to source a
+        // real percentage from.
+        systemHealth: Math.max(50, 100 - activeCriticalOrHigh * 5),
+        moderationQueue: moderationQueue ?? 0,
+        pendingDisputes: pendingDisputes ?? 0,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -684,19 +710,14 @@ export function AdminIncidents(): React.ReactElement {
     };
   }, [fetchIncidents]);
 
-  // Auto-refresh
+  // Auto-refresh — re-fetches real incident data and metrics on an interval.
+  // (Previously this simulated activity with Math.random() jitter on the
+  // metric numbers instead of fetching anything; it looked live but wasn't.)
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(() => {
-      setMetrics(prev => ({
-        ...prev,
-        activeUsers: prev.activeUsers + Math.floor(Math.random() * 10) - 5,
-        reportsPerHour: Math.max(0, prev.reportsPerHour + Math.floor(Math.random() * 6) - 3),
-        moderationQueue: Math.max(0, prev.moderationQueue + Math.floor(Math.random() * 4) - 2),
-      }));
-    }, 5000);
+    const interval = setInterval(() => { fetchIncidents(); }, 30000);
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh, fetchIncidents]);
 
   // Handle incident action
   const handleIncidentAction = async (action: string, data?: object) => {

@@ -607,16 +607,19 @@ export function AdminCommunity(): React.JSX.Element {
       setContent(filtered);
       setTotalPages(Math.ceil((totalCount || filtered.length) / 50));
 
-      // Fetch stats separately
-      const { data: statsData } = await supabase.rpc('get_community_stats');
-      setStats(statsData || {
+      // Computed directly from the fetched content — get_community_stats is not
+      // a real RPC (no such function exists server-side), so this previously
+      // fired a request that always failed before falling back to this exact
+      // computation anyway.
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      setStats({
         totalPosts: filtered.filter(c => c.type === 'post').length,
         totalClips: filtered.filter(c => c.type === 'clip').length,
         totalComments: filtered.filter(c => c.type === 'comment').length,
         pendingReview: filtered.filter(c => c.moderation.report_count > 0).length,
         featuredContent: filtered.filter(c => c.status === 'featured' || c.status === 'pinned').length,
         reportedContent: filtered.filter(c => c.moderation.report_count > 0).length,
-        trendingToday: 0,
+        trendingToday: filtered.filter(c => new Date(c.created_at).getTime() > oneDayAgo).length,
       });
     } finally {
       setIsLoading(false);

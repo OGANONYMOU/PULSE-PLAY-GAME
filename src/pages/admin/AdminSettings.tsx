@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Users, Trophy, Gamepad2, MessageSquare, Megaphone, RefreshCw, ExternalLink, Database } from 'lucide-react';
+import { Users, Trophy, Gamepad2, MessageSquare, Megaphone, RefreshCw, ExternalLink, Database, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export function AdminSettings() {
+  const { role } = useAdmin();
   const [userCount, setUserCount] = useState(0);
   const [gameCount, setGameCount] = useState(0);
   const [tournamentCount, setTournamentCount] = useState(0);
@@ -36,6 +38,22 @@ export function AdminSettings() {
     setIsRefreshing(false);
     toast.success('Stats refreshed.');
   };
+
+  // System settings are ADMIN+ only — MODERATOR passes the route-level
+  // RequireAdmin check but shouldn't reach platform-wide configuration.
+  if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+    return (
+      <div className="p-4 sm:p-5 lg:p-8 min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-sm">
+          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-6 h-6 text-red-400" />
+          </div>
+          <h2 className="font-orbitron font-bold text-lg mb-2">Access Restricted</h2>
+          <p className="text-sm text-muted-foreground">Platform settings require Admin or Super Admin access.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-5 lg:p-8 min-h-screen">

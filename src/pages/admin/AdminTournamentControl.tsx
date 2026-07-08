@@ -163,7 +163,11 @@ export function AdminTournamentControl() {
       state: 'resolved', resolved_by: user?.id, resolved_at: new Date().toISOString(),
       resolution: 'Admin forced result',
     } as never).eq('id', disputeId);
-    await (supabase as any).rpc('advance_match_winner', { p_match_id: matchId, p_winner_id: winnerId });
+    // Same double-elimination-aware dispatch as forceAdvance — a dispute in a
+    // double-elim tournament must route the loser into the losers bracket,
+    // not just eliminate them like single-elimination does.
+    const rpcName = tournament?.bracket_type === 'double_elimination' ? 'advance_match_winner_double_elim' : 'advance_match_winner';
+    await (supabase as any).rpc(rpcName, { p_match_id: matchId, p_winner_id: winnerId });
     await writeAuditLog({ actor_id: user?.id, action: 'dispute.resolve', entity_type: 'dispute', entity_id: disputeId, data: { forced_winner: winnerId, match_id: matchId } });
     toast.success('Dispute resolved. Winner advanced.');
     load();
