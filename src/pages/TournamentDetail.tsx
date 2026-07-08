@@ -1295,6 +1295,23 @@ export function TournamentDetail() {
                     <span className="text-[10px] text-white/25">{formatDistanceToNow(new Date(e.time!), { addSuffix: true })}</span>
                   </div>
                 ))}
+                {!tournament.check_in_open && !tournament.check_in_close && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-white/6 flex items-center justify-center flex-shrink-0">
+                      <UserCheck className="w-4 h-4 text-white/40" />
+                    </div>
+                    <p className="text-xs font-semibold text-white/70">No check-in required for this tournament</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-white/6 flex items-center justify-center flex-shrink-0">
+                    <Info className="w-4 h-4 text-white/40" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-white/70">Result Submission</p>
+                    <p className="text-[11px] text-white/35">Within 48 hours of match completion — disputes after this window may not be reviewable.</p>
+                  </div>
+                </div>
               </div>
 
               {/* Rules */}
