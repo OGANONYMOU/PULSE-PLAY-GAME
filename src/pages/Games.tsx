@@ -142,7 +142,7 @@ const GameCard = memo(function GameCard(p: { game: Game; index: number }): React
             </Link>
           </Button>
           <Button asChild className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm h-10 sm:h-9 min-h-[40px]">
-            <Link to={`/tournaments?game=${g.id}`}>
+            <Link to={`/games/${g.id}?tab=tournaments`}>
               <Trophy className="mr-2 w-4 h-4" />Play
             </Link>
           </Button>

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
   Gamepad2, Trophy, Users, ArrowLeft, Share2,
   Target, Shield, Calendar, ChevronRight,
@@ -117,6 +117,10 @@ interface GameNews {
 }
 
 type HubTab = 'overview' | 'tournaments' | 'clips' | 'leaderboard' | 'clans' | 'discuss';
+const HUB_TAB_VALUES: HubTab[] = ['overview', 'tournaments', 'clips', 'leaderboard', 'clans', 'discuss'];
+function isHubTab(v: string | null): v is HubTab {
+  return v !== null && (HUB_TAB_VALUES as string[]).includes(v);
+}
 type TournamentFilter = 'all' | 'upcoming' | 'ongoing' | 'completed';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -469,12 +473,14 @@ function GameHubSkeleton() {
 export function GameDetail(): React.ReactElement {
   const { id: gameId } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
+  const [searchParams] = useSearchParams();
 
   // Core data
   const [game, setGame]           = useState<Game | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<HubTab>('overview');
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<HubTab>(isHubTab(tabParam) ? tabParam : 'overview');
 
   // Per-tab data
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
