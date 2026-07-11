@@ -540,7 +540,7 @@ export function AdminUsers(): React.ReactElement {
           riskFactors.push({ type: 'mute_history', severity: 'medium', description: 'Currently muted' });
         }
 
-        const gamercred = profile.gamercred as number || 0;
+        const gamercred = profile.gamercred_score as number || 0;
         if (gamercred < 50) {
           riskScore += 10;
           riskFactors.push({ type: 'low_cred', severity: 'low', description: 'Low GamerCred score' });

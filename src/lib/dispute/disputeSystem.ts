@@ -656,7 +656,7 @@ async function applyMatchOverride(
 ): Promise<void> {
   // Update match result
   await supabase
-    .from('tournament_matches')
+    .from('matches')
     .update({
       winner_id: override.winner_id,
       score: override.score,

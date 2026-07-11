@@ -194,7 +194,7 @@ async function detectRepeatedWinners(tournament_id: string): Promise<Omit<FraudF
  */
 async function detectAbnormalScores(tournament_id: string): Promise<Omit<FraudFlag, 'id' | 'created_at' | 'updated_at'> | null> {
   const { data: matches } = await supabase
-    .from('tournament_matches')
+    .from('matches')
     .select('id, player1_score, player2_score, player1_id, player2_id, score_details')
     .eq('tournament_id', tournament_id)
     .eq('status', 'completed')
@@ -270,7 +270,7 @@ async function detectAbnormalScores(tournament_id: string): Promise<Omit<FraudFl
  */
 async function detectSuspiciousTiming(tournament_id: string): Promise<Omit<FraudFlag, 'id' | 'created_at' | 'updated_at'> | null> {
   const { data: matches } = await supabase
-    .from('tournament_matches')
+    .from('matches')
     .select('id, started_at, completed_at, player1_id, player2_id')
     .eq('tournament_id', tournament_id)
     .eq('status', 'completed')
@@ -674,7 +674,7 @@ export async function monitorMatchResult(
   
   // Check if same player just won multiple matches
   const { data: recentWins } = await supabase
-    .from('tournament_matches')
+    .from('matches')
     .select('id')
     .eq('tournament_id', tournament_id)
     .eq('winner_id', winner_id)
@@ -686,7 +686,7 @@ export async function monitorMatchResult(
   if (recentWins && recentWins.length >= 3) {
     // Check time between wins
     const { data: matchTimes } = await supabase
-      .from('tournament_matches')
+      .from('matches')
       .select('completed_at')
       .in('id', recentWins.map(m => m.id))
       .order('completed_at', { ascending: false })

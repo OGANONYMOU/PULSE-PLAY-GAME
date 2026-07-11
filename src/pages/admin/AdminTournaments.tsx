@@ -1195,7 +1195,7 @@ export function AdminTournaments(): React.ReactElement {
       const [participantsRes, disputesRes, matchesRes] = await Promise.all([
         supabase
           .from('tournament_participants')
-          .select('*, profiles(username, avatar_url, gamercred)')
+          .select('*, profiles(username, avatar_url, gamercred:gamercred_score)')
           .eq('tournament_id', tournamentId)
           .order('registered_at', { ascending: true }),
         supabase
@@ -1204,7 +1204,7 @@ export function AdminTournaments(): React.ReactElement {
           .eq('tournament_id', tournamentId)
           .order('created_at', { ascending: false }),
         supabase
-          .from('tournament_matches')
+          .from('matches')
           .select('*')
           .eq('tournament_id', tournamentId)
           .order('round', { ascending: true }),

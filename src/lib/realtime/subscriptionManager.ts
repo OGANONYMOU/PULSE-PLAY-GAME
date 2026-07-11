@@ -213,7 +213,7 @@ export function subscribeToMatchCompletions(
   callback: (match: Record<string, unknown>) => void
 ): string {
   return subscriptionManager.subscribe({
-    table: 'tournament_matches',
+    table: 'matches',
     event: 'UPDATE',
     filter: `tournament_id=eq.${tournament_id}`,
     callback: (payload) => {
@@ -329,7 +329,7 @@ export function useRealtimeTournament(tournament_id: string) {
   useEffect(() => {
     // Initial fetch
     supabase
-      .from('tournament_matches')
+      .from('matches')
       .select('*')
       .eq('tournament_id', tournament_id)
       .order('round', { ascending: true })

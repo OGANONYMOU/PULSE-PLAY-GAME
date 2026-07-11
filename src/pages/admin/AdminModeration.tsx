@@ -557,7 +557,7 @@ export function AdminModeration(): React.ReactElement {
       // Fetch reporter profiles
       const reporterIds = [...new Set((reportsRaw || []).map((r: Record<string, unknown>) => r.reporter_id as string))];
       const { data: profilesRaw } = reporterIds.length > 0
-        ? await supabase.from('profiles').select('id, username, avatar_url, gamercred').in('id', reporterIds)
+        ? await supabase.from('profiles').select('id, username, avatar_url, gamercred:gamercred_score').in('id', reporterIds)
         : { data: [] };
 
       const profileMap: Record<string, { id: string; username: string; avatar_url: string | null; gamercred?: number }> =

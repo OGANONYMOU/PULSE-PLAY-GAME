@@ -75,7 +75,7 @@ interface StaffMember {
 interface OpenDispute {
   id: string;
   fixture_id: string | null;
-  raised_by: string;
+  opened_by: string;
   reason: string;
   notes: string | null;
   state: string;
@@ -233,23 +233,27 @@ export function TournamentOrganizerPanel({
     const [pRes, sRes, dRes] = await Promise.all([
       supabase
         .from('tournament_participants')
-        .select('id, user_id, status, joined_at, checked_in_at, seed, in_game_username, final_placement, profiles(username, avatar_url, gamercred)')
+        .select('id, user_id, status, joined_at, checked_in_at, seed, in_game_username, final_placement, profiles(username, avatar_url, gamercred:gamercred_score)')
         .eq('tournament_id', tournament.id)
         .order('joined_at'),
 
       supabase
         .from('tournament_staff')
-        .select('id, user_id, role, added_at, profiles(username, avatar_url)')
+        .select('id, user_id, role, added_at, profiles!tournament_staff_user_id_fkey(username, avatar_url)')
         .eq('tournament_id', tournament.id)
         .order('added_at'),
 
       supabase
         .from('disputes')
-        .select('id, fixture_id, raised_by, reason, notes, state, due_by, created_at, profiles:raised_by(username)')
+        .select('id, fixture_id, opened_by, reason, notes, state, due_by, created_at, profiles:opened_by(username)')
         .eq('tournament_id', tournament.id)
         .eq('state', 'open')
         .order('due_by'),
     ]);
+
+    if (pRes.error) console.error('[OrganizerPanel] participants load failed:', pRes.error.message);
+    if (sRes.error) console.error('[OrganizerPanel] staff load failed:', sRes.error.message);
+    if (dRes.error) console.error('[OrganizerPanel] disputes load failed:', dRes.error.message);
 
     setParticipants((pRes.data ?? []) as unknown as Participant[]);
     setStaff((sRes.data ?? []) as unknown as StaffMember[]);

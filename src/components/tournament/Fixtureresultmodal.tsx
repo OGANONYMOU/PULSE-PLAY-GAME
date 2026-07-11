@@ -426,7 +426,7 @@ export function FixtureResultModal({
         match_id:   null,
         fixture_id: fixture.id,
         tournament_id: fixture.tournament_id,
-        raised_by:  user.id,
+        opened_by:  user.id,
         reason:     disputeReason,
         notes:      disputeNotes.trim() || null,
         state:      'open',
